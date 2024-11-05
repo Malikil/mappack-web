@@ -1,0 +1,31 @@
+{
+  "name": "pyop-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@floating-ui/react": "^0.26.23",
+    "bootstrap": "^5.3.3",
+    "google-auth-library": "^9.14.2",
+    "google-spreadsheet": "^4.1.4",
+    "mongodb": "^6.8.0",
+    "next": "^14.2.15",
+    "next-auth": "^5.0.0-beta.20",
+    "osu-web.js": "^2.5.0",
+    "react": "^18",
+    "react-bootstrap": "^2.10.2",
+    "react-bootstrap-icons": "^1.11.4",
+    "react-dom": "^18",
+    "react-toastify": "^10.0.6",
+    "swr": "^2.2.5"
+  },
+  "devDependencies": {
+    "eslint": "^8",
+    "eslint-config-next": "14.2.3"
+  }
+}

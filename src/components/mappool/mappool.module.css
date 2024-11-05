@@ -1,0 +1,40 @@
+.poolstats {
+   --bs-bg-opacity: 1;
+   border: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color);
+   border-radius: var(--bs-border-radius);
+   background-color: rgba(var(--bs-body-bg-rgb), var(--bs-bg-opacity));
+   position: fixed;
+   bottom: 0;
+   left: 0;
+   margin: 1rem;
+   padding: 0.5rem;
+   overflow-y: auto;
+}
+
+@media screen and (max-width: 1400px) {
+   .poolstats {
+      max-height: 30%;
+   }
+}
+
+@media screen and (max-width: 768px) {
+   .poolstats {
+      display: none;
+   }
+}
+.map_warning {
+   --bs-border-opacity: 1;
+   --bs-border-width: 4px;
+   border-color: rgba(var(--bs-warning-rgb), var(--bs-border-opacity));
+}
+
+.map_error {
+   --bs-border-opacity: 1;
+   --bs-border-width: 4px;
+   border-color: rgba(var(--bs-danger-rgb), var(--bs-border-opacity));
+}
+.mapcard {
+   flex-basis: 295px;
+   flex-shrink: 0;
+   flex-grow: 1;
+}
