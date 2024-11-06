@@ -1,21 +1,5 @@
 "use client";
 
-/**
- * @typedef Beatmap
- * @prop {number} id
- * @prop {number} setid
- * @prop {string} artist
- * @prop {string} title
- * @prop {string} version
- * @prop {number} length
- * @prop {number} drain
- * @prop {number} bpm
- * @prop {number} cs
- * @prop {number} ar
- * @prop {number} stars
- * @prop {number} mods
- */
-
 import { convertTime } from "@/time";
 import {
    Card,
@@ -29,18 +13,22 @@ import {
    Row
 } from "react-bootstrap";
 import styles from "./mappool.module.css";
-import { getEnumMods } from "osu-web.js";
 
 /**
  * @param {object} props
- * @param {Beatmap} props.beatmap
- * @param {boolean} props.showMods
+ * @param {import("@/types/database.beatmap").DbBeatmap} props.beatmap
  * @param {object[]} [props.mapActions]
  * @param {string} props.mapActions.title
  * @param {function} props.mapActions.action
  * @param {function} props.mapActions.condition
+ * @param {import("@/types/database.beatmap").Rating} [props.rating]
  */
 export default function MapCard(props) {
+   const withinRangeClass = rating => {
+      const range = props.rating?.rd;
+      const target = props.rating?.rating;
+      if (Math.abs(target - rating) < range) return "border border-success rounded";
+   };
    return (
       <Card className={styles.mapcard}>
          <CardBody className="d-flex flex-column">
@@ -53,22 +41,13 @@ export default function MapCard(props) {
                {props.beatmap.artist} - {props.beatmap.title}
             </CardTitle>
             <CardSubtitle className="d-flex">
-               <div>{props.beatmap.version}</div>
-               {props.showMods && (
-                  <div className="ms-2">+{getEnumMods(props.beatmap.mods).join("")}</div>
-               )}
+               <div className="text-break">{props.beatmap.version}</div>
                <div className="ms-auto">{props.beatmap.id}</div>
             </CardSubtitle>
-            <Container>
+            <Container className="mb-2">
                <Row>
                   <Col>Length</Col>
-                  <Col className="d-flex flex-wrap align-items-center gap-1">
-                     <span className="d-inline-block">{convertTime(props.beatmap.length)}</span>{" "}
-                     <span className="d-inline-block">
-                        {props.beatmap.drain < props.beatmap.length &&
-                           ` (${convertTime(props.beatmap.drain)} drain)`}
-                     </span>
-                  </Col>
+                  <Col>{convertTime(props.beatmap.length)}</Col>
                </Row>
                <Row>
                   <Col>BPM</Col>
@@ -89,7 +68,27 @@ export default function MapCard(props) {
                   <Col>{parseFloat(props.beatmap.ar.toFixed(2))}</Col>
                </Row>
             </Container>
-            <div className="mt-auto d-flex">
+            <hr className="mt-auto" />
+            <CardSubtitle>Ratings:</CardSubtitle>
+            <Container>
+               <Row>
+                  <Col className={withinRangeClass(props.beatmap.ratings.nm.rating)}>
+                     NM {props.beatmap.ratings.nm.rating.toFixed(0)}
+                  </Col>
+                  <Col className={withinRangeClass(props.beatmap.ratings.hd.rating)}>
+                     HD {props.beatmap.ratings.hd.rating.toFixed(0)}
+                  </Col>
+               </Row>
+               <Row>
+                  <Col className={withinRangeClass(props.beatmap.ratings.hr.rating)}>
+                     HR {props.beatmap.ratings.hr.rating.toFixed(0)}
+                  </Col>
+                  <Col className={withinRangeClass(props.beatmap.ratings.dt.rating)}>
+                     DT {props.beatmap.ratings.dt.rating.toFixed(0)}
+                  </Col>
+               </Row>
+            </Container>
+            <div className="d-flex">
                <CardLink
                   href={`https://osu.ppy.sh/beatmapsets/${props.beatmap.setid}#osu/${props.beatmap.id}`}
                   target="_blank"
