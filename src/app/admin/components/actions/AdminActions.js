@@ -1,25 +1,25 @@
 "use client";
 
 import { Button, Card, CardBody, CardTitle } from "react-bootstrap";
-import { connectBancho } from "./actions";
+import { advancePack } from "./actions";
 import { toast } from "react-toastify";
 
 export default function AdminActions() {
    return (
       <Card>
          <CardBody>
-            <CardTitle>Bancho Actions</CardTitle>
+            <CardTitle>Actions</CardTitle>
             <div className="d-flex flex-column gap-2">
                <Button
                   onClick={() =>
-                     toast.promise(connectBancho, {
-                        pending: "Connecting to Bancho",
-                        error: "Failed to connect",
-                        success: "Connected!"
+                     toast.promise(advancePack, {
+                        pending: "Updating mappack",
+                        error: "Failed to update",
+                        success: "Updated current mappack"
                      })
                   }
                >
-                  Connect
+                  Advance Mappack
                </Button>
             </div>
          </CardBody>
