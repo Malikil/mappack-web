@@ -8,6 +8,6 @@ const client = new MongoClient(process.env.MONGO_CONNECTION, {
       deprecationErrors: true
    }
 });
-const db = client.db("pyop");
+const db = client.db("packchallenge");
 
 export default db;

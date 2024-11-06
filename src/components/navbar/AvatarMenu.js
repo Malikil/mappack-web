@@ -8,9 +8,7 @@ const checkRoles = cache(async osuid => {
    const player = await collection.findOne({ osuid });
    const roles = {
       any: false,
-      admin: !!player?.admin,
-      approver: !!player?.approver,
-      referee: !!player?.referee
+      admin: !!player?.admin
    };
    if (roles.admin) Object.keys(roles).forEach(k => (roles[k] = true));
    else roles.any = Object.keys(roles).some(k => roles[k]);
@@ -29,25 +27,14 @@ export default async function AvatarMenu() {
                </Link>
             </li>
          )}
-         {roles.approver && (
-            <li>
-               <Link className="dropdown-item" href="/admin/approver">
-                  Approving
-               </Link>
-            </li>
-         )}
-         {roles.referee && (
-            <li>
-               <Link className="dropdown-item" href="/referee">
-                  Referee
-               </Link>
-            </li>
-         )}
-         {roles.any && (
-            <li>
-               <hr className="dropdown-divider" />
-            </li>
-         )}
+         <li>
+            <Link className="dropdown-item" href="/profile">
+               Profile
+            </Link>
+         </li>
+         <li>
+            <hr className="dropdown-divider" />
+         </li>
          <li>
             <form
                action={async () => {

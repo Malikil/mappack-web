@@ -11,6 +11,7 @@
   "dependencies": {
     "@floating-ui/react": "^0.26.23",
     "bootstrap": "^5.3.3",
+    "glicko2": "^1.2.1",
     "google-auth-library": "^9.14.2",
     "google-spreadsheet": "^4.1.4",
     "mongodb": "^6.8.0",

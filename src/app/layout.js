@@ -3,14 +3,14 @@ import "bootstrap/dist/css/bootstrap.css";
 import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
 import BootstrapClient from "@/components/BootstrapClient";
-import Navbar from "@/components/Navbar";
+import Navbar from "@/components/navbar/Navbar";
 import { ToastContainer } from "react-toastify";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-   title: "PYOP Tournament",
-   description: "Pick Your Own Pool tournament website"
+   title: "Mappack Challenge",
+   description: "Mappack Challenge solo queue website"
 };
 
 export default function RootLayout({ children }) {

@@ -1,4 +1,4 @@
-import SignIn from "@/components/SignIn";
+import SignIn from "@/components/navbar/SignIn";
 import Image from "next/image";
 import Link from "next/link";
 import Container from "react-bootstrap/Container";
