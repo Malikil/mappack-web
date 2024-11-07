@@ -49,7 +49,7 @@ export default async function Profile() {
             <CardBody>
                <TableData
                   data={[
-                     ["Rating", player.pvp.rating],
+                     ["Rating", player.pvp.rating.toFixed(0)],
                      ["Wins", player.pvp.wins],
                      ["Losses", player.pvp.losses]
                   ]}
@@ -67,8 +67,8 @@ export default async function Profile() {
             <CardBody>
                <TableData
                   data={[
-                     ["Rating", player.pve.rating],
-                     ["Rating Deviation", player.pve.rd],
+                     ["Rating", player.pve.rating.toFixed(0)],
+                     ["Rating Deviation", player.pve.rd.toFixed(0)],
                      ["Games", player.pve.games]
                   ]}
                />

@@ -49,7 +49,7 @@ export async function addMappool(formData) {
                      // Estimate HD with 1.02 ^ (10 - AR). Subject to change
                      const hdRating = Math.pow(1.01, 10 - bm.ar) * rating;
                      // Estimate HR/DT with 1.1x and 1.5x. Subject to change
-                     const rd = 250,
+                     const rd = 350,
                         vol = 0.06;
                      mapData.ratings = {
                         nm: { rating, rd, vol },

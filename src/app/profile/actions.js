@@ -9,7 +9,7 @@ export async function register(osuid) {
       osuid,
       pvp: {
          rating: 1500,
-         rd: 250,
+         rd: 350,
          vol: 0.06,
          matches: [],
          wins: 0,
@@ -17,7 +17,7 @@ export async function register(osuid) {
       },
       pve: {
          rating: 1500,
-         rd: 250,
+         rd: 350,
          vol: 0.06,
          matches: []
       }
