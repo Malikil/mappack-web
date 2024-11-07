@@ -1,11 +1,12 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import db from "../api/db/connection";
-import { Button, Card, CardBody, CardHeader } from "react-bootstrap";
+import { Button, Card, CardBody, CardHeader, CardTitle } from "react-bootstrap";
 import { register } from "./actions";
 import { revalidatePath } from "next/cache";
 import MatchHistoryItem from "./MatchHistoryItem";
 import ScoreHistoryItem from "./ScoreHistoryItem";
+import AttackButton from "./AttackButton";
 
 const TableData = ({ data }) => (
    <table>
@@ -33,7 +34,7 @@ export default async function Profile() {
             <form
                action={async () => {
                   "use server";
-                  await register(session.user.id);
+                  await register(session.user.id, session.user.name);
                   revalidatePath("/profile");
                }}
             >
@@ -43,7 +44,7 @@ export default async function Profile() {
       );
 
    return (
-      <div className="d-flex gap-2">
+      <div className="d-flex flex-column gap-2">
          <Card>
             <CardHeader>Vs. Players</CardHeader>
             <CardBody>
@@ -54,30 +55,38 @@ export default async function Profile() {
                      ["Losses", player.pvp.losses]
                   ]}
                />
-               <Card className="mt-2">
-                  <CardHeader>Match History</CardHeader>
-                  <CardBody>
-                     <ScoreHistoryItem />
-                  </CardBody>
-               </Card>
+               {player.pvp.matches.length > 0 && (
+                  <Card className="mt-2">
+                     <CardHeader>Match History</CardHeader>
+                     <CardBody>
+                        <MatchHistoryItem />
+                     </CardBody>
+                  </Card>
+               )}
             </CardBody>
          </Card>
          <Card>
             <CardHeader>Score Attack</CardHeader>
             <CardBody>
-               <TableData
-                  data={[
-                     ["Rating", player.pve.rating.toFixed(0)],
-                     ["Rating Deviation", player.pve.rd.toFixed(0)],
-                     ["Games", player.pve.games]
-                  ]}
-               />
-               <Card className="mt-2">
-                  <CardHeader>Match History</CardHeader>
-                  <CardBody>
-                     <MatchHistoryItem />
-                  </CardBody>
-               </Card>
+               <div className="d-flex">
+                  <TableData
+                     data={[
+                        ["Rating", player.pve.rating.toFixed(0)],
+                        ["Rating Deviation", player.pve.rd.toFixed(0)],
+                        ["Games", player.pve.games]
+                     ]}
+                  />
+                  <div className="ms-auto">
+                     <AttackButton userId={session.user.id} />
+                  </div>
+               </div>
+               <hr />
+               <CardTitle>Match History</CardTitle>
+               <div className="d-flex flex-column gap-1">
+                  {player.pve.matches.map((match, i) => (
+                     <ScoreHistoryItem key={i} match={match} />
+                  ))}
+               </div>
             </CardBody>
          </Card>
       </div>

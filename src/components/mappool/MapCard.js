@@ -27,7 +27,7 @@ export default function MapCard(props) {
    const withinRangeClass = rating => {
       const range = props.rating?.rd;
       const target = props.rating?.rating;
-      if (Math.abs(target - rating) < range) return "border border-success rounded";
+      if (Math.abs(target - rating) < range) return "border border-2 border-success rounded";
    };
    return (
       <Card className={styles.mapcard}>

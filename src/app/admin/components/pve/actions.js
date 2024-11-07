@@ -70,7 +70,7 @@ export async function submitPve(formData) {
             "pve.matches": {
                $each: [matches],
                $position: 0,
-               $slice: 10
+               $slice: 5
             }
          }
       }

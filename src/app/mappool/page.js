@@ -10,7 +10,7 @@ export default async function Mappool() {
    let playerRating = null;
    if (session) {
       const player = await db.collection("players").findOne({ osuid: session.user.id });
-      if (player) playerRating = player.pvp;
+      if (player) playerRating = player.pve;
    }
 
    return (
