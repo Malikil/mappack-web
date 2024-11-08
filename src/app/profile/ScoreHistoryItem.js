@@ -8,7 +8,8 @@ export default async function ScoreHistoryItem({ match }) {
    const maplist = await mapsDb.findOne({ active: "current" });
    // Get map details
    const details = match.map(songResult => {
-      const dbmap = maplist.maps.find(map => map.id === songResult.map);
+      const dbmap = maplist.maps.find(map => map.id === songResult.map.id);
+      if (!dbmap) return songResult;
       return {
          ...songResult,
          map: dbmap
@@ -18,12 +19,8 @@ export default async function ScoreHistoryItem({ match }) {
    return (
       <Card>
          <CardBody className="d-flex gap-1 flex-wrap">
-            {details.map(m => (
-               <Card
-                  key={m.map.id + m.mod}
-                  className="flex-shrink-0 flex-grow-1"
-                  style={{ flexBasis: "140px" }}
-               >
+            {details.map((m, i) => (
+               <Card key={i} className="flex-shrink-0 flex-grow-1" style={{ flexBasis: "140px" }}>
                   <Link href={buildUrl.beatmap(m.map.id)} target="_blank" rel="noopener noreferrer">
                      <CardImg
                         src={`https://assets.ppy.sh/beatmaps/${m.map.setid}/covers/cover.jpg`}
@@ -31,15 +28,14 @@ export default async function ScoreHistoryItem({ match }) {
                         style={{ objectFit: "cover" }}
                      />
                   </Link>
-                  <CardBody>
+                  <CardBody className="d-flex flex-column">
                      <CardSubtitle>{m.score.toLocaleString()}</CardSubtitle>
                      <div>{m.map.version}</div>
-                     <div className="d-flex">
-                        <span>
-                           {m.mod.toUpperCase()}
-                           <span className="d-none d-xxl-inline"> Rating:</span>
-                        </span>
-                        <span className="ms-auto">{m.map.ratings[m.mod].rating.toFixed()}</span>
+                     <div className="d-flex mt-auto">
+                        <span>{m.mod.toUpperCase()}</span>
+                        {m.map.ratings && (
+                           <span className="ms-auto">{m.map.ratings[m.mod].rating.toFixed()}</span>
+                        )}
                      </div>
                   </CardBody>
                </Card>

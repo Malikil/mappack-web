@@ -15,14 +15,22 @@ export async function submitPvp(formData) {
    });
    console.log(winner, loser);
    // Get the played maps
-   /** @type {{map: number, mod: 'nm'|'hd'|'hr'|'dt'|'fm'}[]} */
+   const mapsDb = db.collection("maps");
+   const mappack = await mapsDb.findOne({ active: "current" });
+   /** @type {{map: { id: number, setid: number, version: string }, mod: 'nm'|'hd'|'hr'|'dt'|'fm'}[]} */
    const playedMaps = formData
       .get("songs")
       .split("\n")
       .map(item => {
          const [map, mod] = item.split("+");
+         const id = parseInt(map);
+         const dbmap = mappack.maps.find(m => m.id === id);
          return {
-            map: parseInt(map),
+            map: {
+               id: dbmap.id,
+               setid: dbmap.setid,
+               version: dbmap.version
+            },
             mod: mod.trim().toLowerCase()
          };
       });
@@ -33,6 +41,7 @@ export async function submitPvp(formData) {
       .map(s => {
          const sp = s.split("+");
          sp[0] = parseInt(sp[0]);
+         if (sp[1]) sp[1] = sp[1].trim().toLowerCase();
          return sp;
       });
    /** @type {[number,string][]} */
@@ -42,6 +51,7 @@ export async function submitPvp(formData) {
       .map(s => {
          const sp = s.split("+");
          sp[0] = parseInt(sp[0]);
+         if (sp[1]) sp[1] = sp[1].trim().toLowerCase();
          return sp;
       });
 
@@ -108,10 +118,8 @@ export async function submitPvp(formData) {
    console.log(playerUpdateResult);
 
    // Update map ratings
-   const mapsDb = db.collection("maps");
-   const mappack = await mapsDb.findOne({ active: "current" });
    const songlistCombined = playedMaps.flatMap((result, i) => {
-      const map = mappack.maps.find(map => map.id === result.map);
+      const map = mappack.maps.find(map => map.id === result.map.id);
       const wscore = winnerScores[i][0];
       const lscore = loserScores[i][0];
       if (result.mod === "fm") {
@@ -179,7 +187,7 @@ export async function submitPvp(formData) {
 
    // Update song ratings in database
    const uniqueMaps = songlistCombined.reduce((unique, candidate) => {
-      if (!unique.find(m => m.map === candidate.map && m.mod === candidate.mod))
+      if (!unique.find(m => m.map.id === candidate.map.id && m.mod === candidate.mod))
          unique.push(candidate);
       return unique;
    }, []);
@@ -195,7 +203,7 @@ export async function submitPvp(formData) {
             updateOne: {
                filter: {
                   active: "current",
-                  "maps.id": outcome.map
+                  "maps.id": outcome.map.id
                },
                update: {
                   $set: {

@@ -17,9 +17,14 @@ export default async function Mappool() {
       <div>
          <div className="mb-2">
             <div className="fs-2">{pool.name}</div>
-            <Link className="ms-1" href={pool.download}>
-               Download
-            </Link>
+            <div className="d-flex justify-content-between">
+               <Link className="ms-1" href={pool.download}>
+                  Download
+               </Link>
+               <div>
+                  <small>Highlighted maps may be selected for Score Attack</small>
+               </div>
+            </div>
             <hr />
          </div>
          <div className="d-flex flex-wrap gap-2">

@@ -9,7 +9,8 @@ export default async function ScoreHistoryItem({ match }) {
    const maplist = await mapsDb.findOne({ active: "current" });
    // Get map details
    const details = match.map(songResult => {
-      const dbmap = maplist.maps.find(map => map.id === songResult.map);
+      const dbmap = maplist.maps.find(map => map.id === songResult.map.id);
+      if (!dbmap) return songResult;
       dbmap.ratings.fm = { rating: (dbmap.ratings.hd.rating + dbmap.ratings.hr.rating) / 2 };
       return {
          ...songResult,
@@ -20,12 +21,12 @@ export default async function ScoreHistoryItem({ match }) {
    return (
       <Card>
          <CardBody className="d-flex gap-1 flex-wrap">
-            {details.map(m => (
+            {details.map((m, i) => (
                <Card
                   className={`flex-shrink-0 flex-grow-1 border-3 border-${
                      m.score > m.opponentScore ? "success" : "danger"
                   }`}
-                  key={m.map.id + m.mod}
+                  key={i}
                   style={{ flexBasis: "140px" }}
                >
                   <Link href={buildUrl.beatmap(m.map.id)} target="_blank" rel="noopener noreferrer">
@@ -35,8 +36,8 @@ export default async function ScoreHistoryItem({ match }) {
                         style={{ objectFit: "cover" }}
                      />
                   </Link>
-                  <CardBody>
-                     <CardSubtitle className="d-flex justify-content-between">
+                  <CardBody className="d-flex flex-column">
+                     <CardSubtitle className="d-flex justify-content-between flex-wrap">
                         <span>{m.score.toLocaleString()}</span>
                         <span
                            className={`text-${m.score > m.opponentScore ? "success" : "danger"}`}
@@ -46,12 +47,11 @@ export default async function ScoreHistoryItem({ match }) {
                         <span>{m.opponentScore.toLocaleString()}</span>
                      </CardSubtitle>
                      <div>{m.map.version}</div>
-                     <div className="d-flex justify-content-between">
-                        <span>
-                           {m.mod.toUpperCase()}
-                           <span className="d-none d-xxl-inline"> Rating:</span>
-                        </span>
-                        <span>{m.map.ratings[m.mod].rating.toFixed()}</span>
+                     <div className="d-flex mt-auto">
+                        <span>{m.mod.toUpperCase()}</span>
+                        {m.map.ratings && (
+                           <span className="ms-auto">{m.map.ratings[m.mod].rating.toFixed()}</span>
+                        )}
                      </div>
                   </CardBody>
                </Card>

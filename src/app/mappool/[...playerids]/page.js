@@ -67,7 +67,15 @@ export default async function PlayerPool({ params }) {
 
    return (
       <div>
-         <div className="fs-3">Pool for: {players.map(p => p.osuname).join(", ")}</div>
+         <div className="d-flex justify-content-between">
+            <div className="fs-3">Pool for: {players.map(p => p.osuname).join(", ")}</div>
+            <div>
+               <small>
+                  Rating Range: {(targetRating.rating - targetRating.rd).toFixed()} -{" "}
+                  {(targetRating.rating + targetRating.rd).toFixed()}
+               </small>
+            </div>
+         </div>
          <div className="d-flex flex-column gap-3">
             {Object.keys(maplist).map(mod => (
                <ModPool

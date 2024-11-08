@@ -30,6 +30,11 @@ export async function submitPve(formData) {
    const matchedOutcomes = matches.map(match => {
       const playedMap = mappack.maps.find(m => m.id === match.map);
       const mapRating = playedMap.ratings[match.mod];
+      match.map = {
+         id: playedMap.id,
+         setid: playedMap.setid,
+         version: playedMap.version
+      };
       return {
          match,
          mapRating: calculator.makePlayer(mapRating.rating, mapRating.rd, mapRating.vol)
@@ -63,7 +68,7 @@ export async function submitPve(formData) {
          $inc: { "pve.games": 1 },
          $push: {
             "pve.matches": {
-               $each: [matches],
+               $each: [matchedOutcomes.map(m => m.match)],
                $position: 0,
                $slice: 5
             }
@@ -84,7 +89,7 @@ export async function submitPve(formData) {
             updateOne: {
                filter: {
                   active: "current",
-                  "maps.id": outcome.match.map
+                  "maps.id": outcome.match.map.id
                },
                update: {
                   $set: {
