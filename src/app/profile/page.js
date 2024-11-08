@@ -65,14 +65,13 @@ export default async function Profile() {
                      </Link>
                   </div>
                </div>
-               {player.pvp.matches.length > 0 && (
-                  <Card className="mt-2">
-                     <CardHeader>Match History</CardHeader>
-                     <CardBody>
-                        <MatchHistoryItem />
-                     </CardBody>
-                  </Card>
-               )}
+               <hr />
+               <CardTitle>Match History</CardTitle>
+               <div className="d-flex flex-column gap-1">
+                  {player.pvp.matches.map((match, i) => (
+                     <MatchHistoryItem key={i} match={match} />
+                  ))}
+               </div>
             </CardBody>
          </Card>
          <Card>

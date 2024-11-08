@@ -1,4 +1,4 @@
-import { Card, CardBody, CardImg, CardSubtitle, CardText, Container } from "react-bootstrap";
+import { Card, CardBody, CardImg, CardSubtitle } from "react-bootstrap";
 import db from "../api/db/connection";
 import Link from "next/link";
 import { buildUrl } from "osu-web.js";
