@@ -26,7 +26,7 @@ export default async function Leaderboard() {
                         <CardText>
                            Rating: {p.pvp.rating.toFixed()}
                            <br />
-                           W/L: {p.pvp.wins}/{p.pvp.losses}
+                           W/L: {p.pvp.wins} - {p.pvp.losses}
                         </CardText>
                      </CardBody>
                   </Card>

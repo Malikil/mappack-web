@@ -52,7 +52,7 @@ export default function AddPvPSession() {
                            as="textarea"
                            rows={7}
                            name="songs"
-                           placeholder={"12345+NM\n54321+DT\n..."}
+                           placeholder={"12345+NM\n54321+FM\n..."}
                         />
                      </FormGroup>
                   </Col>
@@ -63,7 +63,7 @@ export default function AddPvPSession() {
                            as="textarea"
                            rows={7}
                            name="winnerScores"
-                           placeholder={"600000\n550000\n..."}
+                           placeholder={"600000\n550000+HD\n..."}
                         />
                      </FormGroup>
                   </Col>
@@ -74,7 +74,7 @@ export default function AddPvPSession() {
                            as="textarea"
                            rows={7}
                            name="loserScores"
-                           placeholder={"550000\n500000\n..."}
+                           placeholder={"550000\n500000+HDHR\n..."}
                         />
                      </FormGroup>
                   </Col>

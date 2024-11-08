@@ -3,6 +3,7 @@
 import db from "@/app/api/db/connection";
 import { Glicko2 } from "glicko2";
 import { revalidatePath } from "next/cache";
+import { matchResultValue } from "../pve/functions";
 
 export async function submitPvp(formData) {
    const playersDb = db.collection("players");
@@ -22,19 +23,27 @@ export async function submitPvp(formData) {
          const [map, mod] = item.split("+");
          return {
             map: parseInt(map),
-            mod
+            mod: mod.trim().toLowerCase()
          };
       });
-   /** @type {number[]} */
+   /** @type {[number,string][]} */
    const winnerScores = formData
       .get("winnerScores")
       .split("\n")
-      .map(s => parseInt(s));
-   /** @type {number[]} */
+      .map(s => {
+         const sp = s.split("+");
+         sp[0] = parseInt(sp[0]);
+         return sp;
+      });
+   /** @type {[number,string][]} */
    const loserScores = formData
       .get("loserScores")
       .split("\n")
-      .map(s => parseInt(s));
+      .map(s => {
+         const sp = s.split("+");
+         sp[0] = parseInt(sp[0]);
+         return sp;
+      });
 
    // Create the rating calculator
    const calculator = new Glicko2();
@@ -58,8 +67,8 @@ export async function submitPvp(formData) {
                      $each: [
                         playedMaps.map((m, i) => ({
                            ...m,
-                           score: winnerScores[i],
-                           opponentScore: loserScores[i]
+                           score: winnerScores[i][0],
+                           opponentScore: loserScores[i][0]
                         }))
                      ],
                      $position: 0,
@@ -84,8 +93,8 @@ export async function submitPvp(formData) {
                      $each: [
                         playedMaps.map((m, i) => ({
                            ...m,
-                           score: loserScores[i],
-                           opponentScore: winnerScores[i]
+                           score: loserScores[i][0],
+                           opponentScore: winnerScores[i][0]
                         }))
                      ],
                      $position: 0,
@@ -101,9 +110,103 @@ export async function submitPvp(formData) {
    // Update map ratings
    const mapsDb = db.collection("maps");
    const mappack = await mapsDb.findOne({ active: "current" });
-   const songlistPlayers = playedMaps.map(result => {
-      const rating = mappack.maps.find(map => map.id === result.map).ratings[result.mod];
+   const songlistCombined = playedMaps.flatMap((result, i) => {
+      const map = mappack.maps.find(map => map.id === result.map);
+      const wscore = winnerScores[i][0];
+      const lscore = loserScores[i][0];
+      if (result.mod === "fm") {
+         const wmod = winnerScores[i][1];
+         const lmod = loserScores[i][1];
+         // If they used the same mods, treat it like a map from a specific modpool
+         // If they both used HDHR the map can be skipped entirely
+         if (wmod === lmod)
+            if (wmod === "hdhr") return [];
+            else {
+               const r = map.ratings[wmod];
+               const resultObj = {
+                  ...result,
+                  calc: calculator.makePlayer(r.rating, r.rd, r.vol),
+                  mod: wmod
+               };
+               return [
+                  { ...resultObj, score: wscore, player: winnerPlayer },
+                  { ...resultObj, score: lscore, player: loserPlayer }
+               ];
+            }
+         else {
+            // They used different mods, handle each individually
+            const resultArr = [];
+            if (wmod !== "hdhr") {
+               const r = map.ratings[wmod];
+               resultArr.push({
+                  ...result,
+                  mod: wmod,
+                  calc: calculator.makePlayer(r.rating, r.rd, r.vol),
+                  score: wscore,
+                  player: winnerPlayer
+               });
+            }
+            if (lmod !== "hdhr") {
+               const r = map.ratings[lmod];
+               resultArr.push({
+                  ...result,
+                  mod: lmod,
+                  calc: calculator.makePlayer(r.rating, r.rd, r.vol),
+                  score: lscore,
+                  player: loserPlayer
+               });
+            }
+            return resultArr;
+         }
+      } else {
+         // Not from FM pool
+         console.log(result);
+         const r = map.ratings[result.mod];
+         const resultObj = { ...result, calc: calculator.makePlayer(r.rating, r.rd, r.vol) };
+         return [
+            { ...resultObj, score: wscore, player: winnerPlayer },
+            { ...resultObj, score: lscore, player: loserPlayer }
+         ];
+      }
    });
 
-   //revalidatePath("/profile");
+   const calculatorMatches = songlistCombined.map(result => [
+      result.player,
+      result.calc,
+      matchResultValue(result.score)
+   ]);
+   calculator.updateRatings(calculatorMatches);
+
+   // Update song ratings in database
+   const uniqueMaps = songlistCombined.reduce((unique, candidate) => {
+      if (!unique.find(m => m.map === candidate.map && m.mod === candidate.mod))
+         unique.push(candidate);
+      return unique;
+   }, []);
+   const mapsResult = await mapsDb.bulkWrite(
+      uniqueMaps.map(outcome => {
+         const ratingField = `maps.$.ratings.${outcome.mod}`;
+         const updatedRating = {
+            rating: outcome.calc.getRating(),
+            rd: outcome.calc.getRd(),
+            vol: outcome.calc.getVol()
+         };
+         return {
+            updateOne: {
+               filter: {
+                  active: "current",
+                  "maps.id": outcome.map
+               },
+               update: {
+                  $set: {
+                     [ratingField]: updatedRating
+                  }
+               }
+            }
+         };
+      })
+   );
+   console.log(mapsResult);
+
+   revalidatePath("/profile");
 }
