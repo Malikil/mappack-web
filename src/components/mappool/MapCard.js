@@ -22,6 +22,7 @@ import styles from "./mappool.module.css";
  * @param {function} props.mapActions.action
  * @param {function} props.mapActions.condition
  * @param {import("@/types/database.beatmap").Rating} [props.rating]
+ * @param {boolean} [props.hideRatings]
  */
 export default function MapCard(props) {
    const withinRangeClass = rating => {
@@ -44,7 +45,7 @@ export default function MapCard(props) {
                <div className="text-break">{props.beatmap.version}</div>
                <div className="ms-auto">{props.beatmap.id}</div>
             </CardSubtitle>
-            <Container className="mb-2">
+            <Container className="mb-auto">
                <Row>
                   <Col>Length</Col>
                   <Col>{convertTime(props.beatmap.length)}</Col>
@@ -68,26 +69,30 @@ export default function MapCard(props) {
                   <Col>{parseFloat(props.beatmap.ar.toFixed(2))}</Col>
                </Row>
             </Container>
-            <hr className="mt-auto" />
-            <CardSubtitle>Ratings:</CardSubtitle>
-            <Container>
-               <Row>
-                  <Col className={withinRangeClass(props.beatmap.ratings.nm.rating)}>
-                     NM {props.beatmap.ratings.nm.rating.toFixed(0)}
-                  </Col>
-                  <Col className={withinRangeClass(props.beatmap.ratings.hd.rating)}>
-                     HD {props.beatmap.ratings.hd.rating.toFixed(0)}
-                  </Col>
-               </Row>
-               <Row>
-                  <Col className={withinRangeClass(props.beatmap.ratings.hr.rating)}>
-                     HR {props.beatmap.ratings.hr.rating.toFixed(0)}
-                  </Col>
-                  <Col className={withinRangeClass(props.beatmap.ratings.dt.rating)}>
-                     DT {props.beatmap.ratings.dt.rating.toFixed(0)}
-                  </Col>
-               </Row>
-            </Container>
+            {!props.hideRatings && (
+               <>
+                  <hr className="mt-2" />
+                  <CardSubtitle>Ratings:</CardSubtitle>
+                  <Container>
+                     <Row>
+                        <Col className={withinRangeClass(props.beatmap.ratings.nm.rating)}>
+                           NM {props.beatmap.ratings.nm.rating.toFixed(0)}
+                        </Col>
+                        <Col className={withinRangeClass(props.beatmap.ratings.hd.rating)}>
+                           HD {props.beatmap.ratings.hd.rating.toFixed(0)}
+                        </Col>
+                     </Row>
+                     <Row>
+                        <Col className={withinRangeClass(props.beatmap.ratings.hr.rating)}>
+                           HR {props.beatmap.ratings.hr.rating.toFixed(0)}
+                        </Col>
+                        <Col className={withinRangeClass(props.beatmap.ratings.dt.rating)}>
+                           DT {props.beatmap.ratings.dt.rating.toFixed(0)}
+                        </Col>
+                     </Row>
+                  </Container>
+               </>
+            )}
             <div className="d-flex">
                <CardLink
                   href={`https://osu.ppy.sh/beatmapsets/${props.beatmap.setid}#osu/${props.beatmap.id}`}

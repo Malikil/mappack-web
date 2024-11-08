@@ -21,7 +21,7 @@ export default function AttackButton({ userId }) {
                         </div>
                      );
                   },
-                  autoClose: 20000,
+                  autoClose: 15000,
                   hideProgressBar: false
                }
             })

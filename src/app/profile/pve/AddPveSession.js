@@ -17,7 +17,7 @@ export default function AddPvESession() {
    return (
       <Card>
          <CardBody>
-            <CardTitle>Submit PvE</CardTitle>
+            <CardTitle>Submit Score Attack</CardTitle>
             <Form
                className="d-flex flex-column gap-2"
                action={formData =>
@@ -29,8 +29,13 @@ export default function AddPvESession() {
                }
             >
                <FormGroup>
-                  <FormLabel>Match History</FormLabel>
-                  <FormControl as="textarea" rows={7} name="history" />
+                  <FormLabel>Song Results</FormLabel>
+                  <FormControl
+                     as="textarea"
+                     rows={7}
+                     name="history"
+                     placeholder={"12345+NM 600000\n54321+HD 550000\n..."}
+                  />
                </FormGroup>
                <Button type="submit">Submit</Button>
             </Form>

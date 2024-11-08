@@ -7,6 +7,9 @@ import { revalidatePath } from "next/cache";
 import MatchHistoryItem from "./MatchHistoryItem";
 import ScoreHistoryItem from "./ScoreHistoryItem";
 import AttackButton from "./AttackButton";
+import AddPvESession from "./pve/AddPveSession";
+import Link from "next/link";
+import AddPvPSession from "./pvp/AddPvPSession";
 
 const TableData = ({ data }) => (
    <table>
@@ -48,13 +51,20 @@ export default async function Profile() {
          <Card>
             <CardHeader>Vs. Players</CardHeader>
             <CardBody>
-               <TableData
-                  data={[
-                     ["Rating", player.pvp.rating.toFixed(0)],
-                     ["Wins", player.pvp.wins],
-                     ["Losses", player.pvp.losses]
-                  ]}
-               />
+               <div className="d-flex">
+                  <TableData
+                     data={[
+                        ["Rating", player.pvp.rating.toFixed(0)],
+                        ["Wins", player.pvp.wins],
+                        ["Losses", player.pvp.losses]
+                     ]}
+                  />
+                  <div className="ms-auto">
+                     <Link href={`/mappool/${session.user.id}`}>
+                        <Button>Pool Preview</Button>
+                     </Link>
+                  </div>
+               </div>
                {player.pvp.matches.length > 0 && (
                   <Card className="mt-2">
                      <CardHeader>Match History</CardHeader>
@@ -89,6 +99,10 @@ export default async function Profile() {
                </div>
             </CardBody>
          </Card>
+         <div className="d-flex gap-2">
+            <AddPvPSession />
+            <AddPvESession />
+         </div>
       </div>
    );
 }

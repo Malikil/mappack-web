@@ -3,7 +3,6 @@ import db from "../api/db/connection";
 import { redirect } from "next/navigation";
 import CreatePool from "./components/create-pool/CreatePool";
 import AdminActions from "./components/actions/AdminActions";
-import AddPvESession from "./components/pve/AddPveSession";
 
 export default async function Admin() {
    const session = await auth();
@@ -17,7 +16,6 @@ export default async function Admin() {
       <div className="d-flex gap-3 flex-wrap my-1">
          <CreatePool />
          <AdminActions />
-         <AddPvESession />
       </div>
    );
 }

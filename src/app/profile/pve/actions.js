@@ -1,11 +1,13 @@
 "use server";
 
 import db from "@/app/api/db/connection";
-import { verify } from "../../functions";
 import { Glicko2 } from "glicko2";
+import { revalidatePath } from "next/cache";
+import { auth } from "@/auth";
+import { matchResultValue } from "./functions";
 
 export async function submitPve(formData) {
-   const session = await verify();
+   const session = await auth();
    /** @type {string} */
    const matchesText = formData.get("history");
    const matches = matchesText.split("\n").map(ln => {
@@ -40,18 +42,11 @@ export async function submitPve(formData) {
    const playerCalc = calculator.makePlayer(player.pve.rating, player.pve.rd, player.pve.vol);
 
    // Create mathes for the calculator
-   const calculatorMatches = matchedOutcomes.map(match => {
-      const target = 600000;
-      // Use a sliding scale
-      const diff = match.match.score - target;
-      // Above 980k and below 230k are capped with this scaling factor
-      const scaledDiff = diff / 750000;
-      // "tie" should move from 0 to 0.5
-      const centeredDiff = scaledDiff + 0.5;
-      // Clamp between [0, 1]
-      const matchScore = Math.max(0, Math.min(1, centeredDiff));
-      return [playerCalc, match.mapRating, matchScore];
-   });
+   const calculatorMatches = matchedOutcomes.map(match => [
+      playerCalc,
+      match.mapRating,
+      matchResultValue(match.match.score)
+   ]);
 
    // Update matches
    calculator.updateRatings(calculatorMatches);
@@ -101,4 +96,6 @@ export async function submitPve(formData) {
       })
    );
    console.log(mapsResult);
+
+   revalidatePath("/profile");
 }

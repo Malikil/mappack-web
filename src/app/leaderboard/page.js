@@ -24,10 +24,9 @@ export default async function Leaderboard() {
                      <CardBody>
                         <CardTitle>{p.osuname}</CardTitle>
                         <CardText>
-                           <div>Rating: {p.pvp.rating.toFixed()}</div>
-                           <div>
-                              W/L: {p.pvp.wins}/{p.pvp.losses}
-                           </div>
+                           Rating: {p.pvp.rating.toFixed()}
+                           <br />
+                           W/L: {p.pvp.wins}/{p.pvp.losses}
                         </CardText>
                      </CardBody>
                   </Card>
@@ -49,8 +48,9 @@ export default async function Leaderboard() {
                      <CardBody>
                         <CardTitle>{p.osuname}</CardTitle>
                         <CardText>
-                           <div>Rating: {p.pve.rating.toFixed()}</div>
-                           <div>Games: {p.pve.games}</div>
+                           Rating: {p.pve.rating.toFixed()}
+                           <br />
+                           Games: {p.pve.games}
                         </CardText>
                      </CardBody>
                   </Card>
