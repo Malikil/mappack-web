@@ -19,8 +19,8 @@ import styles from "./mappool.module.css";
  * @param {import("@/types/database.beatmap").DbBeatmap} props.beatmap
  * @param {object[]} [props.mapActions]
  * @param {string} props.mapActions.title
- * @param {function} props.mapActions.action
- * @param {function} props.mapActions.condition
+ * @param {function(import("@/types/database.beatmap").DbBeatmap)} props.mapActions.action
+ * @param {function(import("@/types/database.beatmap").DbBeatmap): boolean} [props.mapActions.condition]
  * @param {import("@/types/database.beatmap").Rating} [props.rating]
  * @param {boolean} [props.hideRatings]
  */
@@ -107,7 +107,7 @@ export default function MapCard(props) {
                         <CardLink
                            key={fn.title}
                            role="button"
-                           onClick={() => fn.action(props.beatmap)}
+                           onClick={() => fn.action(props.beatmap, props.mod, props.rating)}
                         >
                            {fn.title}
                         </CardLink>

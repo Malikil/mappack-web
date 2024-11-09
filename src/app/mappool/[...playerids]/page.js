@@ -1,6 +1,7 @@
 import db from "@/app/api/db/connection";
 import ModPool from "@/components/mappool/Modpool";
 import { redirect } from "next/navigation";
+import { createPredictFunc, predictScore } from "./predict";
 
 export default async function PlayerPool({ params }) {
    /** @type {number[]} */
@@ -90,6 +91,14 @@ export default async function PlayerPool({ params }) {
                      }[mod]
                   }
                   key={mod}
+                  mapActions={[
+                     {
+                        title: "Predict Score",
+                        action: predictScore
+                     }
+                  ]}
+                  modshort={mod}
+                  rating={targetRating}
                />
             ))}
          </div>
