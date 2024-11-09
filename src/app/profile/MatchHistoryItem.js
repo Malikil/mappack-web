@@ -40,7 +40,9 @@ export default async function ScoreHistoryItem({ match }) {
                      <CardSubtitle className="d-flex justify-content-between flex-wrap">
                         <span>{m.score.toLocaleString()}</span>
                         <span
-                           className={`text-${m.score > m.opponentScore ? "success" : "danger"}`}
+                           className={`mx-1 text-${
+                              m.score > m.opponentScore ? "success" : "danger"
+                           }`}
                         >
                            {m.score > m.opponentScore ? <CheckCircle /> : <XCircle />}
                         </span>

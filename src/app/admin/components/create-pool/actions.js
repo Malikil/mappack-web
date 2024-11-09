@@ -49,8 +49,8 @@ export async function addMappool(formData) {
                         const rating = mapData.stars * 300;
                         // Estimate HD with 1.02 ^ (10 - AR). Subject to change
                         const hdRating = Math.pow(1.01, 10 - bm.ar) * rating;
-                        // Estimate HR/DT with 1.1x and 1.5x. Subject to change
-                        const rd = 350,
+                        // Reduce initial rd for maps, the initial rating is already based on their stars
+                        const rd = 250,
                            vol = 0.06;
                         mapData.ratings = {
                            nm: { rating, rd, vol },
@@ -59,6 +59,7 @@ export async function addMappool(formData) {
                               rd,
                               vol
                            },
+                           // Estimate HR/DT with 1.1x and 1.5x. Subject to change
                            hr: {
                               rating: rating * 1.1,
                               rd,

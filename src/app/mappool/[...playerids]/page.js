@@ -44,19 +44,23 @@ export default async function PlayerPool({ params }) {
       { nm: [], hd: [], hr: [], dt: [], fm: [] }
    );
    // Limit to 7 maps per modpool
+   // Sort FM first, so the extra maps can be put into HD/HR
+   longMaplist.fm.sort((a, b) => {
+      const adiff = Math.abs(targetRating.rating - (a.ratings.hd.rating + a.ratings.hr.rating) / 2);
+      const bdiff = Math.abs(targetRating.rating - (b.ratings.hd.rating + b.ratings.hr.rating) / 2);
+      return adiff - bdiff;
+   });
+   // Put extra maps into HD/HR
+   longMaplist.fm.slice(7).forEach(map => {
+      const hdDiff = Math.abs(map.ratings.hd.rating - targetRating.rating);
+      const hrDiff = Math.abs(map.ratings.hr.rating - targetRating.rating);
+      if (hdDiff > hrDiff) longMaplist.hr.push(map);
+      else longMaplist.hd.push(map);
+   });
    const maplist = Object.fromEntries(
       Object.keys(longMaplist).map(mod => {
-         if (mod === "fm") {
-            longMaplist.fm.sort((a, b) => {
-               const adiff = Math.abs(
-                  targetRating.rating - (a.ratings.hd.rating + a.ratings.hr.rating) / 2
-               );
-               const bdiff = Math.abs(
-                  targetRating.rating - (b.ratings.hd.rating + b.ratings.hr.rating) / 2
-               );
-               return adiff - bdiff;
-            });
-         } else
+         // FM is already sorted
+         if (mod !== "fm")
             longMaplist[mod].sort((a, b) => {
                const adiff = Math.abs(targetRating.rating - a.ratings[mod].rating);
                const bdiff = Math.abs(targetRating.rating - b.ratings[mod].rating);

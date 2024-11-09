@@ -46,7 +46,7 @@ export async function generateAttack(osuid) {
       .filter(map => Math.abs(player.pve.rating - map.rating.rating) <= player.pve.rd);
    console.log(`${availableMaps.length} available maps`);
 
-   const selectedMaps = Array.from({ length: 7 }, () => {
+   const selectedMaps = Array.from({ length: Math.min(7, availableMaps.length) }, () => {
       const index = (Math.random() * availableMaps.length) | 0;
       const [selected] = availableMaps.splice(index, 1);
       return selected;
