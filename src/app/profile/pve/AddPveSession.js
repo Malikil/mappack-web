@@ -20,13 +20,36 @@ export default function AddPvESession() {
             <CardTitle>Submit Score Attack</CardTitle>
             <Form
                className="d-flex flex-column gap-2"
-               action={formData =>
-                  toast.promise(submitPve(formData), {
-                     pending: "Submitting",
-                     error: "Failed to update ratings",
-                     success: "Session added"
-                  })
-               }
+               action={async formData => {
+                  const toastId = toast.loading("Submitting");
+                  try {
+                     const result = await submitPve(formData);
+                     if (!result.status || result.status === 200)
+                        return toast.update(toastId, {
+                           render: "Session added",
+                           type: "success",
+                           isLoading: false,
+                           closeButton: true,
+                           autoClose: 3000
+                        });
+                     toast.update(toastId, {
+                        render: result.message,
+                        type: "error",
+                        isLoading: false,
+                        closeButton: true,
+                        autoClose: 3000
+                     });
+                  } catch (err) {
+                     console.warn(err);
+                     toast.update(toastId, {
+                        render: "Unknown error",
+                        type: "error",
+                        isLoading: false,
+                        closeButton: true,
+                        autoClose: 3000
+                     });
+                  }
+               }}
             >
                <FormGroup>
                   <FormLabel>Song Results</FormLabel>
@@ -36,6 +59,12 @@ export default function AddPvESession() {
                      name="history"
                      placeholder={"12345+NM 600000\n54321+HD 550000\n..."}
                   />
+               </FormGroup>
+               <FormGroup>
+                  <FormLabel>
+                     <strong className="text-decoration-underline">OR</strong> - MP Link
+                  </FormLabel>
+                  <FormControl type="text" name="mp" />
                </FormGroup>
                <Button type="submit">Submit</Button>
             </Form>

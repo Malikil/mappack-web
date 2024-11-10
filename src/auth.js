@@ -1,3 +1,4 @@
+import { jwtDecode } from "jwt-decode";
 import NextAuth from "next-auth";
 import Osu from "next-auth/providers/osu";
 
@@ -22,3 +23,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
    }
 });
+
+/**
+ * @param {string} jwt
+ * @returns Returns true when the token *is expired*
+ */
+export function checkExpiry(jwt) {
+   const token = jwtDecode(jwt);
+   return token.exp < Date.now() / 1000;
+}

@@ -1,3 +1,5 @@
+import { Client } from "osu-web.js";
+
 /**
  * Returns the match result to use, assuming player first then map second
  * @param {number} score
@@ -13,4 +15,38 @@ export function matchResultValue(score) {
    // Clamp between [0, 1]
    const matchScore = Math.max(0, Math.min(1, centeredDiff));
    return matchScore;
+}
+
+/**
+ * @param {string} str mapid+mod score
+ * @returns {{
+ *   map: number;
+ *   mod: 'nm'|'hd'|'hr'|'dt';
+ *   score: number
+ * }[]}
+ */
+export function parsePvEString(str) {
+   const matches = str.split("\n").map(ln => {
+      const items = ln.split(" ");
+      const [map, mod] = items[0].split("+");
+      return {
+         map: parseInt(map),
+         mod: mod.toLowerCase(),
+         score: parseInt(items[1])
+      };
+   });
+   return matches;
+}
+
+/**
+ * @param {string} link
+ * @param {string} token
+ * @returns {Promise<{
+ *   map: number;
+ *   mod: 'nm'|'hd'|'hr'|'dt';
+ *   score: number
+ * }[]>}
+ */
+export async function parseMpLobby(link, token) {
+   const osuClient = new Client(token);
 }
