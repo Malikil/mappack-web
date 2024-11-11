@@ -1,4 +1,4 @@
-import { Client } from "osu-web.js";
+import { Client, LegacyClient } from "osu-web.js";
 
 /**
  * Returns the match result to use, assuming player first then map second
@@ -47,6 +47,15 @@ export function parsePvEString(str) {
  *   score: number
  * }[]>}
  */
-export async function parseMpLobby(link, token) {
-   const osuClient = new Client(token);
+export async function parseMpLobby(link) {
+   return;
+   const osuClient = new LegacyClient(process.env.OSU_LEGACY_KEY);
+   const matchIdSegment = link.slice(link.lastIndexOf("/") + 1);
+   try {
+      const mpLobby = await osuClient.getMultiplayerLobby({ mp: matchIdSegment });
+      console.log(mpLobby.games);
+   } catch (err) {
+      console.error(err);
+   }
+   // Test lobby: https://osu.ppy.sh/community/matches/116151054
 }

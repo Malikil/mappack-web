@@ -79,6 +79,25 @@ export default function AddPvPSession() {
                      </FormGroup>
                   </Col>
                </Row>
+               <Row>
+                  <Col className="d-flex gap-2">
+                     <div className="flex-grow-1">
+                        <hr />
+                     </div>
+                     <div>
+                        <strong className="align-middle">OR</strong>
+                     </div>
+                     <div className="flex-grow-1">
+                        <hr />
+                     </div>
+                  </Col>
+               </Row>
+               <Row>
+                  <FormGroup>
+                     <FormLabel>MP Link</FormLabel>
+                     <FormControl type="text" name="mp" />
+                  </FormGroup>
+               </Row>
                <Button type="submit">Submit</Button>
             </Form>
          </CardBody>

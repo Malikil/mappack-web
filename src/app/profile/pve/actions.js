@@ -3,26 +3,25 @@
 import db from "@/app/api/db/connection";
 import { Glicko2 } from "glicko2";
 import { revalidatePath } from "next/cache";
-import { auth, checkExpiry } from "@/auth";
+import { auth } from "@/auth";
 import { matchResultValue, parseMpLobby, parsePvEString } from "./functions";
 
 export async function submitPve(formData) {
    const session = await auth();
-   return {};
-   if (checkExpiry(session.accessToken))
-      return {
-         message: "Access token expired - please log in again",
-         status: 401
-      };
 
    /** @type {string} */
    const matchesText = formData.get("history");
    const matches = matchesText
       ? parsePvEString(matchesText)
-      : await parseMpLobby(formData.get("mp"), session.accessToken);
-   if (!matches) return;
+      : await parseMpLobby(formData.get("mp"));
+   if (!matches)
+      return {
+         http: {
+            status: 400,
+            message: "No songs found"
+         }
+      };
    console.log(matches);
-   return;
    // Create the rating calculator
    const calculator = new Glicko2();
 
