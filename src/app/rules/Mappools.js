@@ -16,12 +16,15 @@ export default function Mappools() {
                </Link>
                .
             </li>
+            <li>A new mappack will the used each Monday.</li>
             <li>Each difficulty is taken individually.</li>
             <li>
                Maps are given a rating on the system. The initial rating is determined from the
-               map's star rating.
+               map&apos;s star rating.
             </li>
-            <li>As different maps are used in matches, the map's rating will also be adjusted.</li>
+            <li>
+               As different maps are used in matches, the map&apos;s rating will also be adjusted.
+            </li>
          </ul>
       </div>
    );
