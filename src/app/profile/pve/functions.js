@@ -1,4 +1,4 @@
-import { Client, LegacyClient } from "osu-web.js";
+import { LegacyClient } from "osu-web.js";
 
 /**
  * Returns the match result to use, assuming player first then map second

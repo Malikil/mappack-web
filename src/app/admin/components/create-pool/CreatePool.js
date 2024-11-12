@@ -11,7 +11,7 @@ import {
    FormLabel
 } from "react-bootstrap";
 import { addMappool } from "./actions";
-import { toast } from "react-toastify";
+import { serverActionToast } from "@/toaster";
 
 export default function CreatePool() {
    return (
@@ -21,10 +21,10 @@ export default function CreatePool() {
             <Form
                className="d-flex flex-column gap-2"
                action={formData =>
-                  toast.promise(addMappool(formData), {
+                  serverActionToast(addMappool(formData), {
                      pending: "Adding Mappool",
-                     error: "Failed to add mappool",
-                     success: "Maps added"
+                     success: "Maps added",
+                     error: "Failed to add maps"
                   })
                }
             >

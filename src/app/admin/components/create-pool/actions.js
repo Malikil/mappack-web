@@ -3,9 +3,18 @@
 import { Client } from "osu-web.js";
 import { verify } from "../../functions";
 import db from "@/app/api/db/connection";
+import { checkExpiry } from "@/auth";
 
 export async function addMappool(formData) {
    const session = await verify();
+
+   if (checkExpiry(session.accessToken))
+      return {
+         http: {
+            status: 401,
+            message: "Access token expired - please log in again"
+         }
+      };
 
    const packName = formData.get("packName");
    const download = formData.get("download");

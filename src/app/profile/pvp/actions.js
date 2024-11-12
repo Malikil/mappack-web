@@ -4,56 +4,81 @@ import db from "@/app/api/db/connection";
 import { Glicko2 } from "glicko2";
 import { revalidatePath } from "next/cache";
 import { matchResultValue } from "../pve/functions";
+import { parseMpLobby } from "./functions";
 
 export async function submitPvp(formData) {
+   let winnerId = formData.get("winner");
+   let loserId = formData.get("loser");
+   let formMaplist = [];
+   /** @type {[number,string][]} */
+   let winnerScores = [];
+   /** @type {[number,string][]} */
+   let loserScores = [];
+   const mp = formData.get("mp");
+   if (mp) {
+      const matchData = await parseMpLobby(mp);
+      console.log(matchData);
+      winnerId = matchData.winScores[0].osuid;
+      loserId = matchData.loseScores[0].osuid;
+      formMaplist = matchData.maps;
+      winnerScores = matchData.winScores.map(item => [item.score, item.mod]);
+      loserScores = matchData.loseScores.map(item => [item.score, item.mod]);
+   } else {
+      formMaplist = formData
+         .get("songs")
+         .split("\n")
+         .map(item => {
+            const [map, mod] = item.split("+");
+            const id = parseInt(map);
+            return {
+               map: id,
+               mod: mod.trim().toLowerCase()
+            };
+         });
+      winnerScores = formData
+         .get("winnerScores")
+         .split("\n")
+         .map(s => {
+            const sp = s.split("+");
+            sp[0] = parseInt(sp[0]);
+            if (sp[1]) sp[1] = sp[1].trim().toLowerCase();
+            return sp;
+         });
+      loserScores = formData
+         .get("loserScores")
+         .split("\n")
+         .map(s => {
+            const sp = s.split("+");
+            sp[0] = parseInt(sp[0]);
+            if (sp[1]) sp[1] = sp[1].trim().toLowerCase();
+            return sp;
+         });
+   }
+
    const playersDb = db.collection("players");
    const winner = await playersDb.findOne({
-      $or: [{ osuid: parseInt(formData.get("winner")) }, { osuname: formData.get("winner") }]
+      $or: [{ osuid: parseInt(winnerId) }, { osuname: winnerId }]
    });
    const loser = await playersDb.findOne({
-      $or: [{ osuid: parseInt(formData.get("loser")) }, { osuname: formData.get("loser") }]
+      $or: [{ osuid: parseInt(loserId) }, { osuname: loserId }]
    });
    console.log(winner, loser);
    // Get the played maps
    const mapsDb = db.collection("maps");
    const mappack = await mapsDb.findOne({ active: "current" });
    /** @type {{map: { id: number, setid: number, version: string }, mod: 'nm'|'hd'|'hr'|'dt'|'fm'}[]} */
-   const playedMaps = formData
-      .get("songs")
-      .split("\n")
-      .map(item => {
-         const [map, mod] = item.split("+");
-         const id = parseInt(map);
-         const dbmap = mappack.maps.find(m => m.id === id);
-         return {
-            map: {
-               id: dbmap.id,
-               setid: dbmap.setid,
-               version: dbmap.version
-            },
-            mod: mod.trim().toLowerCase()
-         };
-      });
-   /** @type {[number,string][]} */
-   const winnerScores = formData
-      .get("winnerScores")
-      .split("\n")
-      .map(s => {
-         const sp = s.split("+");
-         sp[0] = parseInt(sp[0]);
-         if (sp[1]) sp[1] = sp[1].trim().toLowerCase();
-         return sp;
-      });
-   /** @type {[number,string][]} */
-   const loserScores = formData
-      .get("loserScores")
-      .split("\n")
-      .map(s => {
-         const sp = s.split("+");
-         sp[0] = parseInt(sp[0]);
-         if (sp[1]) sp[1] = sp[1].trim().toLowerCase();
-         return sp;
-      });
+   const playedMaps = formMaplist.map(item => {
+      const { map, mod } = item;
+      const dbmap = mappack.maps.find(m => m.id === map);
+      return {
+         map: {
+            id: dbmap.id,
+            setid: dbmap.setid,
+            version: dbmap.version
+         },
+         mod
+      };
+   });
 
    // Create the rating calculator
    const calculator = new Glicko2();
