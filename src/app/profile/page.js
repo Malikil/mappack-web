@@ -1,14 +1,13 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import db from "../api/db/connection";
-import { Button, Card, CardBody, CardHeader, CardTitle } from "react-bootstrap";
-import { register } from "./actions";
+import { Button, Card, CardBody, CardHeader, CardTitle, Form, FormControl } from "react-bootstrap";
+import { getMappool, getOpponentMappool, register } from "./actions";
 import { revalidatePath } from "next/cache";
 import MatchHistoryItem from "./MatchHistoryItem";
 import ScoreHistoryItem from "./ScoreHistoryItem";
 import AttackButton from "./AttackButton";
 import AddPvESession from "./pve/AddPveSession";
-import Link from "next/link";
 import AddPvPSession from "./pvp/AddPvPSession";
 
 const TableData = ({ data }) => (
@@ -51,7 +50,7 @@ export default async function Profile() {
          <Card>
             <CardHeader>Vs. Players</CardHeader>
             <CardBody>
-               <div className="d-flex">
+               <div className="d-flex justify-content-between">
                   <TableData
                      data={[
                         ["Rating", player.pvp.rating.toFixed(0)],
@@ -59,11 +58,18 @@ export default async function Profile() {
                         ["Losses", player.pvp.losses]
                      ]}
                   />
-                  <div className="ms-auto">
-                     <Link href={`/mappool/${session.user.id}`}>
-                        <Button>Pool Preview</Button>
-                     </Link>
-                  </div>
+                  <Form
+                     action={async formData => {
+                        "use server";
+                        return getOpponentMappool(session.user.id, formData);
+                     }}
+                     className="d-flex gap-1 mb-auto"
+                  >
+                     <FormControl type="text" name="opponent" placeholder="Opponent" />
+                     <Button className="text-nowrap" type="submit">
+                        View Pool
+                     </Button>
+                  </Form>
                </div>
                <hr />
                <CardTitle>Match History</CardTitle>

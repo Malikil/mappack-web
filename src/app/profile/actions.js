@@ -1,6 +1,8 @@
 "use server";
 
+import { auth } from "@/auth";
 import db from "../api/db/connection";
+import { redirect, RedirectType } from "next/navigation";
 
 export async function register(osuid, osuname) {
    console.log(`Register player ${osuid}`);
@@ -54,4 +56,13 @@ export async function generateAttack(osuid) {
    console.log(selectedMaps);
 
    return selectedMaps.map(m => `${m.id}+${m.mod.toUpperCase()}`);
+}
+
+export async function getOpponentMappool(userid, formData) {
+   const opp = formData.get("opponent");
+   const playersDb = db.collection("players");
+   const opponent = await playersDb.findOne({
+      $or: [{ osuid: parseInt(opp) }, { osuname: opp }]
+   });
+   return redirect(`/mappool/${userid}/${opponent.osuid}`);
 }
