@@ -1,0 +1,14 @@
+.notify {
+   --bs-bg-opacity: 1;
+   border: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color);
+   border-radius: var(--bs-border-radius);
+   background-color: rgba(var(--bs-body-bg-rgb), var(--bs-bg-opacity));
+   position: fixed;
+   bottom: 0;
+   right: 0;
+   margin: 1rem;
+   padding: 0.5rem;
+   display: flex;
+   gap: 0.5rem;
+   align-items: center;
+}

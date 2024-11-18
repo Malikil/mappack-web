@@ -4,7 +4,13 @@ import db from "@/app/api/db/connection";
 import { verify } from "../../functions";
 
 export async function advancePack() {
-   await verify();
+   if (!(await verify()).session)
+      return {
+         http: {
+            status: 401,
+            message: "Not admin"
+         }
+      };
 
    const collection = db.collection("maps");
    const result = await collection.bulkWrite([

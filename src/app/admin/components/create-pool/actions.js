@@ -6,7 +6,14 @@ import db from "@/app/api/db/connection";
 import { checkExpiry } from "@/auth";
 
 export async function addMappool(formData) {
-   const session = await verify();
+   const { session } = await verify();
+   if (!session)
+      return {
+         http: {
+            status: 401,
+            message: "Not admin"
+         }
+      };
 
    if (checkExpiry(session.accessToken))
       return {

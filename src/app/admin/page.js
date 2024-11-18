@@ -1,21 +1,19 @@
-import { auth } from "@/auth";
-import db from "../api/db/connection";
 import { redirect } from "next/navigation";
 import CreatePool from "./components/create-pool/CreatePool";
 import AdminActions from "./components/actions/AdminActions";
+import { verify } from "./functions";
+import { checkExpiry } from "@/auth";
+import AdminNotify from "./components/admin-notify/AdminNotify";
 
 export default async function Admin() {
-   const session = await auth();
+   const { session } = await verify();
    if (!session) redirect("/");
-
-   const playersCollection = db.collection("players");
-   const user = await playersCollection.findOne({ osuid: session.user.id });
-   if (!user?.admin) redirect("/");
 
    return (
       <div className="d-flex gap-3 flex-wrap my-1">
          <CreatePool />
          <AdminActions />
+         {checkExpiry(session.accessToken) && <AdminNotify />}
       </div>
    );
 }
