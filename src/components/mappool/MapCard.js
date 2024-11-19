@@ -13,6 +13,7 @@ import {
    Row
 } from "react-bootstrap";
 import styles from "./mappool.module.css";
+import { withinRange } from "@/helpers/rating-range";
 
 /**
  * @param {object} props
@@ -26,9 +27,7 @@ import styles from "./mappool.module.css";
  */
 export default function MapCard(props) {
    const withinRangeClass = rating => {
-      const range = props.rating?.rd;
-      const target = props.rating?.rating;
-      if (Math.abs(target - rating) < range) return "border border-2 border-success rounded";
+      if (withinRange(props.rating || {}, rating)) return "border border-2 border-success rounded";
    };
    return (
       <Card className={styles.mapcard}>
@@ -75,18 +74,18 @@ export default function MapCard(props) {
                   <CardSubtitle>Ratings:</CardSubtitle>
                   <Container>
                      <Row>
-                        <Col className={withinRangeClass(props.beatmap.ratings.nm.rating)}>
+                        <Col className={withinRangeClass(props.beatmap.ratings.nm)}>
                            NM {props.beatmap.ratings.nm.rating.toFixed(0)}
                         </Col>
-                        <Col className={withinRangeClass(props.beatmap.ratings.hd.rating)}>
+                        <Col className={withinRangeClass(props.beatmap.ratings.hd)}>
                            HD {props.beatmap.ratings.hd.rating.toFixed(0)}
                         </Col>
                      </Row>
                      <Row>
-                        <Col className={withinRangeClass(props.beatmap.ratings.hr.rating)}>
+                        <Col className={withinRangeClass(props.beatmap.ratings.hr)}>
                            HR {props.beatmap.ratings.hr.rating.toFixed(0)}
                         </Col>
-                        <Col className={withinRangeClass(props.beatmap.ratings.dt.rating)}>
+                        <Col className={withinRangeClass(props.beatmap.ratings.dt)}>
                            DT {props.beatmap.ratings.dt.rating.toFixed(0)}
                         </Col>
                      </Row>

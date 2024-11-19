@@ -1,8 +1,4 @@
-export interface Rating {
-   rating: number;
-   rd: number;
-   vol: number;
-}
+import { Rating } from "./rating";
 
 export interface RatingSet {
    nm: Rating;

@@ -9,7 +9,7 @@ function gaussianRandom() {
    const r = Math.sqrt(-2 * Math.log(1 - Math.random()));
    const x = r * Math.cos(phi);
    const y = r * Math.sin(phi);
-   // Transform to the desired mean and standard deviation:
+
    return [x, y];
 }
 

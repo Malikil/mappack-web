@@ -1,7 +1,8 @@
 import db from "@/app/api/db/connection";
 import ModPool from "@/components/mappool/Modpool";
 import { redirect } from "next/navigation";
-import { createPredictFunc, predictScore } from "./predict";
+import { predictScore } from "./predict";
+import { combineRatings, withinRange } from "@/helpers/rating-range";
 
 export default async function PlayerPool({ params }) {
    /** @type {number[]} */
@@ -12,33 +13,22 @@ export default async function PlayerPool({ params }) {
    const players = await playersDb.find({ osuid: { $in: playerids } }).toArray();
    if (players.length < 1) redirect("/mappool");
 
-   const targetRatingSum = players.reduce(
-      (agg, player) => {
-         agg.rating += player.pvp.rating;
-         agg.variance += player.pvp.rd * player.pvp.rd;
-         return agg;
-      },
-      { rating: 0, variance: 0 }
-   );
-   const targetRating = {
-      rating: targetRatingSum.rating / players.length,
-      rd: Math.sqrt(targetRatingSum.variance)
-   };
-   const withinRange = rating => Math.abs(targetRating.rating - rating) <= targetRating.rd;
+   const targetRating = combineRatings(...players.map(p => p.pvp));
+   const checkWithinRange = rating => withinRange(targetRating, rating);
 
    const mapsDb = db.collection("maps");
    const currentPack = await mapsDb.findOne({ active: "current" });
    const longMaplist = currentPack.maps.reduce(
       (agg, map) => {
          // NM
-         if (withinRange(map.ratings.nm.rating)) agg.nm.push(map);
+         if (checkWithinRange(map.ratings.nm)) agg.nm.push(map);
          // HD/HR/FM
-         if (withinRange(map.ratings.hd.rating))
-            if (withinRange(map.ratings.hr.rating)) agg.fm.push(map);
+         if (checkWithinRange(map.ratings.hd))
+            if (checkWithinRange(map.ratings.hr)) agg.fm.push(map);
             else agg.hd.push(map);
-         else if (withinRange(map.ratings.hr.rating)) agg.hr.push(map);
+         else if (checkWithinRange(map.ratings.hr)) agg.hr.push(map);
          // DT
-         if (withinRange(map.ratings.dt.rating)) agg.dt.push(map);
+         if (checkWithinRange(map.ratings.dt)) agg.dt.push(map);
          return agg;
       },
       { nm: [], hd: [], hr: [], dt: [], fm: [] }
@@ -75,10 +65,7 @@ export default async function PlayerPool({ params }) {
          <div className="d-flex justify-content-between">
             <div className="fs-3">Pool for: {players.map(p => p.osuname).join(", ")}</div>
             <div>
-               <small>
-                  Rating Range: {(targetRating.rating - targetRating.rd).toFixed()} -{" "}
-                  {(targetRating.rating + targetRating.rd).toFixed()}
-               </small>
+               <small>Target rating: {targetRating.rating.toFixed()}</small>
             </div>
          </div>
          <div className="d-flex flex-column gap-3">

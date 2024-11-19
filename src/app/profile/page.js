@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import db from "../api/db/connection";
 import { Button, Card, CardBody, CardHeader, CardTitle, Form, FormControl } from "react-bootstrap";
-import { getMappool, getOpponentMappool, register } from "./actions";
+import { getOpponentMappool, register } from "./actions";
 import { revalidatePath } from "next/cache";
 import MatchHistoryItem from "./MatchHistoryItem";
 import ScoreHistoryItem from "./ScoreHistoryItem";
