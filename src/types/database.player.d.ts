@@ -4,14 +4,28 @@ export interface MatchHistoryMap {
    version: string;
 }
 
-export interface PvEMatchHistorySong {
+export interface MatchHistorySong {
    map: MatchHistoryMap;
-   mod: 'nm'|'hd'|'hr'|'dt';
+   mod: string;
    score: number;
 }
+export interface PvEMatchHistorySong extends MatchHistorySong {
+   mod: 'nm'|'hd'|'hr'|'dt';
+}
+export interface PvPMatchHistorySong extends MatchHistorySong {
+   mod: 'nm'|'hd'|'hr'|'dt'|'fm';
+   opponentScore: number;
+}
 
-export interface PvEMatchHistory {
+export interface MatchHistory {
    prevRating: number;
    ratingDiff: number;
-   songs: PvEMatchHistorySong[]
+   songs: MatchHistorySong[];
+}
+export interface PvEMatchHistory extends MatchHistory {
+   songs: PvEMatchHistorySong[];
+}
+export interface PvPMatchHistory extends MatchHistory {
+   songs: PvPMatchHistorySong[];
+   opponent: string;
 }

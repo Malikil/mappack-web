@@ -18,8 +18,8 @@ export async function submitPvp(formData) {
       winnerId = matchData.winnerId;
       loserId = matchData.loserId;
       formMaplist = matchData.maps;
-      winnerScores = matchData.winScores;
-      loserScores = matchData.loseScores;
+      winnerScores = matchData.winnerScores;
+      loserScores = matchData.loserScores;
    } else {
       formMaplist = formData
          .get("songs")

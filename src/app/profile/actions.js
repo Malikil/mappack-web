@@ -22,7 +22,8 @@ export async function register(osuid, osuname) {
          rating: 1500,
          rd: 350,
          vol: 0.06,
-         matches: []
+         matches: [],
+         games: 0
       }
    });
 }

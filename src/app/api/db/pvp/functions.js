@@ -11,8 +11,8 @@ import { matchResultValue } from "@/app/profile/pve/functions";
 /**
  * @typedef MpLobbyResults
  * @prop {SongResultMap[]} maps
- * @prop {[number, 'hd'|'hr'|'hdhr'|null][]} winScores
- * @prop {[number, 'hd'|'hr'|'hdhr'|null][]} loseScores
+ * @prop {[number, 'hd'|'hr'|'hdhr'|null][]} winnerScores
+ * @prop {[number, 'hd'|'hr'|'hdhr'|null][]} loserScores
  * @prop {number} winnerId
  * @prop {number} loserId
  */
@@ -25,6 +25,7 @@ export async function parseMpLobby(link) {
    const osuClient = new LegacyClient(process.env.OSU_LEGACY_KEY);
    const matchIdSegment = link.slice(link.lastIndexOf("/") + 1);
    try {
+      console.log(`Fetch multiplayer lobby ${matchIdSegment}`);
       const mpLobby = await osuClient.getMultiplayerLobby({ mp: matchIdSegment });
       const result = mpLobby.games.reduce(
          (agg, game) => {
@@ -53,6 +54,8 @@ export async function parseMpLobby(link) {
             // Find the song winner
             const winner = game.scores.sort((a, b) => b.score - a.score)[0].user_id;
             agg.resultScore[winner] = (agg.resultScore[winner] || 0) + 1;
+            // Make sure the loser is still counted
+            agg.resultScore[game.scores[1].user_id] = agg.resultScore[game.scores[1].user_id] || 0;
             return agg;
          },
          { maps: [], scores: {}, resultScore: {} }
@@ -60,6 +63,7 @@ export async function parseMpLobby(link) {
       const matchPlacement = Object.keys(result.resultScore).sort(
          (a, b) => result.resultScore[b] - result.resultScore[a]
       );
+      console.log(result);
       return {
          maps: result.maps,
          winnerScores: result.scores[matchPlacement[0]].map(item => [item.score, item.mod]),
@@ -76,6 +80,7 @@ export async function parseMpLobby(link) {
  * @param {MpLobbyResults} arg0
  */
 export async function addMatchData({ winnerId, loserId, maps, winnerScores, loserScores }) {
+   console.log(winnerScores, loserScores);
    const playersDb = db.collection("players");
    const winner = await playersDb.findOne({
       $or: [{ osuid: parseInt(winnerId) }, { osuname: winnerId }]
@@ -120,13 +125,16 @@ export async function addMatchData({ winnerId, loserId, maps, winnerScores, lose
                $inc: { "pvp.wins": 1 },
                $push: {
                   "pvp.matches": {
-                     $each: [
-                        playedMaps.map((m, i) => ({
+                     $each: [{
+                        prevRating: winner.pvp.rating,
+                        ratingDiff: winnerPlayer.getRating() - winner.pvp.rating,
+                        opponent: loser.osuname,
+                        songs: playedMaps.map((m, i) => ({
                            ...m,
                            score: winnerScores[i][0],
                            opponentScore: loserScores[i][0]
                         }))
-                     ],
+                     }],
                      $position: 0,
                      $slice: 5
                   }
@@ -146,13 +154,16 @@ export async function addMatchData({ winnerId, loserId, maps, winnerScores, lose
                $inc: { "pvp.losses": 1 },
                $push: {
                   "pvp.matches": {
-                     $each: [
-                        playedMaps.map((m, i) => ({
+                     $each: [{
+                        prevRating: loser.pvp.rating,
+                        ratingDiff: loserPlayer.getRating() - loser.pvp.rating,
+                        opponent: winner.osuname,
+                        songs: playedMaps.map((m, i) => ({
                            ...m,
                            score: loserScores[i][0],
                            opponentScore: winnerScores[i][0]
                         }))
-                     ],
+                     }],
                      $position: 0,
                      $slice: 5
                   }
