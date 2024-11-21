@@ -70,7 +70,13 @@ export async function submitPve(formData) {
          $inc: { "pve.games": 1 },
          $push: {
             "pve.matches": {
-               $each: [matchedOutcomes.map(m => m.match)],
+               $each: [
+                  {
+                     prevRating: player.pve.rating,
+                     ratingDiff: playerCalc.getRating() - player.pve.rating,
+                     songs: matchedOutcomes.map(m => m.match)
+                  }
+               ],
                $position: 0,
                $slice: 5
             }

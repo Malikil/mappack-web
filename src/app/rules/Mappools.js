@@ -25,6 +25,10 @@ export default function Mappools() {
             <li>
                As different maps are used in matches, the map&apos;s rating will also be adjusted.
             </li>
+            <li>
+               In all modes, the system will attempt to select maps where the player&apos;s expected
+               score is 600k.
+            </li>
          </ul>
       </div>
    );
