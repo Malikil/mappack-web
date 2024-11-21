@@ -8,9 +8,6 @@ import { matchResultValue, parseMpLobby, parsePvEString } from "./functions";
 
 export async function submitPve(formData) {
    const session = await auth();
-   console.log(formData.get("player"));
-   console.log(parseInt(formData.get("player")) || session.user.id);
-   return;
    /** @type {string} */
    const matchesText = formData.get("history");
    const matches = matchesText
@@ -46,7 +43,9 @@ export async function submitPve(formData) {
 
    // Get the player's current rating
    const playersdb = db.collection("players");
-   const player = await playersdb.findOne({ osuid: formData.get("player") || session.user.id });
+   const player = await playersdb.findOne({
+      osuid: parseInt(formData.get("player")) || session.user.id
+   });
    const playerCalc = calculator.makePlayer(player.pve.rating, player.pve.rd, player.pve.vol);
 
    // Create mathes for the calculator
