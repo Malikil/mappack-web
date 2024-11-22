@@ -4,7 +4,7 @@ import ThemeToggle from "./ThemeToggle";
 export default function NavbarItems() {
    return (
       <ul className="navbar-nav">
-         <li className="nav-item dropdown">
+         {/* <li className="nav-item dropdown">
             <a
                className="nav-link dropdown-toggle"
                href="#"
@@ -36,7 +36,7 @@ export default function NavbarItems() {
                   </Link>
                </li>
             </ul>
-         </li>
+         </li> */}
          <li className="nav-item">
             <Link className="nav-link" href="/mappool">
                Current Pool

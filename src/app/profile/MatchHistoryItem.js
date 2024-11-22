@@ -49,7 +49,7 @@ export default async function ScoreHistoryItem({ match }) {
                         {Math.abs(match.ratingDiff).toFixed(1)}
                      </div>
                   </div>
-                  <div>vs: {match.opponent}</div>
+                  <div>vs. {match.opponent}</div>
                </div>
             )}
             <div className="d-flex gap-1 flex-wrap">
