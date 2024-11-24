@@ -9,7 +9,7 @@ import regression from "regression";
 async function getPreviousMapScalings() {
    const mapsDb = db.collection("maps");
    const maplist = await mapsDb.findOne({ active: "current" });
-   const datasets = maplist.maps.aggregate(
+   const datasets = maplist.maps.reduce(
       (agg, map) => {
          const { nm, hd, hr, dt } = map.ratings;
          agg.nm.push([map.stars, nm.rating]);
@@ -89,10 +89,10 @@ export async function addMappool(formData) {
                         const rd = 200,
                            vol = 0.06;
                         mapData.ratings = {
-                           nm: { rating: oldRatings.nm.predict(mapData.stars), rd, vol },
-                           hd: { rating: oldRatings.hd.predict(mapData.stars), rd, vol },
-                           hr: { rating: oldRatings.hr.predict(mapData.stars), rd, vol },
-                           dt: { rating: oldRatings.dt.predict(mapData.stars), rd, vol }
+                           nm: { rating: oldRatings.nm.predict(mapData.stars)[1], rd, vol },
+                           hd: { rating: oldRatings.hd.predict(mapData.stars)[1], rd, vol },
+                           hr: { rating: oldRatings.hr.predict(mapData.stars)[1], rd, vol },
+                           dt: { rating: oldRatings.dt.predict(mapData.stars)[1], rd, vol }
                         };
                         return mapData;
                      })
