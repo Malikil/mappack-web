@@ -18,7 +18,7 @@ export default function DifficultyChart() {
          setData({
             ...scatterData,
             chart: {
-               datasets: [{ data: scatterData.chart }]
+               datasets: scatterData.chart
             }
          });
       });
@@ -34,6 +34,7 @@ export default function DifficultyChart() {
                <Scatter data={data.chart} options={{ plugins: { legend: { display: false } } }} />
             )}
             <Row>
+               <Col>{data.mapCount || 0} maps</Col>
                <Col>HD: {data.hd.toFixed(2)}</Col>
                <Col>HR: {data.hr.toFixed(2)}</Col>
                <Col>DT: {data.dt.toFixed(2)}</Col>

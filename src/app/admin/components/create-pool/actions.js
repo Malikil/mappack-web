@@ -7,19 +7,19 @@ import { checkExpiry } from "@/auth";
 import regression from "regression";
 
 async function getPreviousMapScalings() {
+   console.log("Get previous map scalings");
    const mapsDb = db.collection("maps");
-   const maplist = await mapsDb.findOne({ active: "current" });
-   const datasets = maplist.maps.reduce(
-      (agg, map) => {
+   const maplist = mapsDb.find();
+   const datasets = { nm: [], hd: [], hr: [], dt: [] };
+   for await (const pool of maplist) {
+      pool.maps.forEach(map => {
          const { nm, hd, hr, dt } = map.ratings;
-         agg.nm.push([map.stars, nm.rating]);
-         agg.hd.push([map.stars, hd.rating]);
-         agg.hr.push([map.stars, hr.rating]);
-         agg.dt.push([map.stars, dt.rating]);
-         return agg;
-      },
-      { nm: [], hd: [], hr: [], dt: [] }
-   );
+         datasets.nm.push([map.stars, nm.rating]);
+         datasets.hd.push([map.stars, hd.rating]);
+         datasets.hr.push([map.stars, hr.rating]);
+         datasets.dt.push([map.stars, dt.rating]);
+      });
+   }
    const results = {
       nm: regression.linear(datasets.nm),
       hd: regression.linear(datasets.hd),
