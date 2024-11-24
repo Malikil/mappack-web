@@ -5,6 +5,7 @@ import { verify } from "./functions";
 import { checkExpiry } from "@/auth";
 import AdminNotify from "./components/admin-notify/AdminNotify";
 import AddAttack from "./components/add-attack/AddAttack";
+import DifficultyChart from "./components/difficulty-chart/DifficultyChart";
 
 export default async function Admin() {
    const { session } = await verify();
@@ -15,6 +16,7 @@ export default async function Admin() {
          <CreatePool />
          <AdminActions />
          <AddAttack />
+         <DifficultyChart />
          {checkExpiry(session.accessToken) && <AdminNotify />}
       </div>
    );
