@@ -26,6 +26,7 @@
       "react-chartjs-2": "^5.2.0",
       "react-dom": "^18",
       "react-toastify": "^10.0.6",
+      "regression": "^2.0.1",
       "swr": "^2.2.5"
    },
    "devDependencies": {

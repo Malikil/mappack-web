@@ -4,6 +4,30 @@ import { Client } from "osu-web.js";
 import { verify } from "../../functions";
 import db from "@/app/api/db/connection";
 import { checkExpiry } from "@/auth";
+import regression from "regression";
+
+async function getPreviousMapScalings() {
+   const mapsDb = db.collection("maps");
+   const maplist = await mapsDb.findOne({ active: "current" });
+   const datasets = maplist.maps.aggregate(
+      (agg, map) => {
+         const { nm, hd, hr, dt } = map.ratings;
+         agg.nm.push([map.stars, nm.rating]);
+         agg.hd.push([map.stars, hd.rating]);
+         agg.hr.push([map.stars, hr.rating]);
+         agg.dt.push([map.stars, dt.rating]);
+         return agg;
+      },
+      { nm: [], hd: [], hr: [], dt: [] }
+   );
+   const results = {
+      nm: regression.linear(datasets.nm),
+      hd: regression.linear(datasets.hd),
+      hr: regression.linear(datasets.hr),
+      dt: regression.linear(datasets.dt)
+   };
+   return results;
+}
 
 export async function addMappool(formData) {
    const { session } = await verify();
@@ -33,6 +57,7 @@ export async function addMappool(formData) {
       .filter(v => v);
 
    const osuClient = new Client(session.accessToken);
+   const oldRatings = await getPreviousMapScalings();
 
    /** @type {import("@/types/database.beatmap").DbBeatmap[]} */
    const maplist = await mapsets
@@ -60,32 +85,14 @@ export async function addMappool(formData) {
                            ar: bm.ar,
                            stars: bm.difficulty_rating
                         };
-                        // Scale linearly 0* => 0 rating
-                        //                5* => 1500 rating
-                        const rating = mapData.stars * 300;
-                        // Estimate HD with 1.02 ^ (10 - AR). Subject to change
-                        const hdRating = Math.pow(1.01, 10 - bm.ar) * rating;
-                        // Reduce initial rd for maps, the initial rating is already based on their stars
-                        const rd = 250,
+                        // Reduce initial rd for maps, the initial rating is already based on their stars and past experience
+                        const rd = 200,
                            vol = 0.06;
                         mapData.ratings = {
-                           nm: { rating, rd, vol },
-                           hd: {
-                              rating: hdRating,
-                              rd,
-                              vol
-                           },
-                           // Estimate HR/DT with 1.1x and 1.5x. Subject to change
-                           hr: {
-                              rating: rating * 1.1,
-                              rd,
-                              vol
-                           },
-                           dt: {
-                              rating: rating * 1.5,
-                              rd,
-                              vol
-                           }
+                           nm: { rating: oldRatings.nm.predict(mapData.stars), rd, vol },
+                           hd: { rating: oldRatings.hd.predict(mapData.stars), rd, vol },
+                           hr: { rating: oldRatings.hr.predict(mapData.stars), rd, vol },
+                           dt: { rating: oldRatings.dt.predict(mapData.stars), rd, vol }
                         };
                         return mapData;
                      })
