@@ -4,7 +4,7 @@ import db from "@/app/api/db/connection";
 
 export async function fetchScatterData() {
    const mapsDb = db.collection("maps");
-   const pools = mapsDb.find({ active: { $in: ["current", "completed"] } });
+   const pools = mapsDb.find({ active: { $ne: "pending" } });
    const modRatios = {
       hd: 0,
       hr: 0,

@@ -1,7 +1,7 @@
 import db from "@/app/api/db/connection";
 import ModPool from "@/components/mappool/Modpool";
 import { redirect } from "next/navigation";
-import { predictScore } from "./predict";
+//import { predictScore } from "./predict";
 import { combineRatings, withinRange } from "@/helpers/rating-range";
 
 export default async function PlayerPool({ params }) {
@@ -82,14 +82,14 @@ export default async function PlayerPool({ params }) {
                      }[mod]
                   }
                   key={mod}
-                  mapActions={[
-                     {
-                        title: "Predict Score",
-                        action: predictScore
-                     }
-                  ]}
-                  modshort={mod}
-                  rating={targetRating}
+                  // mapActions={[
+                  //    {
+                  //       title: "Predict Score",
+                  //       action: predictScore
+                  //    }
+                  // ]}
+                  // modshort={mod}
+                  // rating={targetRating}
                />
             ))}
          </div>
