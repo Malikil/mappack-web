@@ -31,13 +31,39 @@ export default function DifficultyChart() {
             {!data.chart ? (
                <div>No Data</div>
             ) : (
-               <Scatter data={data.chart} options={{ plugins: { legend: { display: false } } }} />
+               <Scatter
+                  data={data.chart}
+                  options={{
+                     plugins: {
+                        tooltip: {
+                           callbacks: {
+                              label: ctx =>
+                                 `${ctx.formattedValue} ${ctx.raw.label || ctx.dataset.label}`
+                           }
+                        }
+                     },
+                     scales: {
+                        x: {
+                           title: {
+                              display: true,
+                              text: "Stars"
+                           }
+                        },
+                        y: {
+                           title: {
+                              display: true,
+                              text: "System Rating"
+                           }
+                        }
+                     }
+                  }}
+               />
             )}
             <Row>
                <Col>{data.mapCount || 0} maps</Col>
-               <Col>HD: {data.hd.toFixed(2)}</Col>
-               <Col>HR: {data.hr.toFixed(2)}</Col>
-               <Col>DT: {data.dt.toFixed(2)}</Col>
+               <Col>HD: {data.hd.toFixed(2)}x</Col>
+               <Col>HR: {data.hr.toFixed(2)}x</Col>
+               <Col>DT: {data.dt.toFixed(2)}x</Col>
             </Row>
          </CardBody>
       </Card>

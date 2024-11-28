@@ -19,19 +19,23 @@ export async function fetchScatterData() {
          modRatios.dt += dt.rating / nm.rating;
          chartData.nm.push({
             x: map.stars,
-            y: nm.rating
+            y: nm.rating,
+            label: `${map.artist} - ${map.title} [${map.version}]`
          });
          chartData.hd.push({
             x: map.stars,
-            y: hd.rating
+            y: hd.rating,
+            label: `${map.artist} - ${map.title} [${map.version}]`
          });
          chartData.hr.push({
             x: map.stars,
-            y: hr.rating
+            y: hr.rating,
+            label: `${map.artist} - ${map.title} [${map.version}]`
          });
          chartData.dt.push({
             x: map.stars,
-            y: dt.rating
+            y: dt.rating,
+            label: `${map.artist} - ${map.title} [${map.version}]`
          });
       });
    }
@@ -43,21 +47,25 @@ export async function fetchScatterData() {
       mapCount: chartData.nm.length,
       chart: [
          {
+            label: "NoMod",
             data: chartData.nm,
             borderColor: "#00DDDD",
             backgroundColor: "#00FFFF"
          },
          {
+            label: "Hidden",
             data: chartData.hd,
             borderColor: "#DDDD00",
             backgroundColor: "#FFFF00"
          },
          {
+            label: "HardRock",
             data: chartData.hr,
-            borderColor: "#DD8300",
+            borderColor: "#EE9400",
             backgroundColor: "#FFA500"
          },
          {
+            label: "DoubleTime",
             data: chartData.dt,
             borderColor: "#DD00DD",
             backgroundColor: "#FF00FF"

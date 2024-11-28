@@ -12,10 +12,12 @@ export default async function Admin() {
    if (!session) redirect("/");
 
    return (
-      <div className="d-flex gap-3 flex-wrap my-1">
-         <CreatePool />
-         <AdminActions />
-         <AddAttack />
+      <div>
+         <div className="d-flex gap-3 flex-wrap mb-2">
+            <CreatePool />
+            <AdminActions />
+            <AddAttack />
+         </div>
          <DifficultyChart />
          {checkExpiry(session.accessToken) && <AdminNotify />}
       </div>
