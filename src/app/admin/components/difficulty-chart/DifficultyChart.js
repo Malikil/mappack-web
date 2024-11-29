@@ -38,7 +38,7 @@ export default function DifficultyChart() {
                         tooltip: {
                            callbacks: {
                               label: ctx =>
-                                 `${ctx.formattedValue} ${ctx.raw.label || ctx.dataset.label}`
+                                 `${ctx.raw.label || ctx.dataset.label} ${ctx.formattedValue}`
                            }
                         }
                      },
