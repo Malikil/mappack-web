@@ -49,13 +49,13 @@ export async function fetchScatterData() {
          {
             label: "NoMod",
             data: chartData.nm,
-            borderColor: "#00DDDD",
+            borderColor: "#00EEEE",
             backgroundColor: "#00FFFF"
          },
          {
             label: "Hidden",
             data: chartData.hd,
-            borderColor: "#DDDD00",
+            borderColor: "#EEEE00",
             backgroundColor: "#FFFF00"
          },
          {
@@ -67,7 +67,7 @@ export async function fetchScatterData() {
          {
             label: "DoubleTime",
             data: chartData.dt,
-            borderColor: "#DD00DD",
+            borderColor: "#EE00EE",
             backgroundColor: "#FF00FF"
          }
       ]

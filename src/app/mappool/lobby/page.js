@@ -1,6 +1,5 @@
 import db from "@/app/api/db/connection";
 import ModPool from "@/components/mappool/Modpool";
-import { combineRatings } from "@/helpers/rating-range";
 
 export default async function PlayerPool({ searchParams }) {
    const stringParams = await searchParams;
@@ -11,7 +10,6 @@ export default async function PlayerPool({ searchParams }) {
       ])
    );
    parsedParams.l = decodeURIComponent(stringParams.l);
-   console.log(parsedParams);
 
    const mapsDb = db.collection("maps");
    const { maps } = await mapsDb.findOne({ active: "current" });

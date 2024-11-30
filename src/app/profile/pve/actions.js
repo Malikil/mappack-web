@@ -60,7 +60,7 @@ export async function submitPve(formData) {
 
    // Save results to database
    const result = await playersdb.updateOne(
-      { osuid: session.user.id },
+      { osuid: player.osuid },
       {
          $set: {
             "pve.rating": playerCalc.getRating(),
