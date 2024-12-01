@@ -15,7 +15,7 @@ import {
  * @param {object} params
  * @param {import("@/types/database.player").PvPMatchHistory} params.match
  */
-export default async function ScoreHistoryItem({ match }) {
+export default async function MatchHistoryItem({ match }) {
    const mapsDb = db.collection("maps");
    const maplist = await mapsDb.findOne({ active: "current" });
    // Get map details

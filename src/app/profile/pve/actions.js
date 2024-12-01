@@ -4,16 +4,12 @@ import db from "@/app/api/db/connection";
 import { Glicko2 } from "glicko2";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
-import { matchResultValue, parseMpLobby, parsePvEString } from "./functions";
+import { matchResultValue, parseMpLobby } from "./functions";
 
 export async function submitPve(formData) {
    const session = await auth();
-   /** @type {string} */
-   const matchesText = formData.get("history");
-   const matches = matchesText
-      ? parsePvEString(matchesText)
-      : await parseMpLobby(formData.get("mp"));
-   if (!matches)
+   const matches = await parseMpLobby(formData.get("mp"));
+   if (!matches || Object.keys(matches).length < 1)
       return {
          http: {
             status: 400,

@@ -18,44 +18,47 @@ export function matchResultValue(score) {
 }
 
 /**
- * @param {string} str mapid+mod score
- * @returns {{
- *   map: number;
- *   mod: 'nm'|'hd'|'hr'|'dt';
- *   score: number
- * }[]}
+ * @param {import("osu-web.js").Mod[]} lobbyMods 
+ * @param {import("osu-web.js").Mod[]} scoreMods 
  */
-export function parsePvEString(str) {
-   const matches = str.split("\n").map(ln => {
-      const items = ln.split(" ");
-      const [map, mod] = items[0].split("+");
-      return {
-         map: parseInt(map),
-         mod: mod.toLowerCase(),
-         score: parseInt(items[1])
-      };
-   });
-   return matches;
+function parseSongMods(lobbyMods, scoreMods) {
+   console.log(lobbyMods);
+   console.log(scoreMods);
+   return 'nm';
 }
 
 /**
  * @param {string} link
  * @param {string} token
  * @returns {Promise<{
- *   map: number;
- *   mod: 'nm'|'hd'|'hr'|'dt';
- *   score: number
- * }[]>}
+ *   [key: string]: {
+ *     map: number;
+ *     mod: 'nm'|'hd'|'hr'|'dt';
+ *     score: number
+ *   }[]
+ * }>}
  */
 export async function parseMpLobby(link) {
-   return;
    const osuClient = new LegacyClient(process.env.OSU_LEGACY_KEY);
    const matchIdSegment = link.slice(link.lastIndexOf("/") + 1);
    try {
       const mpLobby = await osuClient.getMultiplayerLobby({ mp: matchIdSegment });
-      console.log(mpLobby.games);
+      const result = mpLobby.games.reduce((scoreAgg, game) => {
+         if (game.end_time && game.scoring_type === 'Score V2' && game.team_type === 'Head To Head')
+            game.scores.forEach(score => {
+               if (!(score.user_id in scoreAgg))
+                  scoreAgg[score.user_id] = [];
+               scoreAgg[score.user_id].push({
+                  map: game.beatmap_id,
+                  mod: parseSongMods(game.mods, score.enabled_mods),
+                  score: score.score
+               });
+            })
+         return scoreAgg;
+      }, {});
+      console.log(result);
    } catch (err) {
       console.error(err);
    }
-   // Test lobby: https://osu.ppy.sh/community/matches/116151054
+   // Test lobby: https://osu.ppy.sh/community/matches/116371941
 }

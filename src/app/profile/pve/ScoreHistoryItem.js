@@ -1,5 +1,5 @@
 import { Card, CardBody, CardImg, CardSubtitle } from "react-bootstrap";
-import db from "../api/db/connection";
+import db from "../../api/db/connection";
 import Link from "next/link";
 import { buildUrl } from "osu-web.js";
 import {

@@ -5,10 +5,12 @@ import { Button, Card, CardBody, CardHeader, CardTitle, Form, FormControl } from
 import { getOpponentMappool, register } from "./actions";
 import { revalidatePath } from "next/cache";
 import MatchHistoryItem from "./MatchHistoryItem";
-import ScoreHistoryItem from "./ScoreHistoryItem";
+import ScoreHistoryItem from "./pve/ScoreHistoryItem";
 import AttackButton from "./AttackButton";
 import AddPvESession from "./pve/AddPveSession";
-import AddPvPSession from "./pvp/AddPvPSession";
+import { submitPve } from "./pve/actions";
+import { serverActionToast } from "@/toaster";
+import PvEResultsCard from "./pve/PvEResultsCard";
 
 const TableData = ({ data }) => (
    <table>
@@ -83,34 +85,7 @@ export default async function Profile() {
                </div>
             </CardBody>
          </Card>
-         <Card>
-            <CardHeader>Score Attack</CardHeader>
-            <CardBody>
-               <div className="d-flex">
-                  <TableData
-                     data={[
-                        ["Rating", player.pve.rating.toFixed(0)],
-                        ["Rating Deviation", player.pve.rd.toFixed(0)],
-                        ["Games", player.pve.games]
-                     ]}
-                  />
-                  <div className="ms-auto">
-                     <AttackButton userId={session.user.id} />
-                  </div>
-               </div>
-               <hr />
-               <CardTitle>Match History</CardTitle>
-               <div className="d-flex flex-column gap-1">
-                  {player.pve.matches.map((match, i) => (
-                     <ScoreHistoryItem key={i} match={match} />
-                  ))}
-               </div>
-            </CardBody>
-         </Card>
-         <div className="d-flex gap-2">
-            <AddPvPSession />
-            <AddPvESession />
-         </div>
+         <PvEResultsCard data={player.pve} osuid={session.user.id} />
       </div>
    );
 }
