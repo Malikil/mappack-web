@@ -14,16 +14,19 @@ export default function ScoreAttackRules() {
                   <li>
                      Click <pre className="border rounded p-1 d-inline">Generate Score Attack</pre>
                   </li>
+                  <li>A notification with your maplist will pop up</li>
                   <li>
-                     A notification with your maplist will pop up. Formatted in a way it can be
-                     copied into the result submittion area
+                     Play each map in a multiplayer lobby. You can use the command{" "}
+                     <pre className="border rounded p-1 d-inline">!mp start</pre> to start a song by
+                     yourself
+                     <br />
+                     Make sure Score v2 is selected
                   </li>
+                  <li>When all maps are done, copy the mp link and put it into the submit box.</li>
                   <li>
-                     Play each map, the score goes on the same line as the mapid/mod, with a space
-                     between mod and score:{" "}
-                     <pre className="border rounded p-1 d-inline">[mapid]+[mod] [score]</pre>
+                     There is no system in place to avoid duplicates. Make sure you only submit the
+                     lobby once
                   </li>
-                  <li>When all maps are done, submit scores</li>
                </ol>
             </li>
          </ul>

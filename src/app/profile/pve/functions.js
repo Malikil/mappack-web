@@ -57,15 +57,19 @@ export async function parseMpLobby(link) {
    const matchIdSegment = link.slice(link.lastIndexOf("/") + 1);
    try {
       const mpLobby = await osuClient.getMultiplayerLobby({ mp: matchIdSegment });
+      console.log(mpLobby.games.length);
       const result = mpLobby.games.reduce((scoreAgg, game) => {
-         if (game.end_time && game.scoring_type === "Score V2" && game.team_type === "Head To Head")
+         if (game.end_time && game.team_type === "Head To Head")
             game.scores.forEach(score => {
                const scoreResult = {
                   map: game.beatmap_id,
                   mod: parseSongMods(game.mods, score.enabled_mods),
-                  score: score.score
+                  score:
+                     game.scoring_type === "Score V2"
+                        ? score.score
+                        : debugCalcv1Score(score, game.beatmap_id)
                };
-               if (scoreResult.mod) {
+               if (scoreResult.mod && scoreResult.score) {
                   if (!(score.user_id in scoreAgg)) scoreAgg[score.user_id] = [];
                   scoreAgg[score.user_id].push(scoreResult);
                }
@@ -76,4 +80,22 @@ export async function parseMpLobby(link) {
    } catch (err) {
       console.error(err);
    }
+}
+
+/**
+ * @param {import("osu-web.js").LegacyMatchScore} scoreInfo
+ */
+function debugCalcv1Score(scoreInfo, mapId) {
+   const scoreListing = {
+      330369: 8335338,
+      4858539: 19857488,
+      322394: 30149844
+   };
+   if (!(mapId in scoreListing)) return;
+   const acc =
+      (scoreInfo.count50 / 6 + scoreInfo.count100 / 3 + scoreInfo.count300) /
+      (scoreInfo.count50 + scoreInfo.count100 + scoreInfo.count300);
+   const score = (1000000 * scoreInfo.score * acc) / scoreListing[mapId];
+   console.log(scoreInfo.score, score);
+   return parseInt(score.toFixed());
 }

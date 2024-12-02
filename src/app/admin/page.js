@@ -4,7 +4,6 @@ import AdminActions from "./components/actions/AdminActions";
 import { verify } from "./functions";
 import { checkExpiry } from "@/auth";
 import AdminNotify from "./components/admin-notify/AdminNotify";
-import AddAttack from "./components/add-attack/AddAttack";
 import DifficultyChart from "./components/difficulty-chart/DifficultyChart";
 
 export default async function Admin() {
@@ -16,7 +15,6 @@ export default async function Admin() {
          <div className="d-flex gap-3 flex-wrap mb-2">
             <CreatePool />
             <AdminActions />
-            <AddAttack />
          </div>
          <DifficultyChart />
          {checkExpiry(session.accessToken) && <AdminNotify />}
