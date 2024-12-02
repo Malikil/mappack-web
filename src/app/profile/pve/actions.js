@@ -12,7 +12,7 @@ export async function generateAttack(osuid) {
    console.log(`Target range: ${player.pve.rating.toFixed(1)} ±${player.pve.rd.toFixed(1)}`);
    const mapsDb = db.collection("maps");
    const mappack = await mapsDb.findOne({ active: "current" });
-   const availableMaps = mappack.maps
+   let availableMaps = mappack.maps
       .flatMap(map =>
          Object.keys(map.ratings).map(mod => ({
             id: map.id,
@@ -23,11 +23,13 @@ export async function generateAttack(osuid) {
       .filter(map => withinRange(player.pve, map.rating));
    console.log(`${availableMaps.length} available maps`);
 
-   const selectedMaps = Array.from({ length: Math.min(7, availableMaps.length) }, () => {
+   const selectedMaps = Array.from({ length: 7 }, () => {
+      if (availableMaps.length < 1) return;
       const index = (Math.random() * availableMaps.length) | 0;
-      const [selected] = availableMaps.splice(index, 1);
+      const selected = availableMaps[index];
+      availableMaps = availableMaps.filter(m => m.id !== selected.id);
       return selected;
-   });
+   }).filter(v => v);
    console.log(selectedMaps);
 
    return selectedMaps.map(m => `${m.id}+${m.mod.toUpperCase()}`);

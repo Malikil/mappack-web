@@ -16,7 +16,7 @@ export default function PvEResultsCard({ data, osuid }) {
                      ["Games", data.games]
                   ]}
                />
-               <AddPvESession userid={osuid} />
+               <AddPvESession userId={osuid} />
             </div>
             <hr />
             <CardTitle>Match History</CardTitle>

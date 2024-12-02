@@ -76,5 +76,4 @@ export async function parseMpLobby(link) {
    } catch (err) {
       console.error(err);
    }
-   // Test lobby: https://osu.ppy.sh/community/matches/116371941
 }
