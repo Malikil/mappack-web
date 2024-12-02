@@ -22,9 +22,23 @@ export function matchResultValue(score) {
  * @param {import("osu-web.js").Mod[]} scoreMods 
  */
 function parseSongMods(lobbyMods, scoreMods) {
-   console.log(lobbyMods);
-   console.log(scoreMods);
-   return 'nm';
+   const mods = lobbyMods
+      .concat(scoreMods)
+      // Ignore NF
+      .filter(m => m !== "NF");
+   // In order for the score to be valid, only one mod should be used
+   if (mods.length > 1) return null;
+   if (mods.length === 0) return "nm";
+   else
+      switch (mods[0]) {
+         case "HD":
+            return "hd";
+         case "HR":
+            return "hr";
+         case "DT":
+         case "NC":
+            return "dt";
+      }
 }
 
 /**
@@ -44,19 +58,21 @@ export async function parseMpLobby(link) {
    try {
       const mpLobby = await osuClient.getMultiplayerLobby({ mp: matchIdSegment });
       const result = mpLobby.games.reduce((scoreAgg, game) => {
-         if (game.end_time && game.scoring_type === 'Score V2' && game.team_type === 'Head To Head')
+         if (game.end_time && game.scoring_type === "Score V2" && game.team_type === "Head To Head")
             game.scores.forEach(score => {
-               if (!(score.user_id in scoreAgg))
-                  scoreAgg[score.user_id] = [];
-               scoreAgg[score.user_id].push({
+               const scoreResult = {
                   map: game.beatmap_id,
                   mod: parseSongMods(game.mods, score.enabled_mods),
                   score: score.score
-               });
-            })
+               };
+               if (scoreResult.mod) {
+                  if (!(score.user_id in scoreAgg)) scoreAgg[score.user_id] = [];
+                  scoreAgg[score.user_id].push(scoreResult);
+               }
+            });
          return scoreAgg;
       }, {});
-      console.log(result);
+      return result;
    } catch (err) {
       console.error(err);
    }

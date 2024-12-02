@@ -5,11 +5,6 @@ import { Button, Card, CardBody, CardHeader, CardTitle, Form, FormControl } from
 import { getOpponentMappool, register } from "./actions";
 import { revalidatePath } from "next/cache";
 import MatchHistoryItem from "./MatchHistoryItem";
-import ScoreHistoryItem from "./pve/ScoreHistoryItem";
-import AttackButton from "./AttackButton";
-import AddPvESession from "./pve/AddPveSession";
-import { submitPve } from "./pve/actions";
-import { serverActionToast } from "@/toaster";
 import PvEResultsCard from "./pve/PvEResultsCard";
 
 const TableData = ({ data }) => (

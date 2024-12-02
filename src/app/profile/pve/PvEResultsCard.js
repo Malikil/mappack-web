@@ -1,5 +1,4 @@
 import { Card, CardBody, CardHeader, CardTitle } from "react-bootstrap";
-import AttackButton from "../AttackButton";
 import ScoreHistoryItem from "./ScoreHistoryItem";
 import ComponentInfoRows from "../ComponentInfoRows";
 import AddPvESession from "./AddPveSession";
@@ -17,10 +16,7 @@ export default function PvEResultsCard({ data, osuid }) {
                      ["Games", data.games]
                   ]}
                />
-               <div className="d-flex flex-column align-items-end gap-1 ms-auto">
-                  <AttackButton userId={osuid} />
-                  <AddPvESession />
-               </div>
+               <AddPvESession userid={osuid} />
             </div>
             <hr />
             <CardTitle>Match History</CardTitle>
