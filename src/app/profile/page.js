@@ -67,7 +67,7 @@ export default async function Profile() {
                   >
                      <FormControl type="text" name="opponent" placeholder="Opponent" />
                      <Button className="text-nowrap" type="submit">
-                        View Pool
+                        Preview Pool
                      </Button>
                   </Form>
                </div>

@@ -10,14 +10,25 @@ export default function PvPRules() {
                last. Players can decide for themselves what to do about a tiebreaker situation
             </li>
             <li>
-               To join the queue message Malikil with !pvp/!q/!queue. The system will attempt to
-               match you with a similarly skilled player
+               To join queue message Malikil with !pvp/!q/!queue. The system will attempt to match
+               you with a similarly skilled player
+               <ul>
+                  <li>To leave queue after joining, use !unq/!unqueue</li>
+               </ul>
             </li>
-            <li>To leave queue after joining, use !unq/!unqueue</li>
+            <li>When a match is found, you will be prompted to accept the match with !ready/!r</li>
+            <li>When both players are ready the lobby is created and invites are sent</li>
             <li>
-               When a match is found, a lobby will be created automatically and you will be invited
-               to it
+               Once both players are in the lobby, the bot will send a link to the mappool. The
+               linked pool will be the one seen by the bot. Any pool preview generated through your
+               profile is not guaranteed to remain accurate for the duration of the match (other
+               matches which finish may affect ratings and may affect what maps are picked)
             </li>
+            <li>
+               Ban maps with !ban/!b and the mod/number eg:{" "}
+               <pre className="border rounded p-1 d-inline">!ban NM3</pre>
+            </li>
+            <li>Pick maps with !pick/!p</li>
          </ul>
       </div>
    );
