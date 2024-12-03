@@ -1,6 +1,12 @@
 import { combineRatings, withinRange } from "@/helpers/rating-range";
 import db from "../connection";
 
+const NM_MAPCOUNT = 7,
+   HD_MAPCOUNT = 4,
+   HR_MAPCOUNT = 4,
+   DT_MAPCOUNT = 4,
+   FM_MAPCOUNT = 3;
+
 /**
  * @param {number[]} playerIds
  */
@@ -49,7 +55,7 @@ export async function getMappool(playerIds) {
       return adiff - bdiff;
    });
    // Put extra maps into HD/HR
-   maplist.fm.slice(7).forEach(map => {
+   maplist.fm.slice(FM_MAPCOUNT).forEach(map => {
       const hdDiff = Math.abs(map.ratings.hd.rating - targetRating.rating);
       const hrDiff = Math.abs(map.ratings.hr.rating - targetRating.rating);
       if (hdDiff > hrDiff) maplist.hr.push(map);
@@ -59,20 +65,24 @@ export async function getMappool(playerIds) {
    maplist.hd.sort(sortFunc("hd"));
    maplist.hr.sort(sortFunc("hr"));
    // Put extra maps into NM if they're valid
-   maplist.hd.slice(7).forEach(map => {
+   maplist.hd.slice(HD_MAPCOUNT).forEach(map => {
       if (checkWithinRange(map.ratings.nm)) maplist.nm.push(map);
    });
-   maplist.hr.slice(7).forEach(map => {
+   maplist.hr.slice(HR_MAPCOUNT).forEach(map => {
       if (checkWithinRange(map.ratings.nm)) maplist.nm.push(map);
    });
    // Sort NM and DT (the only ones left)
    maplist.nm.sort(sortFunc("nm"));
    maplist.dt.sort(sortFunc("dt"));
 
-   const maps = Object.fromEntries(
-      Object.keys(maplist).map(mod => {
-         return [mod, maplist[mod].slice(0, 7)];
-      })
-   );
-   return { maps, players };
+   return {
+      maps: {
+         nm: maplist.nm.slice(0, NM_MAPCOUNT),
+         hd: maplist.hd.slice(0, HD_MAPCOUNT),
+         hr: maplist.hr.slice(0, HR_MAPCOUNT),
+         dt: maplist.dt.slice(0, DT_MAPCOUNT),
+         fm: maplist.fm.slice(0, FM_MAPCOUNT)
+      },
+      players
+   };
 }
