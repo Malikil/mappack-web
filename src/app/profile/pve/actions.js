@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { matchResultValue, parseMpLobby } from "./functions";
 import { withinRange } from "@/helpers/rating-range";
 
-export async function generateAttack(osuid) {
+export async function generateAttack(osuid, mapcount = 7) {
    const playersDb = db.collection("players");
    const player = await playersDb.findOne({ osuid });
    console.log(`Target range: ${player.pve.rating.toFixed(1)} ±${player.pve.rd.toFixed(1)}`);
@@ -23,7 +23,7 @@ export async function generateAttack(osuid) {
       .filter(map => withinRange(player.pve, map.rating));
    console.log(`${availableMaps.length} available maps`);
 
-   const selectedMaps = Array.from({ length: 7 }, () => {
+   const selectedMaps = Array.from({ length: mapcount }, () => {
       if (availableMaps.length < 1) return;
       const index = (Math.random() * availableMaps.length) | 0;
       const selected = availableMaps[index];
@@ -36,7 +36,7 @@ export async function generateAttack(osuid) {
 }
 
 export async function submitPve(formData) {
-   const matches = await parseMpLobby(formData.get("mp"));
+   const { results: matches, mp } = await parseMpLobby(formData.get("mp"));
    if (!matches || Object.keys(matches).length < 1)
       return {
          http: {
@@ -162,12 +162,18 @@ export async function submitPve(formData) {
                },
                { upsert: true, returnDocument: "after" }
             );
+            // This is about the earliest spot to check if the mp has already been used
+            // Considering that at the moment the player setup depends on the maps being
+            // already set up
+            if (player.pve.matches.find(h => h.mp === mp))
+               throw new Error("History already exists");
             const playerCalc = calculator.makePlayer(
                player.pve.rating,
                player.pve.rd,
                player.pve.vol
             );
             const history = {
+               mp,
                prevRating: player.pve.rating,
                ratingDiff: 0,
                songs: []
@@ -202,8 +208,15 @@ export async function submitPve(formData) {
 
             return { playerId, playerCalc, history };
          })
-      )
-   ).filter(v => v);
+      ).catch(err => console.warn(err.message))
+   )?.filter(v => v);
+   if (!playerCalculatorPairs)
+      return {
+         http: {
+            status: 400,
+            message: "History already exists"
+         }
+      };
 
    // Update matches
    calculator.updateRatings(calculatorResults);

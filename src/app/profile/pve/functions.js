@@ -22,10 +22,17 @@ export function matchResultValue(score) {
  * @param {import("osu-web.js").Mod[]} scoreMods 
  */
 function parseSongMods(lobbyMods, scoreMods) {
-   const mods = lobbyMods
-      .concat(scoreMods)
-      // Ignore NF
-      .filter(m => m !== "NF");
+   // When freemod is set on DT, DT will be in both arrays
+   // Just take unique mods in general
+   const mods = [
+      ...new Set(
+         lobbyMods
+            .concat(scoreMods)
+            // Ignore NF
+            .filter(m => m !== "NF")
+      )
+   ];
+
    // In order for the score to be valid, only one mod should be used
    if (mods.length > 1) return null;
    if (mods.length === 0) return "nm";
@@ -44,21 +51,23 @@ function parseSongMods(lobbyMods, scoreMods) {
 /**
  * @param {string} link
  * @param {string} token
- * @returns {Promise<{
- *   [key: string]: {
- *     map: number;
- *     mod: 'nm'|'hd'|'hr'|'dt';
- *     score: number
- *   }[]
- * }>}
  */
 export async function parseMpLobby(link) {
    const osuClient = new LegacyClient(process.env.OSU_LEGACY_KEY);
-   const matchIdSegment = link.slice(link.lastIndexOf("/") + 1);
+   const matchIdSegment = parseInt(link.slice(link.lastIndexOf("/") + 1));
    try {
       const mpLobby = await osuClient.getMultiplayerLobby({ mp: matchIdSegment });
       console.log(mpLobby.games.length);
-      const result = mpLobby.games.reduce((scoreAgg, game) => {
+      /**
+       * @type {{
+       *    [key: string]: {
+       *       map: number;
+       *       mod: 'nm'|'hd'|'hr'|'dt';
+       *       score: number;
+       *    }[]
+       * }}
+       */
+      const results = mpLobby.games.reduce((scoreAgg, game) => {
          if (game.end_time && game.team_type === "Head To Head")
             game.scores.forEach(score => {
                const scoreResult = {
@@ -76,7 +85,7 @@ export async function parseMpLobby(link) {
             });
          return scoreAgg;
       }, {});
-      return result;
+      return { results, mp: matchIdSegment };
    } catch (err) {
       console.error(err);
    }
@@ -209,6 +218,7 @@ function debugCalcv1Score(scoreInfo, mapId) {
       (scoreInfo.count50 + scoreInfo.count100 + scoreInfo.count300);
    const score =
       (700000 * scoreInfo.score * (scoreInfo.enabled_mods.includes("NF") + 1)) /
+         acc /
          scoreListing[mapId] +
       300000 * Math.pow(acc, 10);
    return parseInt(score.toFixed());
