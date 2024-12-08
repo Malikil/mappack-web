@@ -6,10 +6,10 @@ import db from "@/app/api/db/connection";
 import { checkExpiry } from "@/auth";
 import regression from "regression";
 
-async function getPreviousMapScalings() {
+async function getPreviousMapScalings(mode) {
    console.log("Get previous map scalings");
    const mapsDb = db.collection("maps");
-   const maplist = mapsDb.find();
+   const maplist = mapsDb.find({ mode });
    const datasets = { nm: [], hd: [], hr: [], dt: [] };
    for await (const pool of maplist) {
       pool.maps.forEach(map => {
@@ -56,8 +56,18 @@ export async function addMappool(formData) {
       .map(v => parseInt(v))
       .filter(v => v);
 
+   // Make sure this pack hasn't been used yet
+   const historyDb = db.collection("history");
+   if (await historyDb.findOne({ mode: "osu", packs: packName }))
+      return {
+         http: {
+            status: 409,
+            message: "Pack has already been used"
+         }
+      };
+
    const osuClient = new Client(session.accessToken);
-   const oldRatings = await getPreviousMapScalings();
+   const oldRatings = await getPreviousMapScalings("osu");
 
    /** @type {import("@/types/database.beatmap").DbBeatmap[]} */
    const maplist = await mapsets
@@ -112,7 +122,9 @@ export async function addMappool(formData) {
       name: packName,
       download,
       maps: maplist,
-      active: "pending"
+      active: "pending",
+      mode: "osu"
    });
+   historyDb.updateOne({ mode: "osu" }, { $push: { packs: packName } }, { upsert: true });
    console.log(result);
 }
