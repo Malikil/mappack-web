@@ -35,8 +35,8 @@ export async function generateAttack(osuid, mapcount = 7) {
    return selectedMaps.map(m => `${m.id}+${m.mod.toUpperCase()}`);
 }
 
-export async function submitPve(formData) {
-   const { results: matches, mp } = await parseMpLobby(formData.get("mp"));
+export async function submitPve(formData, matchesData) {
+   const { results: matches, mp } = formData ? await parseMpLobby(formData.get("mp")) : matchesData;
    if (!matches || Object.keys(matches).length < 1)
       return {
          http: {
