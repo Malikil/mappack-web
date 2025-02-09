@@ -12,8 +12,11 @@ import {
 } from "react-bootstrap";
 import { addMappool } from "./actions";
 import { serverActionToast } from "@/toaster";
+import useGamemode from "@/hooks/useGamemode";
 
 export default function CreatePool() {
+   const { gamemode } = useGamemode();
+
    return (
       <Card>
          <CardBody>
@@ -21,7 +24,7 @@ export default function CreatePool() {
             <Form
                className="d-flex flex-column gap-2"
                action={formData =>
-                  serverActionToast(addMappool(formData), {
+                  serverActionToast(addMappool(formData, gamemode), {
                      pending: "Adding Mappool",
                      success: "Maps added",
                      error: "Failed to add maps"
@@ -37,7 +40,7 @@ export default function CreatePool() {
                   <FormControl type="text" name="download" />
                </FormGroup>
                <FormGroup>
-                  <FormLabel>Maps</FormLabel>
+                  <FormLabel>Mapsets</FormLabel>
                   <FormControl as="textarea" rows={10} name="maps" />
                </FormGroup>
                <Button type="submit">Submit</Button>

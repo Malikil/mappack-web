@@ -2,9 +2,9 @@
 
 import db from "@/app/api/db/connection";
 
-export async function fetchScatterData() {
+export async function fetchScatterData(mode) {
    const mapsDb = db.collection("maps");
-   const pools = mapsDb.find({ active: { $ne: "pending" } });
+   const pools = mapsDb.find({ mode });
    const modRatios = {
       hd: 0,
       hr: 0,
@@ -12,6 +12,7 @@ export async function fetchScatterData() {
    };
    const chartData = { nm: [], hd: [], hr: [], dt: [] };
    for await (const pool of pools) {
+      console.log(pool);
       pool.maps.forEach(map => {
          const { nm, hd, hr, dt } = map.ratings;
          modRatios.hd += hd.rating / nm.rating;

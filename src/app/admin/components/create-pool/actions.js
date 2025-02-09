@@ -29,7 +29,7 @@ async function getPreviousMapScalings(mode) {
    return results;
 }
 
-export async function addMappool(formData) {
+export async function addMappool(formData, gamemode) {
    const { session } = await verify();
    if (!session)
       return {
@@ -58,7 +58,7 @@ export async function addMappool(formData) {
 
    // Make sure this pack hasn't been used yet
    const historyDb = db.collection("history");
-   if (await historyDb.findOne({ mode: "osu", packs: packName }))
+   if (await historyDb.findOne({ mode: gamemode, packs: packName }))
       return {
          http: {
             status: 409,
@@ -67,7 +67,7 @@ export async function addMappool(formData) {
       };
 
    const osuClient = new Client(session.accessToken);
-   const oldRatings = await getPreviousMapScalings("osu");
+   const oldRatings = await getPreviousMapScalings(gamemode);
 
    /** @type {import("@/types/database.beatmap").DbBeatmap[]} */
    const maplist = await mapsets
@@ -81,7 +81,9 @@ export async function addMappool(formData) {
                   mapset.beatmaps
                      .map(bm => {
                         // Ignore maps from other modes
-                        if (bm.mode !== "osu") return null;
+                        // Special case: Accept std maps for ctb
+                        if (bm.mode !== gamemode && gamemode !== "fruits" && bm.mode !== "osu")
+                           return null;
 
                         const mapData = {
                            id: bm.id,
@@ -99,10 +101,10 @@ export async function addMappool(formData) {
                         const rd = 200,
                            vol = 0.06;
                         mapData.ratings = {
-                           nm: { rating: oldRatings.nm.predict(mapData.stars)[1], rd, vol },
-                           hd: { rating: oldRatings.hd.predict(mapData.stars)[1], rd, vol },
-                           hr: { rating: oldRatings.hr.predict(mapData.stars)[1], rd, vol },
-                           dt: { rating: oldRatings.dt.predict(mapData.stars)[1], rd, vol }
+                           nm: { rating: oldRatings.nm.predict(mapData.stars)[1] || 1500, rd, vol },
+                           hd: { rating: oldRatings.hd.predict(mapData.stars)[1] || 1500, rd, vol },
+                           hr: { rating: oldRatings.hr.predict(mapData.stars)[1] || 1500, rd, vol },
+                           dt: { rating: oldRatings.dt.predict(mapData.stars)[1] || 1500, rd, vol }
                         };
                         return mapData;
                      })
@@ -123,8 +125,8 @@ export async function addMappool(formData) {
       download,
       maps: maplist,
       active: "pending",
-      mode: "osu"
+      mode: gamemode
    });
-   historyDb.updateOne({ mode: "osu" }, { $push: { packs: packName } }, { upsert: true });
+   historyDb.updateOne({ mode: gamemode }, { $push: { packs: packName } }, { upsert: true });
    console.log(result);
 }
