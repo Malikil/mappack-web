@@ -78,37 +78,64 @@ export async function addMappool(formData, gamemode) {
                const mapset = await osuClient.getUndocumented(`beatmapsets/${setId}`);
                console.log(mapset.title);
                return arr.concat(
-                  mapset.beatmaps
-                     .map(bm => {
-                        // Ignore maps from other modes
-                        // Special case: Accept std maps for ctb
-                        if (bm.mode !== gamemode && gamemode !== "fruits" && bm.mode !== "osu")
-                           return null;
+                  (
+                     await Promise.all(
+                        mapset.beatmaps.map(async bm => {
+                           // Ignore maps from other modes
+                           // Special case: Accept std maps for ctb
+                           if (bm.mode !== gamemode && gamemode !== "fruits" && bm.mode !== "osu")
+                              return null;
 
-                        const mapData = {
-                           id: bm.id,
-                           setid: mapset.id,
-                           artist: mapset.artist_unicode,
-                           title: mapset.title_unicode,
-                           version: bm.version,
-                           length: bm.total_length,
-                           bpm: bm.bpm,
-                           cs: bm.cs,
-                           ar: bm.ar,
-                           stars: bm.difficulty_rating
-                        };
-                        // Reduce initial rd for maps, the initial rating is already based on their stars and past experience
-                        const rd = 200,
-                           vol = 0.06;
-                        mapData.ratings = {
-                           nm: { rating: oldRatings.nm.predict(mapData.stars)[1] || 1500, rd, vol },
-                           hd: { rating: oldRatings.hd.predict(mapData.stars)[1] || 1500, rd, vol },
-                           hr: { rating: oldRatings.hr.predict(mapData.stars)[1] || 1500, rd, vol },
-                           dt: { rating: oldRatings.dt.predict(mapData.stars)[1] || 1500, rd, vol }
-                        };
-                        return mapData;
-                     })
-                     .filter(m => m)
+                           const mapData = {
+                              id: bm.id,
+                              setid: mapset.id,
+                              artist: mapset.artist_unicode,
+                              title: mapset.title_unicode,
+                              version: bm.version,
+                              length: bm.total_length,
+                              bpm: bm.bpm,
+                              cs: bm.cs,
+                              ar: bm.ar,
+                              stars: bm.difficulty_rating
+                           };
+                           // Get the ctb difficulty if it's a converted map
+                           if (gamemode === "fruits" && bm.mode === "osu") {
+                              /** @type {import("osu-web.js").FruitsBeatmapDifficultyAttributes} */
+                              const mapInfo = await osuClient.beatmaps.getBeatmapAttributes(
+                                 bm.id,
+                                 gamemode
+                              );
+                              mapData.stars = mapInfo.star_rating;
+                           }
+                           // Reduce initial rd for maps, the initial rating is already based on their stars and past experience
+                           const rd = 200,
+                              vol = 0.06;
+                           mapData.ratings = {
+                              nm: {
+                                 rating: oldRatings.nm.predict(mapData.stars)[1] || 1500,
+                                 rd,
+                                 vol
+                              },
+                              hd: {
+                                 rating: oldRatings.hd.predict(mapData.stars)[1] || 1500,
+                                 rd,
+                                 vol
+                              },
+                              hr: {
+                                 rating: oldRatings.hr.predict(mapData.stars)[1] || 1500,
+                                 rd,
+                                 vol
+                              },
+                              dt: {
+                                 rating: oldRatings.dt.predict(mapData.stars)[1] || 1500,
+                                 rd,
+                                 vol
+                              }
+                           };
+                           return mapData;
+                        })
+                     )
+                  ).filter(m => m)
                );
             }),
          Promise.resolve([])
