@@ -26,12 +26,26 @@ export default function ModeToggle() {
          </a>
          <ul className="dropdown-menu">
             <li>
-               <a className="dropdown-item" href="#" onClick={() => setGamemode("osu")}>
+               <a
+                  className="dropdown-item"
+                  href="#"
+                  onClick={() => {
+                     setGamemode("osu");
+                     location.reload();
+                  }}
+               >
                   osu!
                </a>
             </li>
             <li>
-               <a className="dropdown-item" href="#" onClick={() => setGamemode("fruits")}>
+               <a
+                  className="dropdown-item"
+                  href="#"
+                  onClick={() => {
+                     setGamemode("fruits");
+                     location.reload();
+                  }}
+               >
                   Catch the Beat
                </a>
             </li>

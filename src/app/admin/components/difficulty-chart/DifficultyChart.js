@@ -16,14 +16,16 @@ export default function DifficultyChart() {
       chart: null
    });
    useEffect(() => {
-      fetchScatterData(gamemode).then(scatterData => {
-         setData({
-            ...scatterData,
-            chart: {
-               datasets: scatterData.chart
-            }
+      console.log(gamemode);
+      if (gamemode)
+         fetchScatterData(gamemode).then(scatterData => {
+            setData({
+               ...scatterData,
+               chart: {
+                  datasets: scatterData.chart
+               }
+            });
          });
-      });
    }, [gamemode]);
 
    return (
