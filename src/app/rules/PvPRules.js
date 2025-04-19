@@ -6,9 +6,10 @@ export default function PvPRules() {
             <li>ScoreV2, BO7, 2 bans each</li>
             <li>HD or HR is required on freemod maps</li>
             <li>
-               Tiebreakers are not implemented. The player who picked first will also be picking
-               last. Players can decide for themselves what to do about a tiebreaker situation
+               If a tiebreaker is needed, the player who picked last will ban two additional maps,
+               then the other player will pick a map to use from those remaining
             </li>
+            <li>Tiebreakers will use freemod, though a mod is not required</li>
             <li>
                To join queue message Malikil with !pvp/!q/!queue. The system will attempt to match
                you with a similarly skilled player
@@ -25,7 +26,7 @@ export default function PvPRules() {
                matches which finish may affect ratings and may affect what maps are picked)
             </li>
             <li>
-               Ban maps with !ban/!b and the mod/number eg:{" "}
+               Ban maps with !ban/!b and the mod-number eg:{" "}
                <pre className="border rounded p-1 d-inline">!ban NM3</pre>
             </li>
             <li>Pick maps with !pick/!p</li>
