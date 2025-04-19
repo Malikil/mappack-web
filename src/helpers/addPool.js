@@ -56,8 +56,8 @@ export async function createMappool(accessToken, packName, download, mapsets) {
                         const mapData = {
                            id: bm.id,
                            setid: mapset.id,
-                           artist: mapset.artist_unicode,
-                           title: mapset.title_unicode,
+                           artist: mapset.artist,
+                           title: mapset.title,
                            version: bm.version,
                            length: bm.total_length,
                            bpm: bm.bpm,
