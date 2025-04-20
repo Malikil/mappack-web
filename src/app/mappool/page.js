@@ -2,6 +2,7 @@ import MapCard from "@/components/mappool/MapCard";
 import db from "../api/db/connection";
 import Link from "next/link";
 import { auth } from "@/auth";
+import averageRating from "@/helpers/average-rating";
 
 export default async function Mappool() {
    const session = await auth();
@@ -29,7 +30,7 @@ export default async function Mappool() {
          </div>
          <div className="d-flex flex-wrap gap-2">
             {pool.maps
-               .sort((a, b) => a.stars - b.stars)
+               .sort((a, b) => averageRating(a) - averageRating(b))
                .map(m => <MapCard key={m.id} beatmap={m} rating={playerRating} />) ||
                "Couldn't fetch mappool"}
          </div>

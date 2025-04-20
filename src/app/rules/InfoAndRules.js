@@ -9,6 +9,13 @@ export default function InfoAndRules() {
          <Mappools />
          <PvPRules />
          <ScoreAttackRules />
+         <hr />
+         <h5>Links</h5>
+         <ul>
+            <li>
+               <a href="https://github.com/Malikil/mappack-web">Github</a>
+            </li>
+         </ul>
       </div>
    );
 }
