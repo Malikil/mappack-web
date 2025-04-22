@@ -1,7 +1,6 @@
-import { createMappool } from "@/helpers/addPool";
+import { createMappool, cyclePools } from "@/helpers/addPool";
 import { NextRequest, NextResponse } from "next/server";
 import { Client } from "osu-web.js";
-import db from "../db/connection";
 
 async function getOsuToken() {
    console.log("Get osu token");
@@ -40,42 +39,7 @@ export async function GET(req) {
       mappack.name,
       mappack.url,
       mappack.beatmapsets.map(bms => bms.id)
-   ).then(
-      async () => {
-         // Advance all mappacks
-         const collection = db.collection("maps");
-         if (!(await collection.findOne({ active: "pending" })))
-            return console.log("No pending pool available");
-
-         const result = await collection.bulkWrite([
-            {
-               deleteMany: {
-                  filter: { active: "stale" }
-               }
-            },
-            {
-               updateMany: {
-                  filter: { active: "completed" },
-                  update: { $set: { active: "stale" } }
-               }
-            },
-            {
-               updateMany: {
-                  filter: { active: "current" },
-                  update: { $set: { active: "completed" } }
-               }
-            },
-            {
-               updateMany: {
-                  filter: { active: "pending" },
-                  update: { $set: { active: "current" } }
-               }
-            }
-         ]);
-         console.log(result);
-      },
-      res => console.warn(res)
-   );
+   ).then(cyclePools, res => console.warn(res));
 
    return new NextResponse("OK");
 }

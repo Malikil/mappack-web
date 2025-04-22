@@ -99,3 +99,47 @@ export async function createMappool(accessToken, packName, download, mapsets) {
    historyDb.updateOne({ mode: "osu" }, { $push: { packs: packName } }, { upsert: true });
    console.log(result);
 }
+
+export async function cyclePools() {
+   const collection = db.collection("maps");
+   if (!(await collection.findOne({ active: "pending" })))
+      return {
+         http: {
+            status: 400,
+            message: "No pending pool available"
+         }
+      };
+
+   const result = await collection.bulkWrite([
+      {
+         deleteMany: {
+            filter: { active: "completed" }
+         }
+      },
+      // {
+      //    updateMany: {
+      //       filter: { active: "completed" },
+      //       update: { $set: { active: "old" } }
+      //    }
+      // },
+      {
+         updateMany: {
+            filter: { active: "stale" },
+            update: { $set: { active: "completed" } }
+         }
+      },
+      {
+         updateMany: {
+            filter: { active: "fresh" },
+            update: { $set: { active: "stale" } }
+         }
+      },
+      {
+         updateMany: {
+            filter: { active: "pending" },
+            update: { $set: { active: "fresh" } }
+         }
+      }
+   ]);
+   console.log(result);
+}

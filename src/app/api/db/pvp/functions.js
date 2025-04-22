@@ -2,6 +2,7 @@ import { Glicko2 } from "glicko2";
 import { LegacyClient } from "osu-web.js";
 import db from "../connection";
 import { matchResultValue } from "@/app/profile/pve/functions";
+import { getCurrentPack } from "@/helpers/currentPack";
 
 /**
  * @typedef SongResultMap
@@ -91,11 +92,11 @@ export async function addMatchData({ winnerId, loserId, maps, winnerScores, lose
    console.log(winner, loser);
    // Get the played maps
    const mapsDb = db.collection("maps");
-   const mappack = await mapsDb.findOne({ active: "current" });
+   const maplist = await getCurrentPack();
    const playedMaps = maps.map(item => {
       const { map, mod } = item;
       /** @type {import("@/types/database.beatmap").DbBeatmap} */
-      const dbmap = mappack.maps.find(m => m.id === map);
+      const dbmap = maplist.find(m => m.id === map);
       return {
          map: {
             id: dbmap.id,
@@ -125,16 +126,18 @@ export async function addMatchData({ winnerId, loserId, maps, winnerScores, lose
                $inc: { "pvp.wins": 1 },
                $push: {
                   "pvp.matches": {
-                     $each: [{
-                        prevRating: winner.pvp.rating,
-                        ratingDiff: winnerPlayer.getRating() - winner.pvp.rating,
-                        opponent: loser.osuname,
-                        songs: playedMaps.map((m, i) => ({
-                           ...m,
-                           score: winnerScores[i][0],
-                           opponentScore: loserScores[i][0]
-                        }))
-                     }],
+                     $each: [
+                        {
+                           prevRating: winner.pvp.rating,
+                           ratingDiff: winnerPlayer.getRating() - winner.pvp.rating,
+                           opponent: loser.osuname,
+                           songs: playedMaps.map((m, i) => ({
+                              ...m,
+                              score: winnerScores[i][0],
+                              opponentScore: loserScores[i][0]
+                           }))
+                        }
+                     ],
                      $position: 0,
                      $slice: 5
                   }
@@ -154,16 +157,18 @@ export async function addMatchData({ winnerId, loserId, maps, winnerScores, lose
                $inc: { "pvp.losses": 1 },
                $push: {
                   "pvp.matches": {
-                     $each: [{
-                        prevRating: loser.pvp.rating,
-                        ratingDiff: loserPlayer.getRating() - loser.pvp.rating,
-                        opponent: winner.osuname,
-                        songs: playedMaps.map((m, i) => ({
-                           ...m,
-                           score: loserScores[i][0],
-                           opponentScore: winnerScores[i][0]
-                        }))
-                     }],
+                     $each: [
+                        {
+                           prevRating: loser.pvp.rating,
+                           ratingDiff: loserPlayer.getRating() - loser.pvp.rating,
+                           opponent: winner.osuname,
+                           songs: playedMaps.map((m, i) => ({
+                              ...m,
+                              score: loserScores[i][0],
+                              opponentScore: winnerScores[i][0]
+                           }))
+                        }
+                     ],
                      $position: 0,
                      $slice: 5
                   }
@@ -176,7 +181,7 @@ export async function addMatchData({ winnerId, loserId, maps, winnerScores, lose
 
    // Update map ratings
    const songlistCombined = playedMaps.flatMap((result, i) => {
-      const map = mappack.maps.find(map => map.id === result.map.id);
+      const map = maplist.find(map => map.id === result.map.id);
       const wscore = winnerScores[i][0];
       const lscore = loserScores[i][0];
       if (result.mod === "fm") {
@@ -259,7 +264,7 @@ export async function addMatchData({ winnerId, loserId, maps, winnerScores, lose
          return {
             updateOne: {
                filter: {
-                  active: "current",
+                  $or: [{ active: "fresh" }, { active: "stale" }],
                   "maps.id": outcome.map.id
                },
                update: {

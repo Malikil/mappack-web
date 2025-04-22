@@ -24,8 +24,11 @@ export async function getMappool(playerIds) {
    };
 
    const mapsDb = db.collection("maps");
-   const currentPack = await mapsDb.findOne({ active: "current" });
-   const maplist = currentPack.maps.reduce(
+   const currentPacks = await mapsDb
+      .find({ $or: [{ active: "fresh" }, { active: "stale" }] })
+      .toArray();
+   const currentMaps = [].concat(...currentPacks.map(p => p.maps));
+   const maplist = currentMaps.reduce(
       (agg, map) => {
          const candidate = {
             nm: checkWithinRange(map.ratings.nm),

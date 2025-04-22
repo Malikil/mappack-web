@@ -5,14 +5,14 @@ import { Glicko2, Player } from "glicko2";
 import { revalidatePath } from "next/cache";
 import { matchResultValue, parseMpLobby } from "./functions";
 import { withinRange } from "@/helpers/rating-range";
+import { getCurrentPack } from "@/helpers/currentPack";
 
 export async function generateAttack(osuid, mapcount = 7) {
    const playersDb = db.collection("players");
    const player = await playersDb.findOne({ osuid });
    console.log(`Target range: ${player.pve.rating.toFixed(1)} ±${player.pve.rd.toFixed(1)}`);
-   const mapsDb = db.collection("maps");
-   const mappack = await mapsDb.findOne({ active: "current" });
-   let availableMaps = mappack.maps
+   const packMaps = await getCurrentPack();
+   let availableMaps = packMaps
       .flatMap(map =>
          Object.keys(map.ratings).map(mod => ({
             id: map.id,
@@ -50,7 +50,7 @@ export async function submitPve(formData, matchesData) {
 
    // Get the maps from database
    const mapsdb = db.collection("maps");
-   const mappack = await mapsdb.findOne({ active: "current" });
+   const packMaps = await getCurrentPack();
    /**
     * @type {{
     *   id: number,
@@ -77,7 +77,7 @@ export async function submitPve(formData, matchesData) {
     *   played: boolean
     * }[]}
     */
-   const fullMaplistForCalculator = mappack.maps.map(map => ({
+   const fullMaplistForCalculator = packMaps.map(map => ({
       // Create rating objects for each map here, then flag them as (un)played for updating later
       id: map.id,
       setid: map.setid,
@@ -273,7 +273,7 @@ export async function submitPve(formData, matchesData) {
          return {
             updateOne: {
                filter: {
-                  active: "current",
+                  $or: [{ active: "fresh" }, { active: "stale" }],
                   "maps.id": mapInfo.id
                },
                update: {

@@ -6,8 +6,10 @@ import averageRating from "@/helpers/average-rating";
 
 export default async function Mappool() {
    const session = await auth();
-   const pools = db.collection("maps");
-   const pool = await pools.findOne({ active: "current" });
+   const mapsCollection = db.collection("maps");
+   const pools = await mapsCollection
+      .find({ $or: [{ active: "fresh" }, { active: "stale" }] })
+      .toArray();
    let playerRating = null;
    if (session) {
       const player = await db.collection("players").findOne({ osuid: session.user.id });
@@ -17,11 +19,15 @@ export default async function Mappool() {
    return (
       <div>
          <div className="mb-2">
-            <div className="fs-2">{pool.name}</div>
+            <div className="fs-2">{pools.map(p => p.name).join(" | ")}</div>
             <div className="d-flex justify-content-between">
-               <Link className="ms-1" href={pool.download}>
-                  Download
-               </Link>
+               <div className="d-flex gap-1">
+                  {pools.map((p, i) => (
+                     <Link key={p.name} className="ms-1" href={p.download}>
+                        Pack {i + 1}
+                     </Link>
+                  ))}
+               </div>
                <div>
                   <small>Highlighted maps may be selected for Score Attack</small>
                </div>
@@ -29,7 +35,8 @@ export default async function Mappool() {
             <hr />
          </div>
          <div className="d-flex flex-wrap gap-2">
-            {pool.maps
+            {[]
+               .concat(...pools.map(p => p.maps))
                .sort((a, b) => averageRating(a) - averageRating(b))
                .map(m => <MapCard key={m.id} beatmap={m} rating={playerRating} />) ||
                "Couldn't fetch mappool"}
