@@ -35,7 +35,7 @@ export async function GET(req) {
    /** @type {import("@/types/undocumented.beatmappacks").UndocumentedBeatmappack} */
    const mappack = await client.getUndocumented(`beatmaps/packs/${mappackMeta.tag}`);
    console.log(`Add mappack ${mappack.tag}`);
-   createMappool(
+   await createMappool(
       accessToken,
       mappack.name,
       mappack.url,
@@ -77,5 +77,5 @@ export async function GET(req) {
       res => console.warn(res)
    );
 
-   return new NextResponse("Accepted", { status: 202 });
+   return new NextResponse("OK");
 }
