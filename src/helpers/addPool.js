@@ -26,6 +26,7 @@ async function getPreviousMapScalings(mode) {
 }
 
 export async function createMappool(accessToken, packName, download, mapsets) {
+   console.log(`Create pool ${packName}`);
    // Make sure this pack hasn't been used yet
    const historyDb = db.collection("history");
    if (await historyDb.findOne({ mode: "osu", packs: packName }))

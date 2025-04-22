@@ -4,6 +4,7 @@ import { Client } from "osu-web.js";
 import db from "../db/connection";
 
 async function getOsuToken() {
+   console.log("Get osu token");
    const url = new URL("https://osu.ppy.sh/oauth/token");
    const headers = {
       Accept: "application/json",
@@ -39,9 +40,8 @@ export async function GET(req) {
       mappack.name,
       mappack.url,
       mappack.beatmapsets.map(bms => bms.id)
-   )
-      .then(res => console.log(res))
-      .then(async () => {
+   ).then(
+      async () => {
          // Advance all mappacks
          const collection = db.collection("maps");
          if (!(await collection.findOne({ active: "pending" })))
@@ -73,7 +73,9 @@ export async function GET(req) {
             }
          ]);
          console.log(result);
-      });
+      },
+      res => console.warn(res)
+   );
 
    return new NextResponse("Accepted", { status: 202 });
 }
