@@ -49,14 +49,15 @@ export default async function MatchHistoryItem({ match }) {
                      </div>
                   </div>
                   <div>
+                     vs. {match.opponent}
                      <Link
+                        className="ms-2"
                         href={buildUrl.match(match.mp)}
                         target="_blank"
                         rel="noopener noreferrer"
                      >
                         {match.mp}
-                     </Link>{" "}
-                     vs. {match.opponent}
+                     </Link>
                   </div>
                </div>
             )}

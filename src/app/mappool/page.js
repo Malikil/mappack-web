@@ -54,7 +54,7 @@ export default async function Mappool() {
    let playerRating = null;
    if (session) {
       const player = await db.collection("players").findOne({ osuid: session.user.id });
-      if (player) playerRating = player.pve;
+      if (player) playerRating = player.pvp;
    }
 
    return (
@@ -65,7 +65,9 @@ export default async function Mappool() {
                   <CardTitle as="h1">{pool._id}</CardTitle>
                   <CardSubtitle className="d-flex justify-content-between">
                      <Link href={pool.download}>Download</Link>
-                     <small>Highlighted maps may be recommended for Score Attack</small>
+                     {playerRating && (
+                        <small>Highlighted maps are within your individual rating range</small>
+                     )}
                   </CardSubtitle>
                   <div className="d-flex flex-column gap-1 mt-2">
                      {pool.maps
