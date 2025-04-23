@@ -18,6 +18,7 @@ export interface PvPMatchHistorySong extends MatchHistorySong {
 }
 
 export interface MatchHistory {
+   mp: number;
    prevRating: number;
    ratingDiff: number;
    songs: MatchHistorySong[];

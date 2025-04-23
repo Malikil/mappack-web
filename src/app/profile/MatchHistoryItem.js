@@ -48,7 +48,16 @@ export default async function MatchHistoryItem({ match }) {
                         {Math.abs(match.ratingDiff).toFixed(1)}
                      </div>
                   </div>
-                  <div>vs. {match.opponent}</div>
+                  <div>
+                     <Link
+                        href={buildUrl.match(match.mp)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                     >
+                        {match.mp}
+                     </Link>{" "}
+                     vs. {match.opponent}
+                  </div>
                </div>
             )}
             <div className="d-flex gap-1 flex-wrap">

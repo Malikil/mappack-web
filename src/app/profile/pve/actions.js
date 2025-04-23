@@ -16,6 +16,7 @@ export async function generateAttack(osuid, mapcount = 7) {
       .flatMap(map =>
          Object.keys(map.ratings).map(mod => ({
             id: map.id,
+            setid: map.setid,
             mod,
             rating: map.ratings[mod]
          }))
@@ -27,7 +28,7 @@ export async function generateAttack(osuid, mapcount = 7) {
       if (availableMaps.length < 1) return;
       const index = (Math.random() * availableMaps.length) | 0;
       const selected = availableMaps[index];
-      availableMaps = availableMaps.filter(m => m.id !== selected.id);
+      availableMaps = availableMaps.filter(m => m.setid !== selected.setid);
       return selected;
    }).filter(v => v);
    console.log(selectedMaps);

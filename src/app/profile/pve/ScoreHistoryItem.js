@@ -41,6 +41,18 @@ export default async function ScoreHistoryItem({ match }) {
                      )}
                      {Math.abs(match.ratingDiff).toFixed(1)}
                   </div>
+                  {!isNaN(match.mp) ? (
+                     <Link
+                        className="ms-auto"
+                        href={buildUrl.match(match.mp)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                     >
+                        Lobby {match.mp}
+                     </Link>
+                  ) : (
+                     <div className="ms-auto">{match.mp}</div>
+                  )}
                </div>
             )}
             <div className="d-flex gap-1 flex-wrap">
