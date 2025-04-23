@@ -3,6 +3,7 @@ import db from "../api/db/connection";
 import Link from "next/link";
 import { auth } from "@/auth";
 import averageRating from "@/helpers/average-rating";
+import { Card, CardBody, CardSubtitle, CardTitle } from "react-bootstrap";
 
 export default async function Mappool() {
    const session = await auth();
@@ -10,6 +11,15 @@ export default async function Mappool() {
    const pools = await mapsCollection
       .find({ $or: [{ active: "fresh" }, { active: "stale" }] })
       .toArray();
+   const newpools = mapsCollection.aggregate([
+      { $match: { $or: [{ active: "fresh" }, { active: "stale" }] } },
+      { $unwind: "maps" },
+      {
+         $group: {
+            _id: ""
+         }
+      }
+   ]);
    let playerRating = null;
    if (session) {
       const player = await db.collection("players").findOne({ osuid: session.user.id });
@@ -18,6 +28,15 @@ export default async function Mappool() {
 
    return (
       <div>
+         {pools.map(pool => (
+            <Card key={pool.name}>
+               <CardTitle>{pool.name}</CardTitle>
+               <CardSubtitle>
+                  <Link href={pool.download}>Download</Link>
+               </CardSubtitle>
+               <CardBody>Maplist</CardBody>
+            </Card>
+         ))}
          <div className="mb-2">
             <div className="fs-2">{pools.map(p => p.name).join(" | ")}</div>
             <div className="d-flex justify-content-between">

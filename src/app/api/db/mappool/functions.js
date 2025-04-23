@@ -1,5 +1,6 @@
 import { combineRatings, withinRange } from "@/helpers/rating-range";
 import db from "../connection";
+import { getCurrentPack } from "@/helpers/currentPack";
 
 const NM_MAPCOUNT = 7,
    HD_MAPCOUNT = 4,
@@ -23,11 +24,12 @@ export async function getMappool(playerIds) {
       return adiff - bdiff;
    };
 
-   const mapsDb = db.collection("maps");
-   const currentPacks = await mapsDb
-      .find({ $or: [{ active: "fresh" }, { active: "stale" }] })
-      .toArray();
-   const currentMaps = [].concat(...currentPacks.map(p => p.maps));
+   //const mapsDb = db.collection("maps");
+   // const currentPacks = await mapsDb
+   //    .find({ $or: [{ active: "fresh" }, { active: "stale" }] })
+   //    .toArray();
+   // const currentMaps = [].concat(...currentPacks.map(p => p.maps));
+   const currentMaps = await getCurrentPack();
    const maplist = currentMaps.reduce(
       (agg, map) => {
          const candidate = {

@@ -1,5 +1,5 @@
-import db from "@/app/api/db/connection";
 import ModPool from "@/components/mappool/Modpool";
+import { getCurrentPack } from "@/helpers/currentPack";
 
 export default async function PlayerPool({ searchParams }) {
    const stringParams = await searchParams;
@@ -11,11 +11,7 @@ export default async function PlayerPool({ searchParams }) {
    );
    parsedParams.l = decodeURIComponent(stringParams.l);
 
-   const mapsDb = db.collection("maps");
-   const mappools = await mapsDb
-      .find({ $or: [{ active: "fresh" }, { active: "stale" }] })
-      .toArray();
-
+   const mappools = await getCurrentPack();
    const maplist = {
       nm: [],
       hd: [],
@@ -23,10 +19,8 @@ export default async function PlayerPool({ searchParams }) {
       dt: [],
       fm: []
    };
-   mappools.forEach(({ maps }) =>
-      Object.keys(maplist).forEach(mod =>
-         maplist[mod].push(...maps.filter(map => parsedParams[mod]?.includes(map.id)))
-      )
+   Object.keys(maplist).forEach(
+      mod => (maplist[mod] = parsedParams[mod].map(m => mappools.find(p => p.id === m)))
    );
 
    return (

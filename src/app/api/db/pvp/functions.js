@@ -11,6 +11,7 @@ import { getCurrentPack } from "@/helpers/currentPack";
  */
 /**
  * @typedef MpLobbyResults
+ * @prop {number} mp
  * @prop {SongResultMap[]} maps
  * @prop {[number, 'hd'|'hr'|'hdhr'|null][]} winnerScores
  * @prop {[number, 'hd'|'hr'|'hdhr'|null][]} loserScores
@@ -66,6 +67,7 @@ export async function parseMpLobby(link) {
       );
       console.log(result);
       return {
+         mp: matchIdSegment,
          maps: result.maps,
          winnerScores: result.scores[matchPlacement[0]].map(item => [item.score, item.mod]),
          loserScores: result.scores[matchPlacement[1]].map(item => [item.score, item.mod]),
@@ -80,7 +82,7 @@ export async function parseMpLobby(link) {
 /**
  * @param {MpLobbyResults} arg0
  */
-export async function addMatchData({ winnerId, loserId, maps, winnerScores, loserScores }) {
+export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, loserScores }) {
    console.log(winnerScores, loserScores);
    const playersDb = db.collection("players");
    const winner = await playersDb.findOne({
@@ -128,6 +130,7 @@ export async function addMatchData({ winnerId, loserId, maps, winnerScores, lose
                   "pvp.matches": {
                      $each: [
                         {
+                           mp,
                            prevRating: winner.pvp.rating,
                            ratingDiff: winnerPlayer.getRating() - winner.pvp.rating,
                            opponent: loser.osuname,
@@ -159,6 +162,7 @@ export async function addMatchData({ winnerId, loserId, maps, winnerScores, lose
                   "pvp.matches": {
                      $each: [
                         {
+                           mp,
                            prevRating: loser.pvp.rating,
                            ratingDiff: loserPlayer.getRating() - loser.pvp.rating,
                            opponent: winner.osuname,
