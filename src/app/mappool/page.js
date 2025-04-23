@@ -73,7 +73,7 @@ export default async function Mappool() {
                      {pool.maps
                         .sort((a, b) => a.setid - b.setid)
                         .map(mapset => (
-                           <Card>
+                           <Card key={mapset.setid}>
                               <CardBody>
                                  <Row className="mb-2">
                                     <Col>
