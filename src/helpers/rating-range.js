@@ -16,6 +16,15 @@ export function withinRange(...ratings) {
 }
 
 /**
+ * 
+ * @param {import("@/types/database.beatmap").RatingSet} mapRatings 
+ * @param {import("@/types/rating").Rating} candidateRating 
+ */
+export function anyWithinRange(mapRatings, candidateRating) {
+   return Object.keys(mapRatings).some(key => withinRange(mapRatings[key], candidateRating))
+}
+
+/**
  * @param {...import("@/types/rating").Rating} ratings
  */
 export function combineRatings(...ratings) {

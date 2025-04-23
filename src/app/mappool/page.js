@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import averageRating from "@/helpers/average-rating";
 import { Card, CardBody, CardImg, CardSubtitle, CardTitle, Col, Row } from "react-bootstrap";
 import MapCardBody from "@/components/mappool/MapCardBody";
+import { anyWithinRange } from "@/helpers/rating-range";
 
 export default async function Mappool() {
    const session = await auth();
@@ -61,64 +62,94 @@ export default async function Mappool() {
    }
 
    return (
-      <div>
+      <div className="d-flex flex-column gap-1">
          {newpools.map(pool => (
             <Card key={pool._id}>
                <CardBody>
-                  <CardTitle>{pool._id}</CardTitle>
-                  <CardSubtitle>
+                  <CardTitle as="h1">{pool._id}</CardTitle>
+                  <CardSubtitle className="d-flex justify-content-between">
                      <Link href={pool.download}>Download</Link>
+                     <small>Highlighted maps may be recommended for Score Attack</small>
                   </CardSubtitle>
                   <div className="d-flex flex-column gap-1 mt-2">
                      {pool.maps
                         .sort((a, b) => a.setid - b.setid)
-                        .map(mapset => (
-                           <Card key={mapset.setid}>
-                              <CardBody>
-                                 <Row className="mb-2">
-                                    <Col>
-                                       <CardImg
-                                          src={`https://assets.ppy.sh/beatmaps/${mapset.setid}/covers/cover.jpg`}
-                                          alt="Cover"
-                                          style={{ minHeight: "100px", objectFit: "cover" }}
-                                       />
-                                    </Col>
-                                    <Col className="d-flex flex-column justify-content-center">
-                                       <div>
-                                          <CardTitle>{mapset.artist}</CardTitle>
-                                          <CardTitle>{mapset.title}</CardTitle>
+                        .map(mapset => {
+                           mapset.versions.sort((a, b) => averageRating(a) - averageRating(b));
+                           return (
+                              <Card key={mapset.setid}>
+                                 <CardBody className="d-flex flex-column gap-2">
+                                    <Row
+                                       role="button"
+                                       data-bs-toggle="collapse"
+                                       data-bs-target={`#collapse${mapset.setid}`}
+                                       aria-expanded="false"
+                                       aria-controls={`collapse${mapset.setid}`}
+                                    >
+                                       <Col>
+                                          <CardImg
+                                             src={`https://assets.ppy.sh/beatmaps/${mapset.setid}/covers/cover.jpg`}
+                                             alt="Cover"
+                                             style={{ minHeight: "100px", objectFit: "cover" }}
+                                          />
+                                       </Col>
+                                       <Col className="d-flex flex-column justify-content-center">
+                                          <div>
+                                             <CardTitle>{mapset.artist}</CardTitle>
+                                             <CardTitle>{mapset.title}</CardTitle>
+                                             <CardSubtitle className="d-flex gap-1">
+                                                {mapset.versions.map(bm => {
+                                                   const valid = anyWithinRange(
+                                                      bm.ratings,
+                                                      playerRating
+                                                   );
+                                                   return (
+                                                      <span
+                                                         key={bm.id}
+                                                         className={`${
+                                                            valid
+                                                               ? "bg-success"
+                                                               : "bg-body-secondary"
+                                                         } rounded`}
+                                                      >
+                                                         &ensp;
+                                                      </span>
+                                                   );
+                                                })}
+                                             </CardSubtitle>
+                                          </div>
+                                       </Col>
+                                    </Row>
+                                    <div className="collapse" id={`collapse${mapset.setid}`}>
+                                       <div className="d-flex gap-1 flex-wrap">
+                                          {mapset.versions.map(bm => (
+                                             <Card
+                                                key={bm.id}
+                                                style={{
+                                                   flexBasis: "225px",
+                                                   flexGrow: 1,
+                                                   maxWidth: "516px"
+                                                }}
+                                             >
+                                                <CardBody className="d-flex flex-column">
+                                                   <CardTitle className="d-flex gap-2">
+                                                      <div className="text-break">{bm.version}</div>
+                                                      <div className="ms-auto">{bm.id}</div>
+                                                   </CardTitle>
+                                                   <MapCardBody
+                                                      beatmap={bm}
+                                                      rating={playerRating}
+                                                      className="mt-auto"
+                                                   />
+                                                </CardBody>
+                                             </Card>
+                                          ))}
                                        </div>
-                                    </Col>
-                                 </Row>
-                                 <div className="d-flex gap-1 flex-wrap">
-                                    {mapset.versions
-                                       .sort((a, b) => averageRating(a) - averageRating(b))
-                                       .map(bm => (
-                                          <Card
-                                             key={bm.id}
-                                             style={{
-                                                flexBasis: "225px",
-                                                flexGrow: 1,
-                                                maxWidth: "516px"
-                                             }}
-                                          >
-                                             <CardBody className="d-flex flex-column">
-                                                <CardTitle className="d-flex gap-2">
-                                                   <div className="text-break">{bm.version}</div>
-                                                   <div className="ms-auto">{bm.id}</div>
-                                                </CardTitle>
-                                                <MapCardBody
-                                                   beatmap={bm}
-                                                   rating={playerRating}
-                                                   className="mt-auto"
-                                                />
-                                             </CardBody>
-                                          </Card>
-                                       ))}
-                                 </div>
-                              </CardBody>
-                           </Card>
-                        ))}
+                                    </div>
+                                 </CardBody>
+                              </Card>
+                           );
+                        })}
                   </div>
                </CardBody>
             </Card>
