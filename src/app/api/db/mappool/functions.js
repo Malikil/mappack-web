@@ -2,10 +2,10 @@ import { combineRatings, withinRange } from "@/helpers/rating-range";
 import db from "../connection";
 import { getCurrentPack } from "@/helpers/currentPack";
 
-const NM_MAPCOUNT = 7,
-   HD_MAPCOUNT = 4,
-   HR_MAPCOUNT = 4,
-   DT_MAPCOUNT = 4,
+const NM_MAPCOUNT = 4,
+   HD_MAPCOUNT = 3,
+   HR_MAPCOUNT = 3,
+   DT_MAPCOUNT = 3,
    FM_MAPCOUNT = 3;
 
 /**
@@ -23,12 +23,23 @@ export async function getMappool(playerIds) {
       const bdiff = Math.abs(targetRating.rating - b.ratings[mod].rating);
       return adiff - bdiff;
    };
+   const filterFunc =
+      (maplist, ...mods) =>
+      candidate => {
+         const counts = {
+            nm: NM_MAPCOUNT,
+            hd: HD_MAPCOUNT,
+            hr: HR_MAPCOUNT,
+            dt: DT_MAPCOUNT,
+            fm: FM_MAPCOUNT
+         };
+         return mods.every(mod => {
+            // See if the map being filtered is in the list already
+            const i = maplist[mod].findIndex(m => m.setid === candidate.setid);
+            return i < 0 || i > counts[mod];
+         });
+      };
 
-   //const mapsDb = db.collection("maps");
-   // const currentPacks = await mapsDb
-   //    .find({ $or: [{ active: "fresh" }, { active: "stale" }] })
-   //    .toArray();
-   // const currentMaps = [].concat(...currentPacks.map(p => p.maps));
    const currentMaps = await getCurrentPack();
    const maplist = currentMaps.reduce(
       (agg, map) => {
@@ -51,7 +62,6 @@ export async function getMappool(playerIds) {
       },
       { nm: [], hd: [], hr: [], dt: [], fm: [] }
    );
-   // Limit to 7 maps per modpool
    // Sort FM first, so the extra maps can be put into HD/HR
    maplist.fm.sort((a, b) => {
       // Special sort for FM
@@ -59,16 +69,18 @@ export async function getMappool(playerIds) {
       const bdiff = Math.abs(targetRating.rating - (b.ratings.hd.rating + b.ratings.hr.rating) / 2);
       return adiff - bdiff;
    });
-   // Put extra maps into HD/HR
+   // Put extra maps into HD/HR whichever is closer
    maplist.fm.slice(FM_MAPCOUNT).forEach(map => {
       const hdDiff = Math.abs(map.ratings.hd.rating - targetRating.rating);
       const hrDiff = Math.abs(map.ratings.hr.rating - targetRating.rating);
       if (hdDiff > hrDiff) maplist.hr.push(map);
       else maplist.hd.push(map);
    });
-   // Sort HD/HR
-   maplist.hd.sort(sortFunc("hd"));
-   maplist.hr.sort(sortFunc("hr"));
+   // Sort DT next, as this is likely to be a more restricted pool
+   maplist.dt = maplist.dt.filter(filterFunc(maplist, "fm")).sort(sortFunc("dt"));
+   // Remove duplicates from the same mapset and sort for HD/HR
+   maplist.hr = maplist.hr.filter(filterFunc(maplist, "dt", "fm")).sort(sortFunc("hr"));
+   maplist.hd = maplist.hd.filter(filterFunc(maplist, "dt", "fm", "hr")).sort(sortFunc("hd"));
    // Put extra maps into NM if they're valid
    maplist.hd.slice(HD_MAPCOUNT).forEach(map => {
       if (checkWithinRange(map.ratings.nm)) maplist.nm.push(map);
@@ -77,8 +89,7 @@ export async function getMappool(playerIds) {
       if (checkWithinRange(map.ratings.nm)) maplist.nm.push(map);
    });
    // Sort NM and DT (the only ones left)
-   maplist.nm.sort(sortFunc("nm"));
-   maplist.dt.sort(sortFunc("dt"));
+   maplist.nm.filter(filterFunc(maplist, "hd", "hr", "dt", "fm")).sort(sortFunc("nm"));
 
    return {
       maps: {

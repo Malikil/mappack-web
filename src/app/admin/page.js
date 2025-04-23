@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import CreatePool from "./components/create-pool/CreatePool";
 import AdminActions from "./components/actions/AdminActions";
 import { verify } from "./functions";
 import { checkExpiry } from "@/auth";
@@ -14,8 +13,6 @@ export default async function Admin() {
    return (
       <div>
          <div className="d-flex gap-3 flex-wrap mb-2">
-            <CreatePool />
-            <AdminActions />
             <AddAttack />
          </div>
          <DifficultyChart />
