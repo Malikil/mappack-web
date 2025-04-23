@@ -3,7 +3,8 @@ import db from "../api/db/connection";
 import Link from "next/link";
 import { auth } from "@/auth";
 import averageRating from "@/helpers/average-rating";
-import { Card, CardBody, CardSubtitle, CardTitle } from "react-bootstrap";
+import { Card, CardBody, CardImg, CardSubtitle, CardTitle, Col, Row } from "react-bootstrap";
+import MapCardBody from "@/components/mappool/MapCardBody";
 
 export default async function Mappool() {
    const session = await auth();
@@ -11,15 +12,48 @@ export default async function Mappool() {
    const pools = await mapsCollection
       .find({ $or: [{ active: "fresh" }, { active: "stale" }] })
       .toArray();
-   const newpools = mapsCollection.aggregate([
-      { $match: { $or: [{ active: "fresh" }, { active: "stale" }] } },
-      { $unwind: "maps" },
-      {
-         $group: {
-            _id: ""
+   const newpools = await mapsCollection
+      .aggregate([
+         { $match: { $or: [{ active: "fresh" }, { active: "stale" }] } },
+         { $unwind: "$maps" },
+         {
+            $group: {
+               _id: "$maps.setid",
+               artist: { $first: "$maps.artist" },
+               title: { $first: "$maps.title" },
+               maps: {
+                  $push: {
+                     id: "$maps.id",
+                     version: "$maps.version",
+                     length: "$maps.length",
+                     bpm: "$maps.bpm",
+                     cs: "$maps.cs",
+                     ar: "$maps.ar",
+                     stars: "$maps.stars",
+                     ratings: "$maps.ratings"
+                  }
+               },
+               name: { $first: "$name" },
+               download: { $first: "$download" }
+            }
+         },
+         {
+            $group: {
+               _id: "$name",
+               download: { $first: "$download" },
+               maps: {
+                  $push: {
+                     setid: "$_id",
+                     artist: "$artist",
+                     title: "$title",
+                     versions: "$maps"
+                  }
+               }
+            }
          }
-      }
-   ]);
+      ])
+      .toArray();
+   console.log(newpools);
    let playerRating = null;
    if (session) {
       const player = await db.collection("players").findOne({ osuid: session.user.id });
@@ -28,13 +62,65 @@ export default async function Mappool() {
 
    return (
       <div>
-         {pools.map(pool => (
-            <Card key={pool.name}>
-               <CardTitle>{pool.name}</CardTitle>
-               <CardSubtitle>
-                  <Link href={pool.download}>Download</Link>
-               </CardSubtitle>
-               <CardBody>Maplist</CardBody>
+         {newpools.map(pool => (
+            <Card key={pool._id}>
+               <CardBody>
+                  <CardTitle>{pool._id}</CardTitle>
+                  <CardSubtitle>
+                     <Link href={pool.download}>Download</Link>
+                  </CardSubtitle>
+                  <div className="d-flex flex-column gap-1 mt-2">
+                     {pool.maps
+                        .sort((a, b) => a.setid - b.setid)
+                        .map(mapset => (
+                           <Card>
+                              <CardBody>
+                                 <Row className="mb-2">
+                                    <Col>
+                                       <CardImg
+                                          src={`https://assets.ppy.sh/beatmaps/${mapset.setid}/covers/cover.jpg`}
+                                          alt="Cover"
+                                          style={{ minHeight: "100px", objectFit: "cover" }}
+                                       />
+                                    </Col>
+                                    <Col className="d-flex flex-column justify-content-center">
+                                       <div>
+                                          <CardTitle>{mapset.artist}</CardTitle>
+                                          <CardTitle>{mapset.title}</CardTitle>
+                                       </div>
+                                    </Col>
+                                 </Row>
+                                 <div className="d-flex gap-1 flex-wrap">
+                                    {mapset.versions
+                                       .sort((a, b) => averageRating(a) - averageRating(b))
+                                       .map(bm => (
+                                          <Card
+                                             key={bm.id}
+                                             style={{
+                                                flexBasis: "225px",
+                                                flexGrow: 1,
+                                                maxWidth: "516px"
+                                             }}
+                                          >
+                                             <CardBody className="d-flex flex-column">
+                                                <CardTitle className="d-flex gap-2">
+                                                   <div className="text-break">{bm.version}</div>
+                                                   <div className="ms-auto">{bm.id}</div>
+                                                </CardTitle>
+                                                <MapCardBody
+                                                   beatmap={bm}
+                                                   rating={playerRating}
+                                                   className="mt-auto"
+                                                />
+                                             </CardBody>
+                                          </Card>
+                                       ))}
+                                 </div>
+                              </CardBody>
+                           </Card>
+                        ))}
+                  </div>
+               </CardBody>
             </Card>
          ))}
          <div className="mb-2">

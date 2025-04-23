@@ -14,6 +14,7 @@ import {
 } from "react-bootstrap";
 import styles from "./mappool.module.css";
 import { withinRange } from "@/helpers/rating-range";
+import MapCardBody from "./MapCardBody";
 
 /**
  * @param {object} props
@@ -44,7 +45,8 @@ export default function MapCard(props) {
                <div className="text-break">{props.beatmap.version}</div>
                <div className="ms-auto">{props.beatmap.id}</div>
             </CardSubtitle>
-            <Container className="mb-auto">
+            <MapCardBody {...props} className="mt-auto" />
+            {/* <Container className="mb-auto">
                <Row>
                   <Col>Length</Col>
                   <Col>{convertTime(props.beatmap.length)}</Col>
@@ -113,7 +115,7 @@ export default function MapCard(props) {
                      ) : null
                   )
                   .filter(p => p)}
-            </div>
+            </div> */}
          </CardBody>
       </Card>
    );

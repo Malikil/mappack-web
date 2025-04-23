@@ -67,7 +67,7 @@ export async function parseMpLobby(link) {
       );
       console.log(result);
       return {
-         mp: matchIdSegment,
+         mp: parseInt(matchIdSegment),
          maps: result.maps,
          winnerScores: result.scores[matchPlacement[0]].map(item => [item.score, item.mod]),
          loserScores: result.scores[matchPlacement[1]].map(item => [item.score, item.mod]),
