@@ -2,6 +2,7 @@
  * @param {...import("@/types/rating").Rating} ratings
  */
 export function withinRange(...ratings) {
+   ratings = ratings.filter(r => r);
    const range = Math.sqrt(ratings.reduce((sum, r) => sum + r.rd * r.rd, 0));
    const { min, max } = ratings.reduce(
       (agg, r) => {
