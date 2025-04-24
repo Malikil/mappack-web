@@ -13,6 +13,7 @@ export default async function Admin() {
    return (
       <div>
          <div className="d-flex gap-3 flex-wrap mb-2">
+            <AdminActions />
             <AddAttack />
          </div>
          <DifficultyChart />

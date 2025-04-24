@@ -17,10 +17,10 @@ async function getPreviousMapScalings(mode) {
       });
    }
    const results = {
-      nm: regression.linear(datasets.nm),
-      hd: regression.linear(datasets.hd),
-      hr: regression.linear(datasets.hr),
-      dt: regression.linear(datasets.dt)
+      nm: regression.polynomial(datasets.nm),
+      hd: regression.polynomial(datasets.hd),
+      hr: regression.polynomial(datasets.hr),
+      dt: regression.polynomial(datasets.dt)
    };
    return results;
 }

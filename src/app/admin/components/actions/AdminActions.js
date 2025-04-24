@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Card, CardBody, CardTitle } from "react-bootstrap";
-import { databaseDebug } from "./actions";
+import { debug } from "./actions";
 import { serverActionToast } from "@/toaster";
 
 export default function AdminActions() {
@@ -12,13 +12,13 @@ export default function AdminActions() {
             <div className="d-flex flex-column gap-2">
                <Button
                   onClick={() =>
-                     serverActionToast(databaseDebug(), {
+                     serverActionToast(debug(), {
                         pending: "In progress",
                         success: "Done"
                      })
                   }
                >
-                  Database Debug
+                  Debug
                </Button>
             </div>
          </CardBody>
