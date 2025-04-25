@@ -25,33 +25,21 @@ export async function debug() {
    console.log("Add players");
    let mali = calculator.makePlayer(convertPP(MALI_PP), 175, 0.06);
    let fouweior = calculator.makePlayer(convertPP(FOUW_PP), 175, 0.06);
-   console.log(
-      `Init  : Mali ${mali.getRating().toFixed(2)} | Fouw ${fouweior.getRating().toFixed(2)}`
-   );
-   calculator.updateRatings([[mali, fouweior, 1]]);
-   console.log(
-      `Game 1:      ${mali.getRating().toFixed(2)} |      ${fouweior.getRating().toFixed(2)}`
-   );
-   calculator.updateRatings([[fouweior, mali, 1]]);
-   console.log(
-      `Game 2:      ${mali.getRating().toFixed(2)} |      ${fouweior.getRating().toFixed(2)}`
-   );
-   calculator.removePlayers();
-   mali = calculator.makePlayer(mali.getRating(), mali.getRd(), mali.getVol());
    let nanhira = calculator.makePlayer(convertPP(NANH_PP), 175, 0.06);
-   console.log(
-      `Init  : Mali ${mali.getRating().toFixed(2)} | Nanh ${nanhira.getRating().toFixed(2)}`
-   );
-   calculator.updateRatings([[mali, nanhira, 1]]);
-   console.log(
-      `Game 3:      ${mali.getRating().toFixed(2)} |      ${nanhira.getRating().toFixed(2)}`
-   );
-   calculator.removePlayers();
-   mali = calculator.makePlayer(mali.getRating(), mali.getRd(), mali.getVol());
    let zwii = calculator.makePlayer(convertPP(ZWII_PP), 175, 0.06);
-   console.log(`Init  : Mali ${mali.getRating().toFixed(2)} | zwii ${zwii.getRating().toFixed(2)}`);
-   calculator.updateRatings([[zwii, mali, 1]]);
-   console.log(`Game 4:      ${mali.getRating().toFixed(2)} |      ${zwii.getRating().toFixed(2)}`);
+   console.log(
+      `Mali ${mali.getRating().toFixed(2)} | Fouw ${fouweior
+         .getRating()
+         .toFixed(2)} | Nanh ${nanhira.getRating().toFixed(2)} | zwii ${zwii
+         .getRating()
+         .toFixed(2)}`
+   );
+   calculator.updateRatings([
+      [mali, fouweior, 1],
+      [fouweior, mali, 1],
+      [mali, nanhira, 1],
+      [zwii, mali, 1]
+   ]);
    console.log("\nzwii", zwii.getRating(), zwii.getRd(), zwii.getVol());
    console.log("fouw", fouweior.getRating(), fouweior.getRd(), fouweior.getVol());
    console.log("mali", mali.getRating(), mali.getRd(), mali.getVol());

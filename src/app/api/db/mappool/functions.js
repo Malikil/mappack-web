@@ -15,8 +15,12 @@ export async function getMappool(playerIds) {
    const playersDb = db.collection("players");
    const players = await playersDb.find({ osuid: { $in: playerIds } }).toArray();
    if (players.length < 1) return { error: { status: 404, message: "No players" } };
-
+   console.log(
+      "Create pool for",
+      players.map(p => ({ id: p.osuid, rating: p.pvp.rating }))
+   );
    const targetRating = combineRatings(...players.map(p => p.pvp));
+   console.log("Target rating", targetRating);
    const checkWithinRange = rating => withinRange(targetRating, rating);
    const sortFunc = mod => (a, b) => {
       const adiff = Math.abs(targetRating.rating - a.ratings[mod].rating);
@@ -62,7 +66,9 @@ export async function getMappool(playerIds) {
       },
       { nm: [], hd: [], hr: [], dt: [], fm: [] }
    );
+
    // Sort FM first, so the extra maps can be put into HD/HR
+   console.log(`${maplist.fm.length} available FM maps`);
    maplist.fm.sort((a, b) => {
       // Special sort for FM
       const adiff = Math.abs(targetRating.rating - (a.ratings.hd.rating + a.ratings.hr.rating) / 2);
@@ -70,26 +76,41 @@ export async function getMappool(playerIds) {
       return adiff - bdiff;
    });
    // Put extra maps into HD/HR whichever is closer
+   console.log(`Before redistributing FM maps: HD-${maplist.hd.length} HR-${maplist.hr.length}`);
    maplist.fm.slice(FM_MAPCOUNT).forEach(map => {
       const hdDiff = Math.abs(map.ratings.hd.rating - targetRating.rating);
       const hrDiff = Math.abs(map.ratings.hr.rating - targetRating.rating);
       if (hdDiff > hrDiff) maplist.hr.push(map);
       else maplist.hd.push(map);
    });
+   console.log(`After redistributing FM maps: HD-${maplist.hd.length} HR-${maplist.hr.length}`);
    // Sort DT next, as this is likely to be a more restricted pool
+   console.log(`${maplist.dt.length} available DT maps`);
    maplist.dt = maplist.dt.filter(filterFunc(maplist, "fm")).sort(sortFunc("dt"));
+   console.log(`${maplist.dt.length} after filtering`);
    // Remove duplicates from the same mapset and sort for HD/HR
+   console.log(`${maplist.hr.length} available HR maps`);
    maplist.hr = maplist.hr.filter(filterFunc(maplist, "dt", "fm")).sort(sortFunc("hr"));
-   maplist.hd = maplist.hd.filter(filterFunc(maplist, "dt", "fm", "hr")).sort(sortFunc("hd"));
-   // Put extra maps into NM if they're valid
-   maplist.hd.slice(HD_MAPCOUNT).forEach(map => {
-      if (checkWithinRange(map.ratings.nm)) maplist.nm.push(map);
-   });
+   console.log(`${maplist.hr.length} after filtering`);
+   // Put extras into NM if valid
+   console.log(`Before redistributing HR maps: NM-${maplist.nm.length}`);
    maplist.hr.slice(HR_MAPCOUNT).forEach(map => {
       if (checkWithinRange(map.ratings.nm)) maplist.nm.push(map);
    });
-   // Sort NM and DT (the only ones left)
-   maplist.nm.filter(filterFunc(maplist, "hd", "hr", "dt", "fm")).sort(sortFunc("nm"));
+   console.log(`After redistributing HR maps: NM-${maplist.nm.length}`);
+   console.log(`${maplist.hd.length} available HD maps`);
+   maplist.hd = maplist.hd.filter(filterFunc(maplist, "dt", "fm", "hr")).sort(sortFunc("hd"));
+   console.log(`${maplist.hd.length} after filtering`);
+   // Put extra maps into NM if they're valid
+   console.log(`Before redistributing HD maps: NM-${maplist.nm.length}`);
+   maplist.hd.slice(HD_MAPCOUNT).forEach(map => {
+      if (checkWithinRange(map.ratings.nm)) maplist.nm.push(map);
+   });
+   console.log(`After redistributing HD maps: NM-${maplist.nm.length}`);
+   // Sort NM
+   console.log(`${maplist.nm.length} available NM maps`);
+   maplist.nm = maplist.nm.filter(filterFunc(maplist, "hd", "hr", "dt", "fm")).sort(sortFunc("nm"));
+   console.log(`${maplist.nm.length} after filtering`);
 
    return {
       maps: {
