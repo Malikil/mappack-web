@@ -62,13 +62,21 @@ export default async function Mappool() {
          {pools.map(pool => (
             <Card key={pool._id}>
                <CardBody>
-                  <CardTitle as="h1">{pool._id}</CardTitle>
-                  <CardSubtitle className="d-flex justify-content-between">
-                     <Link href={pool.download}>Download</Link>
+                  <div className="d-flex justify-content-between flex-wrap gap-2 align-items-end">
+                     <div>
+                        <CardTitle as="h1">{pool._id}</CardTitle>
+                        <CardSubtitle className="d-flex justify-content-between">
+                           <Link href={pool.download}>Download</Link>
+                        </CardSubtitle>
+                     </div>
                      {playerRating && (
-                        <small>Highlighted maps are within your individual rating range</small>
+                        <small>
+                           Highlighted maps are within your individual rating range.
+                           <br />
+                           During matches the average rating for both players is used
+                        </small>
                      )}
-                  </CardSubtitle>
+                  </div>
                   <div className="d-flex flex-column gap-1 mt-2">
                      {pool.maps
                         .sort((a, b) => a.setid - b.setid)
