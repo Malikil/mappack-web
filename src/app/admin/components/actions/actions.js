@@ -1,36 +1,59 @@
 "use server";
 
-import db from "@/app/api/db/connection";
-import regression from "regression";
+import { Glicko2 } from "glicko2";
 
-async function getPreviousMapScalings(mode) {
-   console.log("Get previous map scalings");
-   const mapsDb = db.collection("maps");
-   const maplist = mapsDb.find({ mode });
-   const datasets = { nm: [], hd: [], hr: [], dt: [] };
-   for await (const pool of maplist) {
-      pool.maps.forEach(map => {
-         const { nm, hd, hr, dt } = map.ratings;
-         datasets.nm.push([map.stars, nm.rating]);
-         datasets.hd.push([map.stars, hd.rating]);
-         datasets.hr.push([map.stars, hr.rating]);
-         datasets.dt.push([map.stars, dt.rating]);
-      });
-   }
-   console.log(datasets.nm);
-   console.log(datasets.hd);
-   console.log(datasets.hr);
-   console.log(datasets.dt);
-   const results = {
-      nm: regression.polynomial(datasets.nm),
-      hd: regression.polynomial(datasets.hd),
-      hr: regression.polynomial(datasets.hr),
-      dt: regression.polynomial(datasets.dt)
-   };
-   return results;
-}
+const ZWII_PP = 9044;
+const MALI_PP = 5643;
+const FOUW_PP = 5402;
+const NANH_PP = 4863;
+const PP_EQUIVALENT = 8999;
+
+const convertPP = pp => {
+   // Below 1000 PP, rating == pp
+   if (pp < 1000) return pp;
+   // Between 1000 and 10000 pp, linearly scale so 10000pp == 2000 rating
+   else if (pp < PP_EQUIVALENT) return 1000 * ((pp - 1000) / (PP_EQUIVALENT - 1000) + 1);
+   //else if (pp < 10000) return 1000 + (pp - 1000) / 9;
+   // Afterwards logarithmically scale up from 2000 rating
+   else return 1000 * (Math.log(pp / 1000) / Math.log(PP_EQUIVALENT / 1000) + 1);
+   //else return (500 * Math.log(pp)) / Math.log(10);
+};
 
 export async function debug() {
-   const results = await getPreviousMapScalings("osu");
-   for (const key in results) console.log(results[key].equation);
+   console.log("Make calc");
+   const calculator = new Glicko2();
+   console.log("Add players");
+   let mali = calculator.makePlayer(convertPP(MALI_PP), 175, 0.06);
+   let fouweior = calculator.makePlayer(convertPP(FOUW_PP), 175, 0.06);
+   console.log(
+      `Init  : Mali ${mali.getRating().toFixed(2)} | Fouw ${fouweior.getRating().toFixed(2)}`
+   );
+   calculator.updateRatings([[mali, fouweior, 1]]);
+   console.log(
+      `Game 1:      ${mali.getRating().toFixed(2)} |      ${fouweior.getRating().toFixed(2)}`
+   );
+   calculator.updateRatings([[fouweior, mali, 1]]);
+   console.log(
+      `Game 2:      ${mali.getRating().toFixed(2)} |      ${fouweior.getRating().toFixed(2)}`
+   );
+   calculator.removePlayers();
+   mali = calculator.makePlayer(mali.getRating(), mali.getRd(), mali.getVol());
+   let nanhira = calculator.makePlayer(convertPP(NANH_PP), 175, 0.06);
+   console.log(
+      `Init  : Mali ${mali.getRating().toFixed(2)} | Nanh ${nanhira.getRating().toFixed(2)}`
+   );
+   calculator.updateRatings([[mali, nanhira, 1]]);
+   console.log(
+      `Game 3:      ${mali.getRating().toFixed(2)} |      ${nanhira.getRating().toFixed(2)}`
+   );
+   calculator.removePlayers();
+   mali = calculator.makePlayer(mali.getRating(), mali.getRd(), mali.getVol());
+   let zwii = calculator.makePlayer(convertPP(ZWII_PP), 175, 0.06);
+   console.log(`Init  : Mali ${mali.getRating().toFixed(2)} | zwii ${zwii.getRating().toFixed(2)}`);
+   calculator.updateRatings([[zwii, mali, 1]]);
+   console.log(`Game 4:      ${mali.getRating().toFixed(2)} |      ${zwii.getRating().toFixed(2)}`);
+   console.log("\nzwii", zwii.getRating(), zwii.getRd(), zwii.getVol());
+   console.log("fouw", fouweior.getRating(), fouweior.getRd(), fouweior.getVol());
+   console.log("mali", mali.getRating(), mali.getRd(), mali.getVol());
+   console.log("nanh", nanhira.getRating(), nanhira.getRd(), nanhira.getVol());
 }
