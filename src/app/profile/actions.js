@@ -4,7 +4,7 @@ import { LegacyClient } from "osu-web.js";
 import db from "../api/db/connection";
 import { redirect } from "next/navigation";
 
-const PP_EQUIVALENT = 8999;
+const PP_EQUIVALENT = 9001;
 
 const convertPP = pp => {
    // Below 1000 PP, rating == pp

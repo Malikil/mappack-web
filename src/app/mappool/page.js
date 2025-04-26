@@ -101,9 +101,9 @@ export default async function Mappool() {
                                        </Col>
                                        <Col className="d-flex flex-column justify-content-center">
                                           <div>
-                                             <CardTitle>{mapset.artist}</CardTitle>
                                              <CardTitle>{mapset.title}</CardTitle>
-                                             <CardSubtitle className="d-flex gap-1">
+                                             <CardSubtitle>{mapset.artist}</CardSubtitle>
+                                             <CardSubtitle className="d-flex gap-1 mt-1">
                                                 {mapset.versions.map(bm => {
                                                    const valid = anyWithinRange(
                                                       bm.ratings,
