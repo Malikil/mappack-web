@@ -1,47 +1,43 @@
 "use server";
 
-import { Glicko2 } from "glicko2";
+import db from "@/app/api/db/connection";
+import regression from "regression";
+import MLR from "ml-regression-multivariate-linear";
 
-const ZWII_PP = 9044;
-const MALI_PP = 5643;
-const FOUW_PP = 5402;
-const NANH_PP = 4863;
-const PP_EQUIVALENT = 8999;
-
-const convertPP = pp => {
-   // Below 1000 PP, rating == pp
-   if (pp < 1000) return pp;
-   // Between 1000 and 10000 pp, linearly scale so 10000pp == 2000 rating
-   else if (pp < PP_EQUIVALENT) return 1000 * ((pp - 1000) / (PP_EQUIVALENT - 1000) + 1);
-   //else if (pp < 10000) return 1000 + (pp - 1000) / 9;
-   // Afterwards logarithmically scale up from 2000 rating
-   else return 1000 * (Math.log(pp / 1000) / Math.log(PP_EQUIVALENT / 1000) + 1);
-   //else return (500 * Math.log(pp)) / Math.log(10);
-};
+async function getPreviousMapScalings(mode) {
+   console.log("Get previous map scalings");
+   const mapsDb = db.collection("maps");
+   const maplist = mapsDb.find({ mode });
+   const datasets = { x: [], y: [] };
+   for await (const pool of maplist) {
+      pool.maps.forEach(map => {
+         const { nm, hd, hr, dt } = map.ratings;
+         datasets.x.push([map.stars, map.length, map.bpm, map.ar, map.cs]);
+         datasets.y.push([nm.rating, hd.rating, hr.rating, dt.rating]);
+         //console.log([map.stars, nm.rating, hd.rating, hr.rating, dt.rating].join(", "));
+      });
+   }
+   // const results = {
+   //    nm: new MLR(datasets.nm.x, datasets.nm.y),
+   //    hd: new MLR(datasets.hd.x, datasets.hd.y),
+   //    hr: new MLR(datasets.hr.x, datasets.hr.y),
+   //    dt: new MLR(datasets.dt.x, datasets.dt.y)
+   // };
+   return new MLR(datasets.x, datasets.y);
+}
 
 export async function debug() {
-   console.log("Make calc");
-   const calculator = new Glicko2();
-   console.log("Add players");
-   let mali = calculator.makePlayer(convertPP(MALI_PP), 175, 0.06);
-   let fouweior = calculator.makePlayer(convertPP(FOUW_PP), 175, 0.06);
-   let nanhira = calculator.makePlayer(convertPP(NANH_PP), 175, 0.06);
-   let zwii = calculator.makePlayer(convertPP(ZWII_PP), 175, 0.06);
-   console.log(
-      `Mali ${mali.getRating().toFixed(2)} | Fouw ${fouweior
-         .getRating()
-         .toFixed(2)} | Nanh ${nanhira.getRating().toFixed(2)} | zwii ${zwii
-         .getRating()
-         .toFixed(2)}`
+   //const oldRatings = await getPreviousMapScalings("osu");
+   const test = await db.collection("maps").findOne({ mode: "osu", active: "fresh" });
+   test.maps.forEach(map =>
+      console.log(
+         [
+            map.stars,
+            map.ratings.nm.rating,
+            map.ratings.hd.rating,
+            map.ratings.hr.rating,
+            map.ratings.dt.rating
+         ].join(", ")
+      )
    );
-   calculator.updateRatings([
-      [mali, fouweior, 1],
-      [fouweior, mali, 1],
-      [mali, nanhira, 1],
-      [zwii, mali, 1]
-   ]);
-   console.log("\nzwii", zwii.getRating(), zwii.getRd(), zwii.getVol());
-   console.log("fouw", fouweior.getRating(), fouweior.getRd(), fouweior.getVol());
-   console.log("mali", mali.getRating(), mali.getRd(), mali.getVol());
-   console.log("nanh", nanhira.getRating(), nanhira.getRd(), nanhira.getVol());
 }

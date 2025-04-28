@@ -14,6 +14,7 @@ async function getOsuToken() {
       method: "POST",
       headers,
       body
+      // cache: "no-store" // TODO Investigate if this will be needed in production
    }).then(res => res.json());
    return osuResponse.access_token;
 }
@@ -30,16 +31,24 @@ export async function GET(req) {
    const client = new Client(accessToken);
    /** @type {import("@/types/undocumented.beatmappacks").UndocumentedBeatmappackResponse} */
    const packs = await client.getUndocumented("beatmaps/packs");
+   console.log(packs);
    const mappackMeta = packs.beatmap_packs.find(p => !p.ruleset_id);
+   console.log(`Found mappack ${mappackMeta.tag}`);
    /** @type {import("@/types/undocumented.beatmappacks").UndocumentedBeatmappack} */
    const mappack = await client.getUndocumented(`beatmaps/packs/${mappackMeta.tag}`);
    console.log(`Add mappack ${mappack.tag}`);
-   await createMappool(
+   return await createMappool(
       accessToken,
       mappack.name,
       mappack.url,
       mappack.beatmapsets.map(bms => bms.id)
-   ).then(cyclePools, res => console.warn(res));
-
-   return new NextResponse("OK");
+   )
+      .then(cyclePools)
+      .then(() => new NextResponse("OK"))
+      .catch(err => {
+         console.warn(err);
+         if (err.message == "409")
+            return new NextResponse("Pack has already been used", { status: 409 });
+         else return new NextResponse("Error", { status: 500 });
+      });
 }

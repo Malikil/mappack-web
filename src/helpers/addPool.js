@@ -1,44 +1,37 @@
 import db from "@/app/api/db/connection";
 import { Client } from "osu-web.js";
 import regression from "regression";
+import MLR from "ml-regression-multivariate-linear";
 
 async function getPreviousMapScalings(mode) {
    console.log("Get previous map scalings");
    const mapsDb = db.collection("maps");
    const maplist = mapsDb.find({ mode });
-   const datasets = { nm: [], hd: [], hr: [], dt: [] };
+   const datasets = { x: [], y: [] };
    for await (const pool of maplist) {
       pool.maps.forEach(map => {
          const { nm, hd, hr, dt } = map.ratings;
-         datasets.nm.push([map.stars, nm.rating]);
-         datasets.hd.push([map.stars, hd.rating]);
-         datasets.hr.push([map.stars, hr.rating]);
-         datasets.dt.push([map.stars, dt.rating]);
+         datasets.x.push([map.stars, map.length, map.bpm, map.ar, map.cs]);
+         datasets.y.push([nm.rating, hd.rating, hr.rating, dt.rating]);
       });
    }
-   const results = {
-      nm: regression.polynomial(datasets.nm),
-      hd: regression.polynomial(datasets.hd),
-      hr: regression.polynomial(datasets.hr),
-      dt: regression.polynomial(datasets.dt)
-   };
-   return results;
+   // const results = {
+   //    nm: regression.polynomial(datasets.nm),
+   //    hd: regression.polynomial(datasets.hd),
+   //    hr: regression.polynomial(datasets.hr),
+   //    dt: regression.polynomial(datasets.dt)
+   // };
+   return new MLR(datasets.x, datasets.y);
 }
 
 export async function createMappool(accessToken, packName, download, mapsets) {
    console.log(`Create pool ${packName}`);
    // Make sure this pack hasn't been used yet
    const historyDb = db.collection("history");
-   if (await historyDb.findOne({ mode: "osu", packs: packName }))
-      return {
-         http: {
-            status: 409,
-            message: "Pack has already been used"
-         }
-      };
+   if (await historyDb.findOne({ mode: "osu", packs: packName })) throw new Error("409");
 
    const osuClient = new Client(accessToken);
-   const oldRatings = await getPreviousMapScalings("osu");
+   const predictor = await getPreviousMapScalings("osu");
 
    /** @type {import("@/types/database.beatmap").DbBeatmap[]} */
    const maplist = await mapsets
@@ -67,13 +60,20 @@ export async function createMappool(accessToken, packName, download, mapsets) {
                            stars: bm.difficulty_rating
                         };
                         // Reduce initial rd for maps, the initial rating is already based on their stars and past experience
-                        const rd = 200,
+                        const ratings = predictor.predict([
+                              mapData.stars,
+                              mapData.length,
+                              mapData.bpm,
+                              mapData.ar,
+                              mapData.cs
+                           ]),
+                           rd = 175,
                            vol = 0.06;
                         mapData.ratings = {
-                           nm: { rating: oldRatings.nm.predict(mapData.stars)[1], rd, vol },
-                           hd: { rating: oldRatings.hd.predict(mapData.stars)[1], rd, vol },
-                           hr: { rating: oldRatings.hr.predict(mapData.stars)[1], rd, vol },
-                           dt: { rating: oldRatings.dt.predict(mapData.stars)[1], rd, vol }
+                           nm: { rating: ratings[0], rd, vol },
+                           hd: { rating: ratings[1], rd, vol },
+                           hr: { rating: ratings[2], rd, vol },
+                           dt: { rating: ratings[3], rd, vol }
                         };
                         return mapData;
                      })
