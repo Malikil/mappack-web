@@ -1,8 +1,8 @@
 "use server";
 
 import db from "@/app/api/db/connection";
-import regression from "regression";
 import MLR from "ml-regression-multivariate-linear";
+// note https://www.npmjs.com/package/@rainij/polynomial-regression-js
 
 async function getPreviousMapScalings(mode) {
    console.log("Get previous map scalings");
