@@ -10,6 +10,7 @@
    },
    "dependencies": {
       "@floating-ui/react": "^0.26.23",
+      "@rainij/polynomial-regression-js": "^1.4.0",
       "bootstrap": "^5.3.3",
       "chart.js": "^4.4.6",
       "glicko2": "^1.2.1",
