@@ -17,7 +17,6 @@
       "google-auth-library": "^9.14.2",
       "google-spreadsheet": "^4.1.4",
       "jwt-decode": "^4.0.0",
-      "ml-regression-multivariate-linear": "^2.0.4",
       "mongodb": "^6.8.0",
       "next": "^14.2.15",
       "next-auth": "^5.0.0-beta.20",
@@ -28,7 +27,6 @@
       "react-chartjs-2": "^5.2.0",
       "react-dom": "^18",
       "react-toastify": "^10.0.6",
-      "regression": "^2.0.1",
       "swr": "^2.2.5"
    },
    "devDependencies": {

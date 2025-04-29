@@ -1,9 +1,7 @@
 "use server";
 
 import db from "@/app/api/db/connection";
-import MLR from "ml-regression-multivariate-linear";
 import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
-// note https://www.npmjs.com/package/@rainij/polynomial-regression-js
 
 async function getPreviousMapScalings(mode) {
    console.log("Get previous map scalings");
@@ -27,7 +25,6 @@ async function getPreviousMapScalings(mode) {
    //    dt: new MLR(datasets.dt.x, datasets.dt.y)
    // };
    return {
-      mlr: new MLR(datasets.x, datasets.y),
       poly: polyReg
    };
 }
@@ -40,7 +37,6 @@ export async function debug() {
          [
             map.stars,
             map.ratings.nm.rating,
-            predictor.mlr.predict([map.stars, map.length, map.bpm, map.ar, map.cs])[0],
             predictor.poly.predict([[map.stars, map.length, map.bpm, map.ar, map.cs]])[0][0]
          ].join(", ")
       )
