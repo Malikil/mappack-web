@@ -1,3 +1,5 @@
+import { Rating } from "./rating";
+
 export interface MatchHistoryMap {
    id: number;
    setid: number;
@@ -10,10 +12,10 @@ export interface MatchHistorySong {
    score: number;
 }
 export interface PvEMatchHistorySong extends MatchHistorySong {
-   mod: 'nm'|'hd'|'hr'|'dt';
+   mod: "nm" | "hd" | "hr" | "dt";
 }
 export interface PvPMatchHistorySong extends MatchHistorySong {
-   mod: 'nm'|'hd'|'hr'|'dt'|'fm';
+   mod: "nm" | "hd" | "hr" | "dt" | "fm";
    opponentScore: number;
 }
 
@@ -29,4 +31,24 @@ export interface PvEMatchHistory extends MatchHistory {
 export interface PvPMatchHistory extends MatchHistory {
    songs: PvPMatchHistorySong[];
    opponent: string;
+}
+
+export interface PvPInfo extends Rating {
+   matches: PvPMatchHistory[];
+   losses: number;
+   wins: number;
+}
+
+export interface PvEInfo extends Rating {
+   matches: PvEMatchHistory[];
+   games: number;
+}
+
+export interface DbPlayer {
+   osuid: number;
+   pvp: PvPInfo;
+   pve: PvEInfo;
+   osuname: string;
+   admin?: boolean;
+   hideLeaderboard?: boolean;
 }

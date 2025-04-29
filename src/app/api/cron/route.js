@@ -31,7 +31,7 @@ export async function GET(req) {
    const client = new Client(accessToken);
    /** @type {import("@/types/undocumented.beatmappacks").UndocumentedBeatmappackResponse} */
    const packs = await client.getUndocumented("beatmaps/packs");
-   console.log(packs);
+   console.log(packs.beatmap_packs[0], `+ ${packs.beatmap_packs.length - 1} more`);
    const mappackMeta = packs.beatmap_packs.find(p => !p.ruleset_id);
    console.log(`Found mappack ${mappackMeta.tag}`);
    /** @type {import("@/types/undocumented.beatmappacks").UndocumentedBeatmappack} */

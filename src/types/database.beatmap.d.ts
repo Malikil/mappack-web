@@ -1,5 +1,8 @@
-import { Rating } from "./rating";
+import { ModRatings, Rating } from "./rating";
 
+/**
+ * @deprecated Use ModRatings
+ */
 export interface RatingSet {
    nm: Rating;
    hd: Rating;
@@ -18,5 +21,5 @@ export interface DbBeatmap {
    cs: number;
    ar: number;
    stars: number;
-   ratings: RatingSet;
+   ratings: ModRatings;
 }
