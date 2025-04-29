@@ -1,7 +1,6 @@
 import db from "@/app/api/db/connection";
 import { Client } from "osu-web.js";
-import regression from "regression";
-import MLR from "ml-regression-multivariate-linear";
+import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
 
 async function getPreviousMapScalings(mode) {
    console.log("Get previous map scalings");
@@ -15,13 +14,9 @@ async function getPreviousMapScalings(mode) {
          datasets.y.push([nm.rating, hd.rating, hr.rating, dt.rating]);
       });
    }
-   // const results = {
-   //    nm: regression.polynomial(datasets.nm),
-   //    hd: regression.polynomial(datasets.hd),
-   //    hr: regression.polynomial(datasets.hr),
-   //    dt: regression.polynomial(datasets.dt)
-   // };
-   return new MLR(datasets.x, datasets.y);
+   const polyReg = new PolynomialRegressor(2);
+   polyReg.fit(datasets.x, datasets.y);
+   return polyReg;
 }
 
 export async function createMappool(accessToken, packName, download, mapsets) {
@@ -61,12 +56,8 @@ export async function createMappool(accessToken, packName, download, mapsets) {
                         };
                         // Reduce initial rd for maps, the initial rating is already based on their stars and past experience
                         const ratings = predictor.predict([
-                              mapData.stars,
-                              mapData.length,
-                              mapData.bpm,
-                              mapData.ar,
-                              mapData.cs
-                           ]),
+                              [mapData.stars, mapData.length, mapData.bpm, mapData.ar, mapData.cs]
+                           ])[0],
                            rd = 175,
                            vol = 0.06;
                         mapData.ratings = {

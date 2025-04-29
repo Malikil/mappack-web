@@ -18,7 +18,7 @@ async function getPreviousMapScalings(mode) {
          //console.log([map.stars, nm.rating, hd.rating, hr.rating, dt.rating].join(", "));
       });
    }
-   const polyReg = new PolynomialRegressor(1);
+   const polyReg = new PolynomialRegressor(2);
    polyReg.fit(datasets.x, datasets.y);
    // const results = {
    //    nm: new MLR(datasets.nm.x, datasets.nm.y),
@@ -39,6 +39,7 @@ export async function debug() {
       console.log(
          [
             map.stars,
+            map.ratings.nm.rating,
             predictor.mlr.predict([map.stars, map.length, map.bpm, map.ar, map.cs])[0],
             predictor.poly.predict([[map.stars, map.length, map.bpm, map.ar, map.cs]])[0][0]
          ].join(", ")
