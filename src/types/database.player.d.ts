@@ -1,3 +1,4 @@
+import { GameMode } from "osu-web.js";
 import { Rating } from "./rating";
 
 export interface MatchHistoryMap {
@@ -51,4 +52,5 @@ export interface DbPlayer {
    osuname: string;
    admin?: boolean;
    hideLeaderboard?: boolean;
+   gamemode?: GameMode;
 }

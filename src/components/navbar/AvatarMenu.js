@@ -2,6 +2,7 @@ import db from "@/app/api/db/connection";
 import { auth, signOut } from "@/auth";
 import Link from "next/link";
 import { cache } from "react";
+import GamemodeButton from "./GamemodeButton";
 
 const checkRoles = cache(async osuid => {
    const collection = db.collection("players");
@@ -31,6 +32,20 @@ export default async function AvatarMenu() {
             <Link className="dropdown-item" href="/profile">
                Profile
             </Link>
+         </li>
+         <li>
+            <a className="dropdown-item d-flex justify-content-between" href="#">
+               <span>Game mode </span>
+               <span>&raquo;</span>
+            </a>
+            <ul className="dropdown-menu dropdown-submenu">
+               <li>
+                  <GamemodeButton className="dropdown-item" mode="osu" text="osu!" />
+               </li>
+               <li>
+                  <GamemodeButton className="dropdown-item" mode="fruits" text="Catch" />
+               </li>
+            </ul>
          </li>
          <li>
             <hr className="dropdown-divider" />
