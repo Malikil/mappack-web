@@ -2,6 +2,7 @@
  * @param {...import("@/types/rating").Rating} ratings
  */
 export function withinRange(...ratings) {
+   ratings = ratings.filter(r => r);
    const range = Math.sqrt(ratings.reduce((sum, r) => sum + r.rd * r.rd, 0));
    const { min, max } = ratings.reduce(
       (agg, r) => {
@@ -13,6 +14,15 @@ export function withinRange(...ratings) {
    );
    const diff = Math.abs(min.rating - max.rating);
    return diff <= range;
+}
+
+/**
+ * 
+ * @param {import("@/types/database.beatmap").RatingSet} mapRatings 
+ * @param {import("@/types/rating").Rating} candidateRating 
+ */
+export function anyWithinRange(mapRatings, candidateRating) {
+   return Object.keys(mapRatings).some(key => withinRange(mapRatings[key], candidateRating))
 }
 
 /**

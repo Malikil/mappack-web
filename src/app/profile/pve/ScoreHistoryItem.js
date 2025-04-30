@@ -1,5 +1,4 @@
 import { Card, CardBody, CardImg, CardSubtitle } from "react-bootstrap";
-import db from "../../api/db/connection";
 import Link from "next/link";
 import { buildUrl } from "osu-web.js";
 import {
@@ -8,17 +7,17 @@ import {
    DashCircle,
    PlusCircle
 } from "react-bootstrap-icons";
+import { getCurrentPack } from "@/helpers/currentPack";
 
 /**
  * @param {object} params
  * @param {import("@/types/database.player").PvEMatchHistory} params.match
  */
 export default async function ScoreHistoryItem({ match }) {
-   const mapsDb = db.collection("maps");
-   const maplist = await mapsDb.findOne({ active: "current" });
+   const maplist = await getCurrentPack();
    // Get map details
    const details = (match.songs || match).map(songResult => {
-      const dbmap = maplist.maps.find(map => map.id === songResult.map.id);
+      const dbmap = maplist.find(map => map.id === songResult.map.id);
       if (!dbmap) return songResult;
       return {
          ...songResult,
@@ -42,6 +41,18 @@ export default async function ScoreHistoryItem({ match }) {
                      )}
                      {Math.abs(match.ratingDiff).toFixed(1)}
                   </div>
+                  {!isNaN(match.mp) ? (
+                     <Link
+                        className="ms-auto"
+                        href={buildUrl.match(match.mp)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                     >
+                        Lobby {match.mp}
+                     </Link>
+                  ) : (
+                     <div className="ms-auto">{match.mp}</div>
+                  )}
                </div>
             )}
             <div className="d-flex gap-1 flex-wrap">

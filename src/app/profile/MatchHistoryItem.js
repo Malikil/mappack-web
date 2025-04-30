@@ -1,5 +1,4 @@
 import { Card, CardBody, CardImg, CardSubtitle } from "react-bootstrap";
-import db from "../api/db/connection";
 import Link from "next/link";
 import { buildUrl } from "osu-web.js";
 import {
@@ -10,17 +9,17 @@ import {
    PlusCircle,
    XCircle
 } from "react-bootstrap-icons";
+import { getCurrentPack } from "@/helpers/currentPack";
 
 /**
  * @param {object} params
  * @param {import("@/types/database.player").PvPMatchHistory} params.match
  */
 export default async function MatchHistoryItem({ match }) {
-   const mapsDb = db.collection("maps");
-   const maplist = await mapsDb.findOne({ active: "current" });
+   const maplist = await getCurrentPack();
    // Get map details
    const details = (match.songs || match).map(songResult => {
-      const dbmap = maplist.maps.find(map => map.id === songResult.map.id);
+      const dbmap = maplist.find(map => map.id === songResult.map.id);
       if (!dbmap) return songResult;
       dbmap.ratings.fm = { rating: (dbmap.ratings.hd.rating + dbmap.ratings.hr.rating) / 2 };
       return {
@@ -49,7 +48,17 @@ export default async function MatchHistoryItem({ match }) {
                         {Math.abs(match.ratingDiff).toFixed(1)}
                      </div>
                   </div>
-                  <div>vs. {match.opponent}</div>
+                  <div>
+                     vs. {match.opponent}
+                     <Link
+                        className="ms-2"
+                        href={buildUrl.match(match.mp)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                     >
+                        {match.mp}
+                     </Link>
+                  </div>
                </div>
             )}
             <div className="d-flex gap-1 flex-wrap">

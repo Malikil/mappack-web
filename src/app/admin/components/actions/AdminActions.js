@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Card, CardBody, CardTitle } from "react-bootstrap";
-import { advancePack } from "./actions";
+import { debug } from "./actions";
 import { serverActionToast } from "@/toaster";
 
 export default function AdminActions() {
@@ -12,13 +12,13 @@ export default function AdminActions() {
             <div className="d-flex flex-column gap-2">
                <Button
                   onClick={() =>
-                     serverActionToast(advancePack(), {
-                        pending: "Updating mappack",
-                        success: "Updated current mappack"
+                     serverActionToast(debug(), {
+                        pending: "In progress",
+                        success: "Done"
                      })
                   }
                >
-                  Advance Mappack
+                  Debug
                </Button>
             </div>
          </CardBody>

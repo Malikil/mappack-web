@@ -10,6 +10,7 @@
    },
    "dependencies": {
       "@floating-ui/react": "^0.26.23",
+      "@rainij/polynomial-regression-js": "^1.4.0",
       "bootstrap": "^5.3.3",
       "chart.js": "^4.4.6",
       "glicko2": "^1.2.1",
@@ -26,7 +27,6 @@
       "react-chartjs-2": "^5.2.0",
       "react-dom": "^18",
       "react-toastify": "^10.0.6",
-      "regression": "^2.0.1",
       "swr": "^2.2.5"
    },
    "devDependencies": {

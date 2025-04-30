@@ -16,6 +16,7 @@ export default function Mappools() {
                </Link>
             </li>
             <li>A new mappack will the used each Monday</li>
+            <li>Two packs will be active at a time</li>
             <li>Each difficulty is taken individually</li>
             <li>
                Maps are given a rating on the system. The initial rating is determined from the
