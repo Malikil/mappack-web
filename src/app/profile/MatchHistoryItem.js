@@ -49,7 +49,7 @@ export default async function MatchHistoryItem({ match }) {
                      </div>
                   </div>
                   <div>
-                     vs. {match.opponent}
+                     vs. {match.opponent.name} - Rating: {match.opponent.rating}
                      <Link
                         className="ms-2"
                         href={buildUrl.match(match.mp)}

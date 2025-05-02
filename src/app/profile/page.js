@@ -53,7 +53,10 @@ export default async function Profile() {
                <div className="d-flex justify-content-between">
                   <TableData
                      data={[
-                        ["Rating", player.pvp.rating.toFixed(0)],
+                        [
+                           "Rating",
+                           `${player.pvp.rating.toFixed(0)} (rd: ${player.pvp.rd.toFixed(0)})`
+                        ],
                         ["Wins", player.pvp.wins],
                         ["Losses", player.pvp.losses]
                      ]}

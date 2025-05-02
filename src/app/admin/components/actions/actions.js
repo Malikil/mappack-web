@@ -30,15 +30,10 @@ async function getPreviousMapScalings(mode) {
 }
 
 export async function debug() {
-   const predictor = await getPreviousMapScalings("osu");
-   const test = await db.collection("maps").findOne({ mode: "osu", active: "completed" });
-   test.maps.forEach(map =>
-      console.log(
-         [
-            map.stars,
-            map.ratings.nm.rating,
-            predictor.poly.predict([[map.stars, map.length, map.bpm, map.ar, map.cs]])[0][0]
-         ].join(", ")
-      )
-   );
+   //const predictor = await getPreviousMapScalings("osu");
+   const players = db.collection("players").find();
+   for await (const player of players) {
+      console.log(player.pvp.vol);
+      console.log(player.pve.vol);
+   }
 }
