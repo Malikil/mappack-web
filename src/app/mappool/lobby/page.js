@@ -1,3 +1,4 @@
+import db from "@/app/api/db/connection";
 import ModPool from "@/components/mappool/Modpool";
 
 export default async function LobbyPool({ searchParams }) {
