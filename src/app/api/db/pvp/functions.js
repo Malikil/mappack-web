@@ -29,39 +29,43 @@ export async function parseMpLobby(link) {
    try {
       console.log(`Fetch multiplayer lobby ${matchIdSegment}`);
       const mpLobby = await osuClient.getMultiplayerLobby({ mp: matchIdSegment });
-      const result = mpLobby.games.reduce(
-         (agg, game) => {
-            // If length is 0, that means freemod is enabled. Length will be 1 if nomod (nf counts as the 1)
-            const mod =
-               game.mods.length === 0
-                  ? "fm"
-                  : (game.mods.filter(v => v !== "NF")[0] || "nm").toLowerCase();
-            agg.maps.push({
-               map: game.beatmap_id,
-               mod
-            });
-            game.scores.forEach(score => {
-               // Will HD always be first?
-               const scoreMod = score.enabled_mods
-                  .filter(v => v !== "NF")
-                  .join("")
-                  .toLowerCase();
-               if (!(score.user_id in agg.scores)) agg.scores[score.user_id] = [];
-               agg.scores[score.user_id].push({
-                  osuid: score.user_id,
-                  score: score.score,
-                  mod: ["hd", "hr", "hdhr"].includes(scoreMod) ? scoreMod : null
+      // Is end time an indicator of aborted matches?
+      const result = mpLobby.games
+         .filter(l => l.end_time)
+         .reduce(
+            (agg, game) => {
+               // If length is 0, that means freemod is enabled. Length will be 1 if nomod (nf counts as the 1)
+               const mod =
+                  game.mods.length === 0
+                     ? "fm"
+                     : (game.mods.filter(v => v !== "NF")[0] || "nm").toLowerCase();
+               agg.maps.push({
+                  map: game.beatmap_id,
+                  mod
                });
-            });
-            // Find the song winner
-            const winner = game.scores.sort((a, b) => b.score - a.score)[0].user_id;
-            agg.resultScore[winner] = (agg.resultScore[winner] || 0) + 1;
-            // Make sure the loser is still counted
-            agg.resultScore[game.scores[1].user_id] = agg.resultScore[game.scores[1].user_id] || 0;
-            return agg;
-         },
-         { maps: [], scores: {}, resultScore: {} }
-      );
+               game.scores.forEach(score => {
+                  // Will HD always be first?
+                  const scoreMod = score.enabled_mods
+                     .filter(v => v !== "NF")
+                     .join("")
+                     .toLowerCase();
+                  if (!(score.user_id in agg.scores)) agg.scores[score.user_id] = [];
+                  agg.scores[score.user_id].push({
+                     osuid: score.user_id,
+                     score: score.score,
+                     mod: ["hd", "hr", "hdhr"].includes(scoreMod) ? scoreMod : null
+                  });
+               });
+               // Find the song winner
+               const winner = game.scores.sort((a, b) => b.score - a.score)[0].user_id;
+               agg.resultScore[winner] = (agg.resultScore[winner] || 0) + 1;
+               // Make sure the loser is still counted
+               agg.resultScore[game.scores[1].user_id] =
+                  agg.resultScore[game.scores[1].user_id] || 0;
+               return agg;
+            },
+            { maps: [], scores: {}, resultScore: {} }
+         );
       const matchPlacement = Object.keys(result.resultScore).sort(
          (a, b) => result.resultScore[b] - result.resultScore[a]
       );
