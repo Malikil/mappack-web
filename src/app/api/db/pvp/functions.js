@@ -95,10 +95,11 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
    // Get the played maps
    const mapsDb = db.collection("maps");
    const maplist = await getCurrentPack();
+   const staleMaplist = await db.collection('maps').findOne({ active: 'completed' });
    const playedMaps = maps.map(item => {
       const { map, mod } = item;
       /** @type {import("@/types/database.beatmap").DbBeatmap} */
-      const dbmap = maplist.find(m => m.id === map);
+      const dbmap = maplist.find(m => m.id === map) || staleMaplist.maps.find(m => m.id === map);
       return {
          map: {
             id: dbmap.id,
@@ -186,6 +187,10 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
    // Update map ratings
    const songlistCombined = playedMaps.flatMap((result, i) => {
       const map = maplist.find(map => map.id === result.map.id);
+      // If the map isn't in the maplist, skip it
+      // This could be because the pool has rotated since the match started
+      if (!map) return [];
+
       const wscore = winnerScores[i][0];
       const lscore = loserScores[i][0];
       if (result.mod === "fm") {
