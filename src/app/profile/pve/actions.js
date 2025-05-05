@@ -166,7 +166,11 @@ export async function submitPve(formData, matchesData) {
             // This is about the earliest spot to check if the mp has already been used
             // Considering that at the moment the player setup depends on the maps being
             // already set up
-            if (player.pve.matches.find(h => h.mp === mp))
+            // Make sure the lobby hasn't been used in either pve or pvp
+            if (
+               player.pve.matches.find(h => h.mp === mp) ||
+               player.pvp.matches.find(h => h.mp === mp)
+            )
                throw new Error("History already exists");
             const playerCalc = calculator.makePlayer(
                player.pve.rating,
