@@ -5,6 +5,8 @@ import { getOpponentMappool } from "./actions";
 import MatchHistoryItem from "./pvp/MatchHistoryItem";
 import PvEResultsCard from "./pve/PvEResultsCard";
 import db from "@/app/api/db/connection";
+import Image from "next/image";
+import { buildUrl } from "osu-web.js";
 
 const TableData = ({ data }) => (
    <table>
@@ -33,6 +35,16 @@ export default async function Profile({ params }) {
 
    return (
       <div className="d-flex flex-column gap-2">
+         <h1>
+            <Image
+               alt="avatar"
+               src={buildUrl.userAvatar(player.osuid)}
+               height={64}
+               width={64}
+               className="rounded"
+            />{" "}
+            {player.osuname}
+         </h1>
          <Card>
             <CardHeader>Vs. Players</CardHeader>
             <CardBody>

@@ -6,6 +6,11 @@ const nextConfig = {
             protocol: "https",
             hostname: "a.ppy.sh",
             pathname: "**"
+         },
+         {
+            protocol: "https",
+            hostname: "s.ppy.sh",
+            pathname: "/a/*"
          }
       ]
    }
