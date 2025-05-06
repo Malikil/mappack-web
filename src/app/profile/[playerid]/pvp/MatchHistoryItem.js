@@ -49,14 +49,18 @@ export default async function MatchHistoryItem({ match }) {
                      </div>
                   </div>
                   <div>
-                     vs. {match.opponent.name} - Rating: {match.opponent.rating?.toFixed(0)}
+                     vs.{" "}
+                     <Link href={`/profile/${match.opponent.id}`} className="text-decoration-none">
+                        {match.opponent.name}
+                     </Link>{" "}
+                     ({match.opponent.rating?.toFixed(0)})
                      <Link
-                        className="ms-2"
+                        className="ms-2 text-decoration-none"
                         href={buildUrl.match(match.mp)}
                         target="_blank"
                         rel="noopener noreferrer"
                      >
-                        {match.mp}
+                        MP{match.mp}
                      </Link>
                   </div>
                </div>

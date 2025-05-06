@@ -2,9 +2,9 @@
 
 import { LegacyClient } from "osu-web.js";
 import db from "../api/db/connection";
-import { redirect } from "next/navigation";
 
-const PP_EQUIVALENT = 9001;
+// How much PP does the rank 10k player have?
+const PP_EQUIVALENT = 9017;
 
 const convertPP = pp => {
    // Below 1000 PP, rating == pp
@@ -46,13 +46,4 @@ export async function register(osuid, osuname) {
       },
       { upsert: true }
    );
-}
-
-export async function getOpponentMappool(userid, formData) {
-   const opp = formData.get("opponent");
-   const playersDb = db.collection("players");
-   const opponent = await playersDb.findOne({
-      $or: [{ osuid: parseInt(opp) }, { osuname: opp }]
-   });
-   return redirect(`/mappool/${userid}/${opponent?.osuid || ""}`);
 }

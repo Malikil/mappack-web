@@ -1,4 +1,4 @@
-import { generateAttack } from "@/app/profile/pve/actions";
+import { generateAttack } from "@/app/profile/[playerid]/pve/actions";
 import { NextResponse } from "next/server";
 
 /**

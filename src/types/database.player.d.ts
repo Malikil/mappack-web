@@ -26,6 +26,7 @@ export interface MatchHistory {
    songs: MatchHistorySong[];
 }
 export interface MatchHistoryOpponent {
+   id: number;
    name: string;
    rating: number;
 }

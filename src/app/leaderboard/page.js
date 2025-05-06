@@ -2,6 +2,7 @@ import { Card, CardBody, CardHeader, CardImg, CardText, CardTitle } from "react-
 import db from "../api/db/connection";
 import { buildUrl } from "osu-web.js";
 import { verify } from "../admin/functions";
+import Link from "next/link";
 
 export default async function Leaderboard() {
    const adminFilter = (await verify()).session
@@ -39,17 +40,23 @@ export default async function Leaderboard() {
                   }}
                >
                   {pvpPlayers.map(p => (
-                     <Card key={p.osuid}>
-                        <CardImg src={buildUrl.userAvatar(p.osuid)} alt="Avatar" />
-                        <CardBody>
-                           <CardTitle>{p.osuname}</CardTitle>
-                           <CardText>
-                              Rating: {p.pvp.rating.toFixed()}
-                              <br />
-                              W/L: {p.pvp.wins} - {p.pvp.losses}
-                           </CardText>
-                        </CardBody>
-                     </Card>
+                     <Link
+                        key={p.osuid}
+                        href={`/profile/${p.osuid}`}
+                        className="text-decoration-none"
+                     >
+                        <Card>
+                           <CardImg src={buildUrl.userAvatar(p.osuid)} alt="Avatar" />
+                           <CardBody>
+                              <CardTitle>{p.osuname}</CardTitle>
+                              <CardText>
+                                 Rating: {p.pvp.rating.toFixed()}
+                                 <br />
+                                 W/L: {p.pvp.wins} - {p.pvp.losses}
+                              </CardText>
+                           </CardBody>
+                        </Card>
+                     </Link>
                   ))}
                </div>
             </CardBody>

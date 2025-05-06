@@ -1,7 +1,7 @@
 import { Glicko2 } from "glicko2";
 import { LegacyClient } from "osu-web.js";
 import db from "../connection";
-import { matchResultValue } from "@/app/profile/pve/functions";
+import { matchResultValue } from "@/app/profile/[playerid]/pve/functions";
 import { getCurrentPack } from "@/helpers/currentPack";
 
 /**
@@ -99,7 +99,7 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
    // Get the played maps
    const mapsDb = db.collection("maps");
    const maplist = await getCurrentPack();
-   const staleMaplist = await db.collection('maps').findOne({ active: 'completed' });
+   const staleMaplist = await db.collection("maps").findOne({ active: "completed" });
    const playedMaps = maps.map(item => {
       const { map, mod } = item;
       /** @type {import("@/types/database.beatmap").DbBeatmap} */
@@ -138,7 +138,11 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
                            mp,
                            prevRating: winner.pvp.rating,
                            ratingDiff: winnerPlayer.getRating() - winner.pvp.rating,
-                           opponent: { name: loser.osuname, rating: loser.pvp.rating },
+                           opponent: {
+                              id: loser.osuid,
+                              name: loser.osuname,
+                              rating: loser.pvp.rating
+                           },
                            songs: playedMaps.map((m, i) => ({
                               ...m,
                               score: winnerScores[i][0],
@@ -170,7 +174,11 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
                            mp,
                            prevRating: loser.pvp.rating,
                            ratingDiff: loserPlayer.getRating() - loser.pvp.rating,
-                           opponent: { name: winner.osuname, rating: winner.pvp.rating },
+                           opponent: {
+                              id: winner.osuid,
+                              name: winner.osuname,
+                              rating: winner.pvp.rating
+                           },
                            songs: playedMaps.map((m, i) => ({
                               ...m,
                               score: loserScores[i][0],
