@@ -43,12 +43,12 @@ export default async function ScoreHistoryItem({ match }) {
                   </div>
                   {!isNaN(match.mp) ? (
                      <Link
-                        className="ms-auto"
+                        className="ms-auto text-decoration-none"
                         href={buildUrl.match(match.mp)}
                         target="_blank"
                         rel="noopener noreferrer"
                      >
-                        Lobby {match.mp}
+                        MP{match.mp}
                      </Link>
                   ) : (
                      <div className="ms-auto">{match.mp}</div>
