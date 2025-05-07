@@ -27,11 +27,17 @@ export default async function Profile({ params }) {
 
    const playersCollection = db.collection("players");
    const player = await playersCollection.findOne({
-      osuid: playerid,
-      hideLeaderboard: { $exists: false }
+      osuid: playerid
+      //hideLeaderboard: { $exists: false }
    });
 
-   if (!player) return redirect("/leaderboard");
+   // If there's no player, or if we're trying to view a hidden player when we're not an admin
+   if (
+      !player ||
+      (player.hideLeaderboard &&
+         !(await playersCollection.findOne({ osuid: session.user.id })).admin)
+   )
+      return redirect("/leaderboard");
 
    return (
       <div className="d-flex flex-column gap-2">

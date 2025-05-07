@@ -5,9 +5,7 @@ import { verify } from "../admin/functions";
 import Link from "next/link";
 
 export default async function Leaderboard() {
-   const adminFilter = (await verify()).session
-      ? {}
-      : { $or: [{ hideLeaderboard: { $exists: false } }, { hideLeaderboard: false }] };
+   const adminFilter = (await verify()).session ? {} : { hideLeaderboard: { $exists: false } };
    const playersDb = db.collection("players");
    const pvePlayers = await playersDb
       .find(
@@ -72,17 +70,23 @@ export default async function Leaderboard() {
                   }}
                >
                   {pvePlayers.map(p => (
-                     <Card key={p.osuid}>
-                        <CardImg src={buildUrl.userAvatar(p.osuid)} alt="Avatar" />
-                        <CardBody>
-                           <CardTitle>{p.osuname}</CardTitle>
-                           <CardText>
-                              Rating: {p.pve.rating.toFixed()}
-                              <br />
-                              Games: {p.pve.games}
-                           </CardText>
-                        </CardBody>
-                     </Card>
+                     <Link
+                        key={p.osuid}
+                        href={`/profile/${p.osuid}`}
+                        className="text-decoration-none"
+                     >
+                        <Card>
+                           <CardImg src={buildUrl.userAvatar(p.osuid)} alt="Avatar" />
+                           <CardBody>
+                              <CardTitle>{p.osuname}</CardTitle>
+                              <CardText>
+                                 Rating: {p.pve.rating.toFixed()}
+                                 <br />
+                                 Games: {p.pve.games}
+                              </CardText>
+                           </CardBody>
+                        </Card>
+                     </Link>
                   ))}
                </div>
             </CardBody>

@@ -48,6 +48,7 @@ export async function createMappool(accessToken, packName, download, mapsets) {
                            artist: mapset.artist,
                            title: mapset.title,
                            version: bm.version,
+                           mapper: mapset.creator,
                            length: bm.total_length,
                            bpm: bm.bpm,
                            cs: bm.cs,

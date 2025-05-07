@@ -2,18 +2,7 @@
 
 import { LegacyClient } from "osu-web.js";
 import db from "../api/db/connection";
-
-// How much PP does the rank 10k player have?
-const PP_EQUIVALENT = 9017;
-
-const convertPP = pp => {
-   // Below 1000 PP, rating == pp
-   if (pp < 1000) return pp;
-   // Between 1000 and 10k rank (pp value), linearly scale so 10k == 2000 rating
-   else if (pp < PP_EQUIVALENT) return 1000 * ((pp - 1000) / (PP_EQUIVALENT - 1000) + 1);
-   // Afterwards logarithmically scale up from 2000 rating
-   else return 1000 * (Math.log(pp / 1000) / Math.log(PP_EQUIVALENT / 1000) + 1);
-};
+import { convertPP } from "@/helpers/rating-range";
 
 export async function register(osuid, osuname) {
    console.log(`Register player ${osuid}`);

@@ -1,3 +1,15 @@
+// How much PP does the rank 10k player have?
+const PP_EQUIVALENT = 9017;
+
+export function convertPP(pp) {
+   // Below 1000 PP, rating == pp
+   if (pp < 1000) return pp;
+   // Between 1000 and 10k rank (pp value), linearly scale so 10k == 2000 rating
+   else if (pp < PP_EQUIVALENT) return 1000 * ((pp - 1000) / (PP_EQUIVALENT - 1000) + 1);
+   // Afterwards logarithmically scale up from 2000 rating
+   else return 1000 * (Math.log(pp / 1000) / Math.log(PP_EQUIVALENT / 1000) + 1);
+}
+
 /**
  * @param {...import("@/types/rating").Rating} ratings
  */
@@ -17,12 +29,12 @@ export function withinRange(...ratings) {
 }
 
 /**
- * 
- * @param {import("@/types/database.beatmap").RatingSet} mapRatings 
- * @param {import("@/types/rating").Rating} candidateRating 
+ *
+ * @param {import("@/types/rating").ModRatings} mapRatings
+ * @param {import("@/types/rating").Rating} candidateRating
  */
 export function anyWithinRange(mapRatings, candidateRating) {
-   return Object.keys(mapRatings).some(key => withinRange(mapRatings[key], candidateRating))
+   return Object.keys(mapRatings).some(key => withinRange(mapRatings[key], candidateRating));
 }
 
 /**
