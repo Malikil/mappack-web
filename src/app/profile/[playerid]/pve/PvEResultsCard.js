@@ -3,7 +3,7 @@ import ScoreHistoryItem from "./ScoreHistoryItem";
 import ComponentInfoRows from "../ComponentInfoRows";
 import AddPvESession from "./AddPveSession";
 
-export default function PvEResultsCard({ data, osuid }) {
+export default function PvEResultsCard({ data, osuid, mode }) {
    return (
       <Card>
          <CardHeader>Score Attack</CardHeader>
@@ -22,7 +22,7 @@ export default function PvEResultsCard({ data, osuid }) {
             <CardTitle>Match History</CardTitle>
             <div className="d-flex flex-column gap-1">
                {data.matches.map((match, i) => (
-                  <ScoreHistoryItem key={i} match={match} />
+                  <ScoreHistoryItem key={i} match={match} mode={mode} />
                ))}
             </div>
          </CardBody>

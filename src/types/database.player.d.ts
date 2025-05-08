@@ -50,10 +50,13 @@ export interface PvEInfo extends Rating {
    games: number;
 }
 
-export interface DbPlayer {
-   osuid: number;
+export interface ModeInfo {
    pvp: PvPInfo;
    pve: PvEInfo;
+}
+
+export interface DbPlayer extends Record<GameMode, ModeInfo> {
+   osuid: number;
    osuname: string;
    admin?: boolean;
    hideLeaderboard?: boolean;

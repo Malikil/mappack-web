@@ -13,8 +13,8 @@ import { getCurrentPack } from "@/helpers/currentPack";
  * @param {object} params
  * @param {import("@/types/database.player").PvEMatchHistory} params.match
  */
-export default async function ScoreHistoryItem({ match }) {
-   const maplist = await getCurrentPack();
+export default async function ScoreHistoryItem({ match, mode }) {
+   const maplist = await getCurrentPack(mode);
    // Get map details
    const details = (match.songs || match).map(songResult => {
       const dbmap = maplist.find(map => map.id === songResult.map.id);

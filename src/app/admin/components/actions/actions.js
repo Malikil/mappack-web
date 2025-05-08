@@ -1,9 +1,12 @@
 "use server";
 
 import db from "@/app/api/db/connection";
+import { createMappool } from "@/helpers/addPool";
 import { getCurrentPack } from "@/helpers/currentPack";
+import { convertPP } from "@/helpers/rating-range";
 import { delay } from "@/time";
 import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
+import { Client, LegacyClient } from "osu-web.js";
 
 async function getPreviousMapScalings(mode) {
    console.log("Get previous map scalings");
@@ -31,13 +34,43 @@ async function getPreviousMapScalings(mode) {
    };
 }
 
+async function getOsuToken() {
+   console.log("Get osu token");
+   const url = new URL("https://osu.ppy.sh/oauth/token");
+   const headers = {
+      Accept: "application/json",
+      "Content-Type": "application/x-www-form-urlencoded"
+   };
+   const body = `client_id=${process.env.AUTH_OSU_ID}&client_secret=${process.env.AUTH_OSU_SECRET}&grant_type=client_credentials&scope=public`;
+   const osuResponse = await fetch(url, {
+      method: "POST",
+      headers,
+      body
+      // cache: "no-store" // TODO Investigate if this will be needed in production
+   }).then(res => res.json());
+   return osuResponse.access_token;
+}
+
 export async function debug() {
-   //const predictor = await getPreviousMapScalings("osu");
-   const players = db.collection("players").find();
-   for await (const player of players) {
-      console.log(player.pvp.vol);
-      console.log(player.pve.vol);
-   }
+   // ========== TEMPORARY MANUAL FETCH NEW CTB POOL ==========
+   // // Get recent beatmap packs
+   // const accessToken = await getOsuToken();
+   // const client = new Client(accessToken);
+   // /** @type {import("@/types/undocumented.beatmappacks").UndocumentedBeatmappackResponse} */
+   // const packs = await client.getUndocumented("beatmaps/packs");
+   // console.log(packs.beatmap_packs.slice(0, 5), `+ ${packs.beatmap_packs.length - 5} more`);
+   // const mappackMeta = packs.beatmap_packs.find(p => p.ruleset_id === 2);
+   // console.log(`Found mappack ${mappackMeta.tag}`);
+   // /** @type {import("@/types/undocumented.beatmappacks").UndocumentedBeatmappack} */
+   // const mappack = await client.getUndocumented(`beatmaps/packs/${mappackMeta.tag}`);
+   // console.log(`Add mappack ${mappack.tag}`);
+   // await createMappool(
+   //    accessToken,
+   //    mappack.name,
+   //    mappack.url,
+   //    mappack.beatmapsets.map(bms => bms.id),
+   //    "fruits"
+   // );
 }
 
 export async function updateV1Meta() {

@@ -19,7 +19,14 @@ async function getPreviousMapScalings(mode) {
    return polyReg;
 }
 
-export async function createMappool(accessToken, packName, download, mapsets, gamemode = "osu") {
+/**
+ * @param {string} accessToken 
+ * @param {string} packName 
+ * @param {string} download 
+ * @param {number[]} mapsets 
+ * @param {import("osu-web.js").GameMode} gamemode 
+ */
+export async function createMappool(accessToken, packName, download, mapsets, gamemode = 'osu') {
    console.log(`Create pool ${packName}`);
    // Make sure this pack hasn't been used yet
    const historyDb = db.collection("history");

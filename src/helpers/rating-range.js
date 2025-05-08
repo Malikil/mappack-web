@@ -1,13 +1,23 @@
 // How much PP does the rank 10k player have?
-const PP_EQUIVALENT = 9017;
+const PP_EQUIVALENT = {
+   osu: 9019,
+   mania: 7213, // 4 key
+   taiko: 5896, // 5k
+   fruits: 8238 // 1k
+};
 
-export function convertPP(pp) {
+/**
+ * @param {number} pp
+ * @param {import("osu-web.js").GameMode} mode
+ */
+export function convertPP(pp, mode = "osu") {
+   const ppmod = PP_EQUIVALENT[mode];
    // Below 1000 PP, rating == pp
    if (pp < 1000) return pp;
    // Between 1000 and 10k rank (pp value), linearly scale so 10k == 2000 rating
-   else if (pp < PP_EQUIVALENT) return 1000 * ((pp - 1000) / (PP_EQUIVALENT - 1000) + 1);
+   else if (pp < ppmod) return 1000 * ((pp - 1000) / (ppmod - 1000) + 1);
    // Afterwards logarithmically scale up from 2000 rating
-   else return 1000 * (Math.log(pp / 1000) / Math.log(PP_EQUIVALENT / 1000) + 1);
+   else return 1000 * (Math.log(pp / 1000) / Math.log(ppmod / 1000) + 1);
 }
 
 /**

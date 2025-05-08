@@ -61,7 +61,7 @@ export async function parseMpLobby(link) {
       console.log(mpLobby.games.length);
       /**
        * @type {{
-       *    [key: string]: {
+       *    [user_id: string]: {
        *       map: number;
        *       mod: 'nm'|'hd'|'hr'|'dt';
        *       score: number;

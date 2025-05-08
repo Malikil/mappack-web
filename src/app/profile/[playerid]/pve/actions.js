@@ -6,12 +6,14 @@ import { revalidatePath } from "next/cache";
 import { matchResultValue, parseMpLobby } from "./functions";
 import { withinRange } from "@/helpers/rating-range";
 import { getCurrentPack } from "@/helpers/currentPack";
+import { auth } from "@/auth";
 
 export async function generateAttack(osuid, mapcount = 7) {
    const playersDb = db.collection("players");
    const player = await playersDb.findOne({ osuid });
-   console.log(`Target range: ${player.pve.rating.toFixed(1)} ±${player.pve.rd.toFixed(1)}`);
-   const packMaps = await getCurrentPack();
+   const pveStats = player[player.gamemode]?.pve || player.pve;
+   console.log(`Target range: ${pveStats.rating.toFixed(1)} ±${pveStats.rd.toFixed(1)}`);
+   const packMaps = await getCurrentPack(player.gamemode || "osu");
    let availableMaps = packMaps
       .flatMap(map =>
          Object.keys(map.ratings).map(mod => ({
@@ -21,7 +23,7 @@ export async function generateAttack(osuid, mapcount = 7) {
             rating: map.ratings[mod]
          }))
       )
-      .filter(map => withinRange(player.pve, map.rating));
+      .filter(map => withinRange(pveStats, map.rating));
    console.log(`${availableMaps.length} available maps`);
 
    const selectedMaps = Array.from({ length: mapcount }, () => {
@@ -46,12 +48,16 @@ export async function submitPve(formData, matchesData) {
          }
       };
    console.log(matches);
+   const session = await auth();
+   const mode = session
+      ? (await db.collection("players").findOne({ osuid: session.user.id })).gamemode || "osu"
+      : "osu";
    // Create the rating calculator
    const calculator = new Glicko2();
 
    // Get the maps from database
    const mapsdb = db.collection("maps");
-   const packMaps = await getCurrentPack();
+   const packMaps = await getCurrentPack(mode);
    /**
     * @type {{
     *   id: number,
@@ -138,26 +144,31 @@ export async function submitPve(formData, matchesData) {
                return;
             // Get the player's current rating
             const playerId = parseInt(playerIdKey);
+            const ratingSet = {
+               pvp: {
+                  rating: 1500,
+                  rd: 350,
+                  vol: 0.06,
+                  matches: [],
+                  wins: 0,
+                  losses: 0
+               },
+               pve: {
+                  rating: 1500,
+                  rd: 350,
+                  vol: 0.06,
+                  matches: [],
+                  games: 0
+               }
+            };
+            /** @type {import("@/types/database.player").DbPlayer} */
             const player = await playersdb.findOneAndUpdate(
                { osuid: playerId },
                {
                   $setOnInsert: {
                      osuname: `#${playerIdKey}`,
-                     pvp: {
-                        rating: 1500,
-                        rd: 350,
-                        vol: 0.06,
-                        matches: [],
-                        wins: 0,
-                        losses: 0
-                     },
-                     pve: {
-                        rating: 1500,
-                        rd: 350,
-                        vol: 0.06,
-                        matches: [],
-                        games: 0
-                     },
+                     osu: ratingSet,
+                     fruits: ratingSet,
                      hideLeaderboard: true
                   }
                },
@@ -168,18 +179,18 @@ export async function submitPve(formData, matchesData) {
             // already set up
             // Make sure the lobby hasn't been used in either pve or pvp
             if (
-               player.pve.matches.find(h => h.mp === mp) ||
-               player.pvp.matches.find(h => h.mp === mp)
+               player[mode].pve.matches.find(h => h.mp === mp) ||
+               player[mode].pvp.matches.find(h => h.mp === mp)
             )
                throw new Error("History already exists");
             const playerCalc = calculator.makePlayer(
-               player.pve.rating,
-               player.pve.rd,
-               player.pve.vol
+               player[mode].pve.rating,
+               player[mode].pve.rd,
+               player[mode].pve.vol
             );
             const history = {
                mp,
-               prevRating: player.pve.rating,
+               prevRating: player[mode].pve.rating,
                ratingDiff: 0,
                songs: []
             };
@@ -236,13 +247,13 @@ export async function submitPve(formData, matchesData) {
                filter: { osuid: playerId },
                update: {
                   $set: {
-                     "pve.rating": updatedRating,
-                     "pve.rd": playerCalc.getRd(),
-                     "pve.vol": playerCalc.getVol()
+                     [`${mode}.pve.rating`]: updatedRating,
+                     [`${mode}.pve.rd`]: playerCalc.getRd(),
+                     [`${mode}.pve.vol`]: playerCalc.getVol()
                   },
-                  $inc: { "pve.games": 1 },
+                  $inc: { [`${mode}.pve.games`]: 1 },
                   $push: {
-                     "pve.matches": {
+                     [`${mode}.pve.matches`]: {
                         $each: [history],
                         $position: 0,
                         $slice: 5

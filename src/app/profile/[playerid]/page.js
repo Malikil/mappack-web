@@ -39,6 +39,8 @@ export default async function Profile({ params }) {
    )
       return redirect("/leaderboard");
 
+   const pvpStats = player[player.gamemode]?.pvp || player.pvp;
+   const pveStats = player[player.gamemode]?.pve || player.pve;
    return (
       <div className="d-flex flex-column gap-2">
          <h1>
@@ -57,12 +59,9 @@ export default async function Profile({ params }) {
                <div className="d-flex justify-content-between">
                   <TableData
                      data={[
-                        [
-                           "Rating",
-                           `${player.pvp.rating.toFixed(0)} (rd: ${player.pvp.rd.toFixed(0)})`
-                        ],
-                        ["Wins", player.pvp.wins],
-                        ["Losses", player.pvp.losses]
+                        ["Rating", `${pvpStats.rating.toFixed(0)} (rd: ${pvpStats.rd.toFixed(0)})`],
+                        ["Wins", pvpStats.wins],
+                        ["Losses", pvpStats.losses]
                      ]}
                   />
                   <Form
@@ -81,15 +80,16 @@ export default async function Profile({ params }) {
                <hr />
                <CardTitle>Match History</CardTitle>
                <div className="d-flex flex-column gap-1">
-                  {player.pvp.matches.map((match, i) => (
+                  {pvpStats.matches.map((match, i) => (
                      <MatchHistoryItem key={i} match={match} />
                   ))}
                </div>
             </CardBody>
          </Card>
          <PvEResultsCard
-            data={player.pve}
+            data={pveStats}
             osuid={session?.user.id === playerid ? playerid : null}
+            mode={player.gamemode}
          />
       </div>
    );
