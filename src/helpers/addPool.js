@@ -37,9 +37,9 @@ export async function createMappool(accessToken, packName, download, mapsets, ga
                const mapset = await osuClient.getUndocumented(`beatmapsets/${setId}`);
                console.log(mapset.title);
                return arr.concat(
-                  await Promise.all(
-                     mapset.beatmaps
-                        .map(async bm => {
+                  (
+                     await Promise.all(
+                        mapset.beatmaps.map(async bm => {
                            // Ignore maps from other modes
                            // Special case: Accept std maps for ctb
                            if (bm.mode !== gamemode && gamemode !== "fruits" && bm.mode !== "osu")
@@ -51,6 +51,7 @@ export async function createMappool(accessToken, packName, download, mapsets, ga
                               artist: mapset.artist,
                               title: mapset.title,
                               version: bm.version,
+                              mapper: mapset.creator,
                               length: bm.total_length,
                               bpm: bm.bpm,
                               cs: bm.cs,
@@ -86,8 +87,8 @@ export async function createMappool(accessToken, packName, download, mapsets, ga
                            };
                            return mapData;
                         })
-                        .filter(m => m)
-                  )
+                     )
+                  ).filter(m => m)
                );
             }),
          Promise.resolve([])

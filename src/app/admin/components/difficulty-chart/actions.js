@@ -18,25 +18,12 @@ export async function fetchScatterData(mode) {
          modRatios.hd += hd.rating / nm.rating;
          modRatios.hr += hr.rating / nm.rating;
          modRatios.dt += dt.rating / nm.rating;
-         chartData.nm.push({
-            x: map.stars,
-            y: nm.rating,
-            label: `${map.artist} - ${map.title} [${map.version}]`
-         });
-         chartData.hd.push({
-            x: map.stars,
-            y: hd.rating,
-            label: `${map.artist} - ${map.title} [${map.version}]`
-         });
-         chartData.hr.push({
-            x: map.stars,
-            y: hr.rating,
-            label: `${map.artist} - ${map.title} [${map.version}]`
-         });
-         chartData.dt.push({
-            x: map.stars,
-            y: dt.rating,
-            label: `${map.artist} - ${map.title} [${map.version}]`
+         Object.keys(chartData).forEach(k => {
+            chartData[k].push({
+               x: map.stars,
+               y: map.ratings[k].rating,
+               label: `${map.artist} - ${map.title} [${map.version}]`
+            });
          });
       });
    }

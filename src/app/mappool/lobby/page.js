@@ -1,7 +1,7 @@
+import db from "@/app/api/db/connection";
 import ModPool from "@/components/mappool/Modpool";
-import { getCurrentPack } from "@/helpers/currentPack";
 
-export default async function PlayerPool({ searchParams }) {
+export default async function LobbyPool({ searchParams }) {
    const stringParams = await searchParams;
    const parsedParams = Object.fromEntries(
       Object.keys(stringParams).map(k => [
@@ -11,7 +11,11 @@ export default async function PlayerPool({ searchParams }) {
    );
    parsedParams.l = decodeURIComponent(stringParams.l);
 
-   const mappools = await getCurrentPack();
+   // Get all maps. If pools are rotated while the match is ongoing, the previous maps will still need
+   // to be visible on the lobby's pool page
+   const mapsCollection = db.collection("maps");
+   const pools = await mapsCollection.find().toArray();
+   const mappools = [].concat(...pools.map(p => p.maps));
    const maplist = {
       nm: [],
       hd: [],

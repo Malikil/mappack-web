@@ -12,11 +12,11 @@ export default function PvEResultsCard({ data, osuid }) {
                <ComponentInfoRows
                   data={[
                      ["Rating", data.rating.toFixed(0)],
-                     ["Rating Deviation", data.rd.toFixed(0)],
+                     ["Deviation", data.rd.toFixed(0)],
                      ["Games", data.games]
                   ]}
                />
-               <AddPvESession userId={osuid} />
+               {osuid && <AddPvESession userId={osuid} />}
             </div>
             <hr />
             <CardTitle>Match History</CardTitle>

@@ -6,7 +6,8 @@ import { addMatchData, parseMpLobby } from "./functions";
  */
 export const POST = async req => {
    const auth = req.headers.get("Authorization");
-   if (auth !== process.env.MATCH_SUBMIT_AUTH) return new NextResponse(null, { status: 404 });
+   if (auth !== process.env.MATCH_SUBMIT_AUTH)
+      return new NextResponse("Bad auth key", { status: 401 });
 
    const { mp, playerDefault } = await req.json();
    console.log(`Add results from ${mp}`);

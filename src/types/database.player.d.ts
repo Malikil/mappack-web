@@ -26,12 +26,17 @@ export interface MatchHistory {
    ratingDiff: number;
    songs: MatchHistorySong[];
 }
+export interface MatchHistoryOpponent {
+   id: number;
+   name: string;
+   rating: number;
+}
 export interface PvEMatchHistory extends MatchHistory {
    songs: PvEMatchHistorySong[];
 }
 export interface PvPMatchHistory extends MatchHistory {
    songs: PvPMatchHistorySong[];
-   opponent: string;
+   opponent: MatchHistoryOpponent;
 }
 
 export interface PvPInfo extends Rating {

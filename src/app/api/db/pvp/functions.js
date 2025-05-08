@@ -1,7 +1,7 @@
 import { Glicko2 } from "glicko2";
 import { LegacyClient } from "osu-web.js";
 import db from "../connection";
-import { matchResultValue } from "@/app/profile/pve/functions";
+import { matchResultValue } from "@/app/profile/[playerid]/pve/functions";
 import { getCurrentPack } from "@/helpers/currentPack";
 
 /**
@@ -29,39 +29,43 @@ export async function parseMpLobby(link) {
    try {
       console.log(`Fetch multiplayer lobby ${matchIdSegment}`);
       const mpLobby = await osuClient.getMultiplayerLobby({ mp: matchIdSegment });
-      const result = mpLobby.games.reduce(
-         (agg, game) => {
-            // If length is 0, that means freemod is enabled. Length will be 1 if nomod (nf counts as the 1)
-            const mod =
-               game.mods.length === 0
-                  ? "fm"
-                  : (game.mods.filter(v => v !== "NF")[0] || "nm").toLowerCase();
-            agg.maps.push({
-               map: game.beatmap_id,
-               mod
-            });
-            game.scores.forEach(score => {
-               // Will HD always be first?
-               const scoreMod = score.enabled_mods
-                  .filter(v => v !== "NF")
-                  .join("")
-                  .toLowerCase();
-               if (!(score.user_id in agg.scores)) agg.scores[score.user_id] = [];
-               agg.scores[score.user_id].push({
-                  osuid: score.user_id,
-                  score: score.score,
-                  mod: ["hd", "hr", "hdhr"].includes(scoreMod) ? scoreMod : null
+      // Is end time an indicator of aborted matches?
+      const result = mpLobby.games
+         .filter(l => l.end_time)
+         .reduce(
+            (agg, game) => {
+               // If length is 0, that means freemod is enabled. Length will be 1 if nomod (nf counts as the 1)
+               const mod =
+                  game.mods.length === 0
+                     ? "fm"
+                     : (game.mods.filter(v => v !== "NF")[0] || "nm").toLowerCase();
+               agg.maps.push({
+                  map: game.beatmap_id,
+                  mod
                });
-            });
-            // Find the song winner
-            const winner = game.scores.sort((a, b) => b.score - a.score)[0].user_id;
-            agg.resultScore[winner] = (agg.resultScore[winner] || 0) + 1;
-            // Make sure the loser is still counted
-            agg.resultScore[game.scores[1].user_id] = agg.resultScore[game.scores[1].user_id] || 0;
-            return agg;
-         },
-         { maps: [], scores: {}, resultScore: {} }
-      );
+               game.scores.forEach(score => {
+                  // Will HD always be first?
+                  const scoreMod = score.enabled_mods
+                     .filter(v => v !== "NF")
+                     .join("")
+                     .toLowerCase();
+                  if (!(score.user_id in agg.scores)) agg.scores[score.user_id] = [];
+                  agg.scores[score.user_id].push({
+                     osuid: score.user_id,
+                     score: score.score,
+                     mod: ["hd", "hr", "hdhr"].includes(scoreMod) ? scoreMod : null
+                  });
+               });
+               // Find the song winner
+               const winner = game.scores.sort((a, b) => b.score - a.score)[0].user_id;
+               agg.resultScore[winner] = (agg.resultScore[winner] || 0) + 1;
+               // Make sure the loser is still counted
+               agg.resultScore[game.scores[1].user_id] =
+                  agg.resultScore[game.scores[1].user_id] || 0;
+               return agg;
+            },
+            { maps: [], scores: {}, resultScore: {} }
+         );
       const matchPlacement = Object.keys(result.resultScore).sort(
          (a, b) => result.resultScore[b] - result.resultScore[a]
       );
@@ -95,10 +99,11 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
    // Get the played maps
    const mapsDb = db.collection("maps");
    const maplist = await getCurrentPack();
+   const staleMaplist = await db.collection("maps").findOne({ active: "completed" });
    const playedMaps = maps.map(item => {
       const { map, mod } = item;
       /** @type {import("@/types/database.beatmap").DbBeatmap} */
-      const dbmap = maplist.find(m => m.id === map);
+      const dbmap = maplist.find(m => m.id === map) || staleMaplist.maps.find(m => m.id === map);
       return {
          map: {
             id: dbmap.id,
@@ -133,7 +138,11 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
                            mp,
                            prevRating: winner.pvp.rating,
                            ratingDiff: winnerPlayer.getRating() - winner.pvp.rating,
-                           opponent: loser.osuname,
+                           opponent: {
+                              id: loser.osuid,
+                              name: loser.osuname,
+                              rating: loser.pvp.rating
+                           },
                            songs: playedMaps.map((m, i) => ({
                               ...m,
                               score: winnerScores[i][0],
@@ -165,7 +174,11 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
                            mp,
                            prevRating: loser.pvp.rating,
                            ratingDiff: loserPlayer.getRating() - loser.pvp.rating,
-                           opponent: winner.osuname,
+                           opponent: {
+                              id: winner.osuid,
+                              name: winner.osuname,
+                              rating: winner.pvp.rating
+                           },
                            songs: playedMaps.map((m, i) => ({
                               ...m,
                               score: loserScores[i][0],
@@ -186,6 +199,10 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
    // Update map ratings
    const songlistCombined = playedMaps.flatMap((result, i) => {
       const map = maplist.find(map => map.id === result.map.id);
+      // If the map isn't in the maplist, skip it
+      // This could be because the pool has rotated since the match started
+      if (!map) return [];
+
       const wscore = winnerScores[i][0];
       const lscore = loserScores[i][0];
       if (result.mod === "fm") {

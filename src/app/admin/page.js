@@ -5,6 +5,7 @@ import { checkExpiry } from "@/auth";
 import AdminNotify from "./components/admin-notify/AdminNotify";
 import DifficultyChart from "./components/difficulty-chart/DifficultyChart";
 import AddAttack from "./components/add-attack/AddAttack";
+import CustomPool from "./components/custom-pool/CustomPool";
 
 export default async function Admin() {
    const { session } = await verify();
@@ -15,6 +16,7 @@ export default async function Admin() {
          <div className="d-flex gap-3 flex-wrap mb-2">
             <AdminActions />
             <AddAttack />
+            <CustomPool />
          </div>
          <DifficultyChart />
          {checkExpiry(session.accessToken) && <AdminNotify />}

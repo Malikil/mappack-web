@@ -1,6 +1,6 @@
 "use server";
 
-import { submitPve } from "@/app/profile/pve/actions";
+import { submitPve } from "@/app/profile/[playerid]/pve/actions";
 
 export default async function adminPve(formData) {
    const id = parseInt(formData.get("player")) || 3208718;

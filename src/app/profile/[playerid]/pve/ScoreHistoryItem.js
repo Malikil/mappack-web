@@ -4,24 +4,21 @@ import { buildUrl } from "osu-web.js";
 import {
    ArrowDownRightCircle,
    ArrowUpRightCircle,
-   CheckCircle,
    DashCircle,
-   PlusCircle,
-   XCircle
+   PlusCircle
 } from "react-bootstrap-icons";
 import { getCurrentPack } from "@/helpers/currentPack";
 
 /**
  * @param {object} params
- * @param {import("@/types/database.player").PvPMatchHistory} params.match
+ * @param {import("@/types/database.player").PvEMatchHistory} params.match
  */
-export default async function MatchHistoryItem({ match }) {
+export default async function ScoreHistoryItem({ match }) {
    const maplist = await getCurrentPack();
    // Get map details
    const details = (match.songs || match).map(songResult => {
       const dbmap = maplist.find(map => map.id === songResult.map.id);
       if (!dbmap) return songResult;
-      dbmap.ratings.fm = { rating: (dbmap.ratings.hd.rating + dbmap.ratings.hr.rating) / 2 };
       return {
          ...songResult,
          map: dbmap
@@ -32,42 +29,37 @@ export default async function MatchHistoryItem({ match }) {
       <Card>
          <CardBody>
             {match.songs && (
-               <div className="d-flex justify-content-between mb-3 px-1">
-                  <div className="d-flex align-items-center gap-2">
-                     <div className="fw-bold">{match.prevRating.toFixed()}</div>
-                     {match.ratingDiff > 0 ? <ArrowUpRightCircle /> : <ArrowDownRightCircle />}
-                     <div className="fw-bold">
-                        {(match.prevRating + match.ratingDiff).toFixed()}
-                     </div>
-                     <div className="d-flex align-items-center">
-                        {match.ratingDiff > 0 ? (
-                           <PlusCircle className="text-success m-1" />
-                        ) : (
-                           <DashCircle className="text-danger m-1" />
-                        )}
-                        {Math.abs(match.ratingDiff).toFixed(1)}
-                     </div>
+               <div className="d-flex align-items-center gap-2 mb-3 px-1">
+                  <div className="fw-bold">{match.prevRating.toFixed()}</div>
+                  {match.ratingDiff > 0 ? <ArrowUpRightCircle /> : <ArrowDownRightCircle />}
+                  <div className="fw-bold">{(match.prevRating + match.ratingDiff).toFixed()}</div>
+                  <div className="d-flex align-items-center">
+                     {match.ratingDiff > 0 ? (
+                        <PlusCircle className="text-success m-1" />
+                     ) : (
+                        <DashCircle className="text-danger m-1" />
+                     )}
+                     {Math.abs(match.ratingDiff).toFixed(1)}
                   </div>
-                  <div>
-                     vs. {match.opponent}
+                  {!isNaN(match.mp) ? (
                      <Link
-                        className="ms-2"
+                        className="ms-auto text-decoration-none"
                         href={buildUrl.match(match.mp)}
                         target="_blank"
                         rel="noopener noreferrer"
                      >
-                        {match.mp}
+                        MP{match.mp}
                      </Link>
-                  </div>
+                  ) : (
+                     <div className="ms-auto">{match.mp}</div>
+                  )}
                </div>
             )}
             <div className="d-flex gap-1 flex-wrap">
                {details.map((m, i) => (
                   <Card
-                     className={`flex-shrink-0 flex-grow-1 border-3 border-${
-                        m.score > m.opponentScore ? "success" : "danger"
-                     }`}
                      key={i}
+                     className="flex-shrink-0 flex-grow-1"
                      style={{ flexBasis: "140px" }}
                   >
                      <Link
@@ -82,17 +74,7 @@ export default async function MatchHistoryItem({ match }) {
                         />
                      </Link>
                      <CardBody className="d-flex flex-column">
-                        <CardSubtitle className="d-flex justify-content-between flex-wrap">
-                           <span>{m.score.toLocaleString()}</span>
-                           <span
-                              className={`mx-1 text-${
-                                 m.score > m.opponentScore ? "success" : "danger"
-                              }`}
-                           >
-                              {m.score > m.opponentScore ? <CheckCircle /> : <XCircle />}
-                           </span>
-                           <span>{m.opponentScore.toLocaleString()}</span>
-                        </CardSubtitle>
+                        <CardSubtitle>{m.score.toLocaleString()}</CardSubtitle>
                         <div>{m.map.version}</div>
                         <div className="d-flex mt-auto">
                            <span>{m.mod.toUpperCase()}</span>
