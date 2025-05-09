@@ -52,6 +52,16 @@ async function getOsuToken() {
 }
 
 export async function debug() {
+   const maps = await getCurrentPack("fruits");
+   maps.forEach(map =>
+      console.log(
+         map.stars,
+         ", ",
+         Object.keys(map.ratings)
+            .map(k => map.ratings[k].rating)
+            .join(", ")
+      )
+   );
    // ========== TEMPORARY MANUAL FETCH NEW CTB POOL ==========
    // // Get recent beatmap packs
    // const accessToken = await getOsuToken();
