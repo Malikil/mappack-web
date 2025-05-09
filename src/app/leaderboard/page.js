@@ -5,23 +5,31 @@ import { verify } from "../admin/functions";
 import Link from "next/link";
 
 export default async function Leaderboard() {
-   const adminFilter = (await verify()).session ? {} : { hideLeaderboard: { $exists: false } };
+   const auth = await verify();
+   const gamemode = auth.user.gamemode;
+   const adminFilter = auth.session ? {} : { hideLeaderboard: { $exists: false } };
    const playersDb = db.collection("players");
    const pvePlayers = await playersDb
       .find(
          {
             ...adminFilter,
-            "pve.games": { $gt: 0 }
+            "pve.games": { $gt: 0 },
+            [gamemode]: { $exists: true }
          },
-         { sort: ["pve.rating", -1], limit: 100 }
+         { sort: [`${gamemode}.pve.rating`, -1], limit: 100 }
       )
       .toArray();
    const pvpPlayers = await playersDb
       .find(
          {
-            $and: [adminFilter, { $or: [{ "pvp.wins": { $gt: 0 } }, { "pvp.losses": { $gt: 0 } }] }]
+            ...adminFilter,
+            $or: [
+               { [`${gamemode}.pvp.wins`]: { $gt: 0 } },
+               { [`${gamemode}.pvp.losses`]: { $gt: 0 } }
+            ],
+            [gamemode]: { $exists: true }
          },
-         { sort: ["pvp.rating", -1], limit: 100 }
+         { sort: [`${gamemode}.pvp.rating`, -1], limit: 100 }
       )
       .toArray();
 
@@ -48,9 +56,9 @@ export default async function Leaderboard() {
                            <CardBody>
                               <CardTitle>{p.osuname}</CardTitle>
                               <CardText>
-                                 Rating: {p.pvp.rating.toFixed()}
+                                 Rating: {p[gamemode].pvp.rating.toFixed()}
                                  <br />
-                                 W/L: {p.pvp.wins} - {p.pvp.losses}
+                                 W/L: {p[gamemode].pvp.wins} - {p[gamemode].pvp.losses}
                               </CardText>
                            </CardBody>
                         </Card>
@@ -80,9 +88,9 @@ export default async function Leaderboard() {
                            <CardBody>
                               <CardTitle>{p.osuname}</CardTitle>
                               <CardText>
-                                 Rating: {p.pve.rating.toFixed()}
+                                 Rating: {p[gamemode].pve.rating.toFixed()}
                                  <br />
-                                 Games: {p.pve.games}
+                                 Games: {p[gamemode].pve.games}
                               </CardText>
                            </CardBody>
                         </Card>
