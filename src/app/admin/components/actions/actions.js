@@ -52,35 +52,35 @@ async function getOsuToken() {
 }
 
 export async function debug() {
-   const maps = await getCurrentPack("fruits");
-   maps.forEach(map =>
-      console.log(
-         map.stars,
-         ", ",
-         Object.keys(map.ratings)
-            .map(k => map.ratings[k].rating)
-            .join(", ")
-      )
-   );
-   // ========== TEMPORARY MANUAL FETCH NEW CTB POOL ==========
-   // // Get recent beatmap packs
-   // const accessToken = await getOsuToken();
-   // const client = new Client(accessToken);
-   // /** @type {import("@/types/undocumented.beatmappacks").UndocumentedBeatmappackResponse} */
-   // const packs = await client.getUndocumented("beatmaps/packs");
-   // console.log(packs.beatmap_packs.slice(0, 5), `+ ${packs.beatmap_packs.length - 5} more`);
-   // const mappackMeta = packs.beatmap_packs.find(p => p.ruleset_id === 2);
-   // console.log(`Found mappack ${mappackMeta.tag}`);
-   // /** @type {import("@/types/undocumented.beatmappacks").UndocumentedBeatmappack} */
-   // const mappack = await client.getUndocumented(`beatmaps/packs/${mappackMeta.tag}`);
-   // console.log(`Add mappack ${mappack.tag}`);
-   // await createMappool(
-   //    accessToken,
-   //    mappack.name,
-   //    mappack.url,
-   //    mappack.beatmapsets.map(bms => bms.id),
-   //    "fruits"
+   // const maps = await getCurrentPack("fruits");
+   // maps.forEach(map =>
+   //    console.log(
+   //       map.stars,
+   //       ", ",
+   //       Object.keys(map.ratings)
+   //          .map(k => map.ratings[k].rating)
+   //          .join(", ")
+   //    )
    // );
+   // ========== TEMPORARY MANUAL FETCH NEW CTB POOL ==========
+   // Get recent beatmap packs
+   const accessToken = await getOsuToken();
+   const client = new Client(accessToken);
+   /** @type {import("@/types/undocumented.beatmappacks").UndocumentedBeatmappackResponse} */
+   const packs = await client.getUndocumented("beatmaps/packs");
+   console.log(packs.beatmap_packs.slice(0, 5), `+ ${packs.beatmap_packs.length - 5} more`);
+   const mappackMeta = packs.beatmap_packs.find(p => !p.ruleset_id); // === 2 ctb
+   console.log(`Found mappack ${mappackMeta.tag}`);
+   /** @type {import("@/types/undocumented.beatmappacks").UndocumentedBeatmappack} */
+   const mappack = await client.getUndocumented(`beatmaps/packs/${mappackMeta.tag}`);
+   console.log(`Add mappack ${mappack.tag}`);
+   await createMappool(
+      accessToken,
+      mappack.name,
+      mappack.url,
+      mappack.beatmapsets.map(bms => bms.id),
+      "osu"
+   );
 }
 
 export async function updateV1Meta() {
