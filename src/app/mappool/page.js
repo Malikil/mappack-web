@@ -11,7 +11,7 @@ export default async function Mappool() {
    const mapsCollection = db.collection("maps");
    const pools = await mapsCollection
       .aggregate([
-         { $match: { $or: [{ active: "fresh" }, { active: "stale" }] } },
+         { $match: { mode: "osu", $or: [{ active: "fresh" }, { active: "stale" }] } },
          { $unwind: "$maps" },
          {
             $group: {
