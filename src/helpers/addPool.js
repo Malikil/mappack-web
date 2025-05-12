@@ -25,8 +25,9 @@ async function getPreviousMapScalings(mode) {
  * @param {string} download 
  * @param {number[]} mapsets 
  * @param {import("osu-web.js").GameMode} gamemode 
+ * @param {boolean} alsoFruits
  */
-export async function createMappool(accessToken, packName, download, mapsets, gamemode = 'osu') {
+export async function createMappool(accessToken, packName, download, mapsets, gamemode = 'osu', alsoFruits = false) {
    console.log(`Create pool ${packName}`);
    // Make sure this pack hasn't been used yet
    const historyDb = db.collection("history");
@@ -36,13 +37,14 @@ export async function createMappool(accessToken, packName, download, mapsets, ga
    const predictor = await getPreviousMapScalings(gamemode);
    // Rather than fetch the latest std pack all over again when prepping ctb pools, just calc both
    // ratings duing the std fetch
-   const ctbPredictor = gamemode === "osu" && (await getPreviousMapScalings("fruits"));
+   const ctbPredictor = gamemode === "osu" && alsoFruits && (await getPreviousMapScalings("fruits"));
 
    /** @type {(import("@/types/database.beatmap").DbBeatmap & { mode: import("osu-web.js").GameMode })[]} */
    const maplist = await mapsets
       .reduce(
          (prom, setId) =>
             prom.then(async arr => {
+               console.log(`Fetch mapset ${setId}`);
                /** @type {import("@/types/undocumented.beatmapset").UndocumentedBeatmapsetResponse} */
                const mapset = await osuClient.getUndocumented(`beatmapsets/${setId}`);
                console.log(mapset.title);
@@ -72,15 +74,18 @@ export async function createMappool(accessToken, packName, download, mapsets, ga
                               stars: bm.difficulty_rating,
                               mode: bm.mode
                            };
+                           console.log(bm.id, mapData);
 
                            // Get the ctb difficulty if it's a converted map
-                           const altData = bm.mode === "osu" && {
+                           const altData = bm.mode === "osu" && (alsoFruits || gamemode === 'fruits') && {
                               ...mapData,
-                              stars: (
-                                 await osuClient.beatmaps.getBeatmapAttributes(bm.id, "fruits")
-                              ).star_rating,
+                              stars: console.log(bm.id, 'Fetch ctb attributes') || (
+                                 await osuClient.beatmaps.getBeatmapAttributes(bm.id, "fruits").catch(err => console.error(bm.id, err))
+                                 // The old star rating is acceptable if there's a network error here (for now)
+                              )?.star_rating || mapData.stars,
                               mode: "fruits"
                            };
+                           console.log(bm.id, 'altData', altData);
 
                            // Reduce initial rd for maps, the initial rating is already based on their
                            // stars and past experience
@@ -123,6 +128,7 @@ export async function createMappool(accessToken, packName, download, mapsets, ga
                                  dt: { rating: altRatings[3], rd, vol }
                               };
                            }
+                           console.log(bm.id, mapData.ratings, altData?.ratings);
                            return [mapData, altData];
                         })
                      )
@@ -158,13 +164,21 @@ export async function createMappool(accessToken, packName, download, mapsets, ga
       {
          updateOne: {
             filter: { mode: gamemode },
-            update: { $push: { packs: packName } },
+            update: {
+               $push: {
+                  packs: {
+                     $each: [packName],
+                     $position: 0,
+                     $slice: 50
+                  }
+               }
+            },
             upsert: true
          }
       }
    ];
    // If this is a std pack, also insert it for ctb
-   if (gamemode === "osu") {
+   if (gamemode === "osu" && alsoFruits) {
       insert.push({
          name: packName,
          download,
@@ -181,7 +195,15 @@ export async function createMappool(accessToken, packName, download, mapsets, ga
       history.push({
          updateOne: {
             filter: { mode: "fruits" },
-            update: { $push: { packs: packName } },
+            update: {
+               $push: {
+                  packs: {
+                     $each: [packName],
+                     $position: 0,
+                     $slice: 50
+                  }
+               }
+            },
             upsert: true
          }
       });
