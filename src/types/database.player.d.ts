@@ -51,8 +51,8 @@ export interface PvEInfo extends Rating {
 }
 
 export interface ModeInfo {
-   pvp: PvPInfo;
-   pve: PvEInfo;
+   pvp?: PvPInfo;
+   pve?: PvEInfo;
 }
 
 export interface DbPlayer extends Record<GameMode, ModeInfo> {

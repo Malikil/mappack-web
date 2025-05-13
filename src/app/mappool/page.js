@@ -9,14 +9,14 @@ import { anyWithinRange } from "@/helpers/rating-range";
 export default async function Mappool() {
    const session = await auth();
    const player = session && (await db.collection("players").findOne({ osuid: session.user.id }));
-   const playerRating = player && player[player.gamemode].pvp;
+   const playerRating = player && (player[player.gamemode]?.pvp || player[player.gamemode]?.pve);
 
    const mapsCollection = db.collection("maps");
    const pools = await mapsCollection
       .aggregate([
          {
             $match: {
-               mode: player.gamemode,
+               mode: player.gamemode || "osu",
                $or: [{ active: "fresh" }, { active: "stale" }]
             }
          },
@@ -39,13 +39,15 @@ export default async function Mappool() {
                   }
                },
                name: { $first: "$name" },
-               download: { $first: "$download" }
+               download: { $first: "$download" },
+               order: { $first: "$active" }
             }
          },
          {
             $group: {
                _id: "$name",
                download: { $first: "$download" },
+               order: { $first: "$order" },
                maps: {
                   $push: {
                      setid: "$_id",
@@ -63,7 +65,7 @@ export default async function Mappool() {
    return (
       <div className="d-flex flex-column gap-1">
          {pools
-            .sort((a, b) => (a._id < b._id ? 1 : a._id > b._id ? -1 : 0))
+            .sort((a, b) => (a.order < b.order ? -1 : 1))
             .map(pool => (
                <Card key={pool._id}>
                   <CardBody>
