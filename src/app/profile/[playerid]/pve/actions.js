@@ -11,7 +11,7 @@ import { auth } from "@/auth";
 export async function generateAttack(osuid, mapcount = 7) {
    const playersDb = db.collection("players");
    const player = await playersDb.findOne({ osuid });
-   const pveStats = player[player.gamemode]?.pve || player.pve;
+   const pveStats = player[player.gamemode]?.pve;
    console.log(`Target range: ${pveStats.rating.toFixed(1)} ±${pveStats.rd.toFixed(1)}`);
    const packMaps = await getCurrentPack(player.gamemode || "osu");
    let availableMaps = packMaps
@@ -49,6 +49,7 @@ export async function submitPve(formData, matchesData) {
       };
    console.log(matches);
    const session = await auth();
+   /** @type {import("osu-web.js").GameMode} */
    const mode = session
       ? (await db.collection("players").findOne({ osuid: session.user.id })).gamemode || "osu"
       : "osu";
@@ -145,14 +146,6 @@ export async function submitPve(formData, matchesData) {
             // Get the player's current rating
             const playerId = parseInt(playerIdKey);
             const ratingSet = {
-               pvp: {
-                  rating: 1500,
-                  rd: 350,
-                  vol: 0.06,
-                  matches: [],
-                  wins: 0,
-                  losses: 0
-               },
                pve: {
                   rating: 1500,
                   rd: 350,
@@ -180,7 +173,7 @@ export async function submitPve(formData, matchesData) {
             // Make sure the lobby hasn't been used in either pve or pvp
             if (
                player[mode].pve.matches.find(h => h.mp === mp) ||
-               player[mode].pvp.matches.find(h => h.mp === mp)
+               player[mode].pvp?.matches.find(h => h.mp === mp)
             )
                throw new Error("History already exists");
             const playerCalc = calculator.makePlayer(
