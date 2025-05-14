@@ -7,7 +7,7 @@ import PvEResultsCard from "./pve/PvEResultsCard";
 import db from "@/app/api/db/connection";
 import Image from "next/image";
 import { buildUrl } from "osu-web.js";
-import CreatePvpStats from "./pvp/CreatePvPStats";
+import CreatePvpStats from "./pvp/CreatePvpStats";
 
 const TableData = ({ data }) => (
    <table>
