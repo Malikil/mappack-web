@@ -7,6 +7,7 @@ import PvEResultsCard from "./pve/PvEResultsCard";
 import db from "@/app/api/db/connection";
 import Image from "next/image";
 import { buildUrl } from "osu-web.js";
+import CreatePvpStats from "./pvp/CreatePvPStats";
 
 const TableData = ({ data }) => (
    <table>
@@ -30,15 +31,16 @@ export default async function Profile({ params }) {
       //hideLeaderboard: { $exists: false }
    });
    const user =
-      playerid === session.user.id
+      playerid === session?.user.id
          ? player
-         : await playersCollection.findOne({ osuid: session.user.id });
+         : await playersCollection.findOne({ osuid: session?.user.id });
 
    // If there's no player, or if we're trying to view a hidden player when we're not an admin
    if (!player || (player.hideLeaderboard && !user.admin)) return redirect("/leaderboard");
+   const gamemode = user?.gamemode || "osu";
 
-   const pvpStats = player[user.gamemode || "osu"]?.pvp;
-   const pveStats = player[user.gamemode || "osu"]?.pve;
+   const pvpStats = player[gamemode]?.pvp;
+   const pveStats = player[gamemode]?.pve;
    return (
       <div className="d-flex flex-column gap-2">
          <div className="d-flex justify-content-between align-items-center px-2">
@@ -52,16 +54,11 @@ export default async function Profile({ params }) {
                />{" "}
                {player.osuname}
             </h1>
-            <Image
-               alt="Mode"
-               src={`/mode-${user.gamemode || "osu"}.png`}
-               height={48}
-               width={48}
-            />
+            <Image alt="Mode" src={`/mode-${gamemode}.png`} height={48} width={48} />
          </div>
-         {pvpStats && (
-            <Card>
-               <CardHeader>Vs. Players</CardHeader>
+         <Card>
+            <CardHeader>Vs. Players</CardHeader>
+            {pvpStats ? (
                <CardBody>
                   <div className="d-flex justify-content-between">
                      <TableData
@@ -95,12 +92,19 @@ export default async function Profile({ params }) {
                      ))}
                   </div>
                </CardBody>
-            </Card>
-         )}
+            ) : (
+               <CardBody className="d-flex justify-content-between align-items-center">
+                  <span>
+                     Play a match to create PvP stats{user === player && ", or click the button"}
+                  </span>
+                  {user === player && <CreatePvpStats playerid={playerid} gamemode={gamemode} />}
+               </CardBody>
+            )}
+         </Card>
          {pveStats && (
             <PvEResultsCard
                data={pveStats}
-               osuid={session?.user.id === playerid ? playerid : null}
+               osuid={user === player ? playerid : null}
                mode={player.gamemode}
             />
          )}

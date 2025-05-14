@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
-import { addMatchData, parseMpLobby } from "./functions";
+import { NextRequest, NextResponse } from "next/server";
+import { addMatchData, createPvpRegistration, parseMpLobby } from "./functions";
 
 /**
- * @param {import('next/server').NextRequest} req
+ * @param {NextRequest} req
  */
 export const POST = async req => {
    const auth = req.headers.get("Authorization");
@@ -19,4 +19,18 @@ export const POST = async req => {
    }
    await addMatchData(mpResults);
    return new NextResponse(null, { status: 200 });
+};
+
+/**
+ * @param {NextRequest} req
+ */
+export const PUT = async req => {
+   const auth = req.headers.get("Authorization");
+   if (auth !== process.env.MATCH_SUBMIT_AUTH)
+      return new NextResponse("Bad auth key", { status: 401 });
+
+   const { id, pp_raw, mode } = await req.json();
+   const player = await createPvpRegistration(id, pp_raw, mode);
+   if (player) return NextResponse.json(player, { status: 201 });
+   else return new NextResponse("Couldn't create PvP stats", { status: 400 });
 };

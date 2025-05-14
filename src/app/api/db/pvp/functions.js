@@ -3,6 +3,7 @@ import { LegacyClient } from "osu-web.js";
 import db from "../connection";
 import { matchResultValue } from "@/app/profile/[playerid]/pve/functions";
 import { getCurrentPack } from "@/helpers/currentPack";
+import { convertPP } from "@/helpers/rating-range";
 
 /**
  * @typedef SongResultMap
@@ -18,6 +19,31 @@ import { getCurrentPack } from "@/helpers/currentPack";
  * @prop {number} winnerId
  * @prop {number} loserId
  */
+
+/**
+ * @param {number} osuid
+ * @param {number} ppRaw
+ * @param {import("osu-web.js").GameMode} mode
+ */
+export async function createPvpRegistration(osuid, ppRaw, mode = "osu") {
+   const player = await db.collection("players").findOneAndUpdate(
+      { osuid, [`${mode}.pvp`]: { $exists: false } },
+      {
+         $set: {
+            [`${mode}.pvp`]: {
+               rating: convertPP(ppRaw, mode),
+               rd: 175,
+               vol: 0.06,
+               matches: [],
+               wins: 0,
+               losses: 0
+            }
+         }
+      },
+      { returnDocument: "after" }
+   );
+   return player;
+}
 
 /**
  * @param {string} link

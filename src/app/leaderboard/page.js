@@ -1,20 +1,21 @@
 import { Card, CardBody, CardHeader, CardImg, CardText, CardTitle } from "react-bootstrap";
 import db from "../api/db/connection";
 import { buildUrl } from "osu-web.js";
-import { verify } from "../admin/functions";
 import Link from "next/link";
+import { auth } from "@/auth";
 
 export default async function Leaderboard() {
-   const auth = await verify();
-   const gamemode = auth.user.gamemode;
-   const adminFilter = auth.session ? {} : { hideLeaderboard: { $exists: false } };
+   const session = await auth();
+   let adminFilter = { hideLeaderboard: { $exists: false } };
    const playersDb = db.collection("players");
+   const user = await playersDb.findOne({ osuid: session?.user.id });
+   const gamemode = user?.gamemode || "osu";
+   if (user && user.admin) adminFilter = {};
    const pvePlayers = await playersDb
       .find(
          {
             ...adminFilter,
-            "pve.games": { $gt: 0 },
-            [gamemode]: { $exists: true }
+            [`${gamemode}.pve.games`]: { $gt: 0 }
          },
          { sort: [`${gamemode}.pve.rating`, -1], limit: 100 }
       )
@@ -23,11 +24,7 @@ export default async function Leaderboard() {
       .find(
          {
             ...adminFilter,
-            $or: [
-               { [`${gamemode}.pvp.wins`]: { $gt: 0 } },
-               { [`${gamemode}.pvp.losses`]: { $gt: 0 } }
-            ],
-            [gamemode]: { $exists: true }
+            [`${gamemode}.pvp`]: { $exists: true }
          },
          { sort: [`${gamemode}.pvp.rating`, -1], limit: 100 }
       )

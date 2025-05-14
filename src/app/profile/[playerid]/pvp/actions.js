@@ -1,7 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { addMatchData, parseMpLobby } from "@/app/api/db/pvp/functions";
+import { addMatchData, createPvpRegistration, parseMpLobby } from "@/app/api/db/pvp/functions";
+import { LegacyClient } from "osu-web.js";
+
+export async function createPvp(userid, gamemode) {
+   const osu = new LegacyClient(process.env.OSU_LEGACY_KEY);
+   const osuUser = await osu.getUser({ u: userid, m: gamemode });
+   await createPvpRegistration(userid, osuUser.pp_raw, gamemode);
+   revalidatePath(`/profile/${userid}`);
+}
 
 export async function submitPvp(formData) {
    let winnerId = formData.get("winner");
