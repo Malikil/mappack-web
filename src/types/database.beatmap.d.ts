@@ -16,6 +16,7 @@ export interface DbBeatmap {
    artist: string;
    title: string;
    version: string;
+   mapper: string;
    length: number;
    bpm: number;
    cs: number;

@@ -7,6 +7,7 @@ import { withinRange } from "@/helpers/rating-range";
 /**
  * @param {object} props
  * @param {import("@/types/database.beatmap").DbBeatmap} props.beatmap
+ * @param {boolean} [props.starsPlus]
  * @param {object[]} [props.mapActions]
  * @param {string} props.mapActions.title
  * @param {function(import("@/types/database.beatmap").DbBeatmap)} props.mapActions.action
@@ -21,6 +22,10 @@ export default function MapCardBody(props) {
    return (
       <div className={`d-flex flex-column ${props.className || ""}`}>
          <Container className="mb-auto">
+            <Row className="mb-2">
+               <Col>Submitted by</Col>
+               <Col>{props.beatmap.mapper}</Col>
+            </Row>
             <Row>
                <Col>Length</Col>
                <Col>{convertTime(props.beatmap.length)}</Col>
@@ -32,7 +37,7 @@ export default function MapCardBody(props) {
             <Row>
                <Col>Stars</Col>
                <Col className="d-flex align-items-center gap-1">
-                  <div>{props.beatmap.stars.toFixed(2)}</div>
+                  <div className={props.starsPlus && 'fst-italic'}>{props.starsPlus && '('}{props.beatmap.stars.toFixed(2)}{props.starsPlus && ')'}</div>
                </Col>
             </Row>
             <Row>

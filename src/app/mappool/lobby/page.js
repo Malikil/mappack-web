@@ -34,6 +34,7 @@ export default async function LobbyPool({ searchParams }) {
             {Object.keys(maplist).map(mod => (
                <ModPool
                   maps={maplist[mod]}
+                  modshort={mod}
                   mod={
                      {
                         nm: "NoMod",

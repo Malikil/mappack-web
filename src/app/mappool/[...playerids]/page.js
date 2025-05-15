@@ -25,6 +25,7 @@ export default async function PlayerPool({ params }) {
             {Object.keys(maplist).map(mod => (
                <ModPool
                   maps={maplist[mod]}
+                  modshort={mod}
                   mod={
                      {
                         nm: "NoMod",
