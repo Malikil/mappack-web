@@ -2,8 +2,8 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import db from "../api/db/connection";
 import { Button } from "react-bootstrap";
-import { register } from "./actions";
 import { revalidatePath } from "next/cache";
+import { register } from "../api/db/register/functions";
 
 export default async function Profile() {
    const session = await auth();

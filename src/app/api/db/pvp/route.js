@@ -31,6 +31,6 @@ export const PUT = async req => {
 
    const { id, pp_raw, mode } = await req.json();
    const player = await createPvpRegistration(id, pp_raw, mode);
-   if (player) return NextResponse.json(player, { status: 201 });
+   if (player) return NextResponse.json(player[mode].pvp, { status: 201 });
    else return new NextResponse("Couldn't create PvP stats", { status: 400 });
 };

@@ -1,6 +1,4 @@
-"use server";
-
-import db from "../api/db/connection";
+import db from "../connection";
 
 export async function register(osuid, osuname) {
    console.log(`Register player ${osuid}`);
@@ -12,7 +10,7 @@ export async function register(osuid, osuname) {
       games: 0,
       matches: []
    };
-   await collection.updateOne(
+   const player = await collection.findOneAndUpdate(
       { osuid },
       {
          $set: {
@@ -24,6 +22,7 @@ export async function register(osuid, osuname) {
          },
          $unset: { hideLeaderboard: "" }
       },
-      { upsert: true }
+      { upsert: true, returnDocument: "after" }
    );
+   return player;
 }

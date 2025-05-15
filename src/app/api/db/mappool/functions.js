@@ -17,9 +17,9 @@ export async function getMappool(playerIds) {
    if (players.length < 1) return { error: { status: 404, message: "No players" } };
    console.log(
       "Create pool for",
-      players.map(p => ({ id: p.osuid, rating: p.pvp.rating }))
+      players.map(p => ({ id: p.osuid, rating: p.osu.pvp.rating }))
    );
-   const targetRating = combineRatings(...players.map(p => p.pvp));
+   const targetRating = combineRatings(...players.map(p => p.osu.pvp));
    console.log("Target rating", targetRating);
    const checkWithinRange = rating => withinRange(targetRating, rating);
    const sortFunc = mod => (a, b) => {
@@ -44,7 +44,7 @@ export async function getMappool(playerIds) {
          });
       };
 
-   const currentMaps = await getCurrentPack();
+   const currentMaps = await getCurrentPack("osu");
    const maplist = currentMaps.reduce(
       (agg, map) => {
          const candidate = {
