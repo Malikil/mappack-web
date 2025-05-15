@@ -118,14 +118,16 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
    const winner = await playersDb.findOne({
       $or: [{ osuid: parseInt(winnerId) }, { osuname: winnerId }]
    });
+   const winnerRating = winner.osu.pvp;
    const loser = await playersDb.findOne({
       $or: [{ osuid: parseInt(loserId) }, { osuname: loserId }]
    });
+   const loserRating = loser.osu.pvp;
    console.log(winner, loser);
    // Get the played maps
    const mapsDb = db.collection("maps");
-   const maplist = await getCurrentPack();
-   const staleMaplist = await db.collection("maps").findOne({ active: "completed" });
+   const maplist = await getCurrentPack("osu");
+   const staleMaplist = await db.collection("maps").findOne({ mode: "osu", active: "completed" });
    const playedMaps = maps.map(item => {
       const { map, mod } = item;
       /** @type {import("@/types/database.beatmap").DbBeatmap} */
@@ -142,8 +144,12 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
 
    // Create the rating calculator
    const calculator = new Glicko2();
-   const winnerPlayer = calculator.makePlayer(winner.pvp.rating, winner.pvp.rd, winner.pvp.vol);
-   const loserPlayer = calculator.makePlayer(loser.pvp.rating, loser.pvp.rd, loser.pvp.vol);
+   const winnerPlayer = calculator.makePlayer(
+      winnerRating.rating,
+      winnerRating.rd,
+      winnerRating.vol
+   );
+   const loserPlayer = calculator.makePlayer(loserRating.rating, loserRating.rd, loserRating.vol);
    // Update player ratings
    calculator.updateRatings([[winnerPlayer, loserPlayer, 1]]);
    const playerUpdateResult = await playersDb.bulkWrite([
@@ -152,22 +158,22 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
             filter: { _id: winner._id },
             update: {
                $set: {
-                  "pvp.rating": winnerPlayer.getRating(),
-                  "pvp.rd": winnerPlayer.getRd(),
-                  "pvp.vol": winnerPlayer.getVol()
+                  "osu.pvp.rating": winnerPlayer.getRating(),
+                  "osu.pvp.rd": winnerPlayer.getRd(),
+                  "osu.pvp.vol": winnerPlayer.getVol()
                },
-               $inc: { "pvp.wins": 1 },
+               $inc: { "osu.pvp.wins": 1 },
                $push: {
-                  "pvp.matches": {
+                  "osu.pvp.matches": {
                      $each: [
                         {
                            mp,
-                           prevRating: winner.pvp.rating,
-                           ratingDiff: winnerPlayer.getRating() - winner.pvp.rating,
+                           prevRating: winnerRating.rating,
+                           ratingDiff: winnerPlayer.getRating() - winnerRating.rating,
                            opponent: {
                               id: loser.osuid,
                               name: loser.osuname,
-                              rating: loser.pvp.rating
+                              rating: loserRating.rating
                            },
                            songs: playedMaps.map((m, i) => ({
                               ...m,
@@ -188,22 +194,22 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
             filter: { _id: loser._id },
             update: {
                $set: {
-                  "pvp.rating": loserPlayer.getRating(),
-                  "pvp.rd": loserPlayer.getRd(),
-                  "pvp.vol": loserPlayer.getVol()
+                  "osu.pvp.rating": loserPlayer.getRating(),
+                  "osu.pvp.rd": loserPlayer.getRd(),
+                  "osu.pvp.vol": loserPlayer.getVol()
                },
-               $inc: { "pvp.losses": 1 },
+               $inc: { "osu.pvp.losses": 1 },
                $push: {
-                  "pvp.matches": {
+                  "osu.pvp.matches": {
                      $each: [
                         {
                            mp,
-                           prevRating: loser.pvp.rating,
-                           ratingDiff: loserPlayer.getRating() - loser.pvp.rating,
+                           prevRating: loserRating.rating,
+                           ratingDiff: loserPlayer.getRating() - loserRating.rating,
                            opponent: {
                               id: winner.osuid,
                               name: winner.osuname,
-                              rating: winner.pvp.rating
+                              rating: winnerRating.rating
                            },
                            songs: playedMaps.map((m, i) => ({
                               ...m,
