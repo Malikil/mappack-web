@@ -22,10 +22,6 @@ export default function MapCardBody(props) {
    return (
       <div className={`d-flex flex-column ${props.className || ""}`}>
          <Container className="mb-auto">
-            <Row className="mb-2">
-               <Col>Submitted by</Col>
-               <Col>{props.beatmap.mapper}</Col>
-            </Row>
             <Row>
                <Col>Length</Col>
                <Col>{convertTime(props.beatmap.length)}</Col>
@@ -37,7 +33,11 @@ export default function MapCardBody(props) {
             <Row>
                <Col>Stars</Col>
                <Col className="d-flex align-items-center gap-1">
-                  <div className={props.starsPlus && 'fst-italic'}>{props.starsPlus && '('}{props.beatmap.stars.toFixed(2)}{props.starsPlus && ')'}</div>
+                  <div className={props.starsPlus && "fst-italic"}>
+                     {props.starsPlus && "("}
+                     {props.beatmap.stars.toFixed(2)}
+                     {props.starsPlus && ")"}
+                  </div>
                </Col>
             </Row>
             <Row>

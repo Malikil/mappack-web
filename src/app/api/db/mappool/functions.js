@@ -12,14 +12,17 @@ const NM_MAPCOUNT = 4,
  * @param {number[]} playerIds
  */
 export async function getMappool(playerIds) {
+   const mode = "osu";
    const playersDb = db.collection("players");
-   const players = await playersDb.find({ osuid: { $in: playerIds } }).toArray();
+   const players = await playersDb
+      .find({ osuid: { $in: playerIds }, [`${mode}.pvp`]: { $exists: true } })
+      .toArray();
    if (players.length < 1) return { error: { status: 404, message: "No players" } };
    console.log(
       "Create pool for",
-      players.map(p => ({ id: p.osuid, rating: p.osu.pvp.rating }))
+      players.map(p => ({ id: p.osuid, rating: p[mode].pvp.rating }))
    );
-   const targetRating = combineRatings(...players.map(p => p.osu.pvp));
+   const targetRating = combineRatings(...players.map(p => p[mode].pvp));
    console.log("Target rating", targetRating);
    const checkWithinRange = rating => withinRange(targetRating, rating);
    const sortFunc = mod => (a, b) => {
@@ -44,7 +47,7 @@ export async function getMappool(playerIds) {
          });
       };
 
-   const currentMaps = await getCurrentPack("osu");
+   const currentMaps = await getCurrentPack(mode);
    const maplist = currentMaps.reduce(
       (agg, map) => {
          const candidate = {

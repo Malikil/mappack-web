@@ -1,6 +1,15 @@
 "use client";
 
-import { Card, CardBody, CardImg, CardSubtitle, CardTitle } from "react-bootstrap";
+import {
+   Card,
+   CardBody,
+   CardImg,
+   CardSubtitle,
+   CardTitle,
+   Col,
+   Container,
+   Row
+} from "react-bootstrap";
 import styles from "./mappool.module.css";
 import MapCardBody from "./MapCardBody";
 
@@ -27,11 +36,17 @@ export default function MapCard(props) {
             <CardTitle className="mt-1">
                {props.beatmap.artist} - {props.beatmap.title}
             </CardTitle>
-            <CardSubtitle className="d-flex">
+            <CardSubtitle className="d-flex mb-2">
                <div className="text-break">{props.beatmap.version}</div>
                <div className="ms-auto">{props.beatmap.id}</div>
             </CardSubtitle>
-            <MapCardBody {...props} className="mt-auto" />
+            <Container className="mt-auto">
+               <Row className="mb-2">
+                  <Col>Submitted by</Col>
+                  <Col>{props.beatmap.mapper}</Col>
+               </Row>
+            </Container>
+            <MapCardBody {...props} />
          </CardBody>
       </Card>
    );
