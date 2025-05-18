@@ -33,7 +33,7 @@ export default function MapCardBody(props) {
             <Row>
                <Col>Stars</Col>
                <Col className="d-flex align-items-center gap-1">
-                  <div className={props.starsPlus && "fst-italic"}>
+                  <div className={props.starsPlus ? "fst-italic" : undefined}>
                      {props.starsPlus && "("}
                      {props.beatmap.stars.toFixed(2)}
                      {props.starsPlus && ")"}

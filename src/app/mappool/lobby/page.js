@@ -14,7 +14,7 @@ export default async function LobbyPool({ searchParams }) {
    // Get all maps. If pools are rotated while the match is ongoing, the previous maps will still need
    // to be visible on the lobby's pool page
    const mapsCollection = db.collection("maps");
-   const pools = await mapsCollection.find().toArray();
+   const pools = await mapsCollection.find({ mode: stringParams.m || 'osu' }).toArray();
    const mappools = [].concat(...pools.map(p => p.maps));
    const maplist = {
       nm: [],
@@ -24,8 +24,9 @@ export default async function LobbyPool({ searchParams }) {
       fm: []
    };
    Object.keys(maplist).forEach(
-      mod => (maplist[mod] = parsedParams[mod].map(m => mappools.find(p => p.id === m)))
+      mod => (maplist[mod] = parsedParams[mod].map(m => mappools.find(p => p.id === m)).filter(m => m))
    );
+   console.log(maplist);
 
    return (
       <div>

@@ -16,7 +16,7 @@ export default async function Mappool() {
       .aggregate([
          {
             $match: {
-               mode: player.gamemode || "osu",
+               mode: player?.gamemode || "osu",
                $or: [{ active: "fresh" }, { active: "stale" }]
             }
          },
