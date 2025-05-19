@@ -162,6 +162,8 @@ export async function submitPve(formData, matchesData) {
                      osuname: `#${playerIdKey}`,
                      osu: ratingSet,
                      fruits: ratingSet,
+                     taiko: ratingSet,
+                     mania: ratingSet,
                      hideLeaderboard: true
                   }
                },
@@ -244,7 +246,10 @@ export async function submitPve(formData, matchesData) {
                      [`${mode}.pve.rd`]: playerCalc.getRd(),
                      [`${mode}.pve.vol`]: playerCalc.getVol()
                   },
-                  $inc: { [`${mode}.pve.games`]: 1 },
+                  $inc: {
+                     [`${mode}.pve.games`]: 1,
+                     [`${mode}.pve.songs`]: history.songs.length
+                  },
                   $push: {
                      [`${mode}.pve.matches`]: {
                         $each: [history],
