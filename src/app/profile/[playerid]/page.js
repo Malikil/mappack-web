@@ -8,6 +8,7 @@ import db from "@/app/api/db/connection";
 import Image from "next/image";
 import { buildUrl } from "osu-web.js";
 import CreatePvpStats from "./pvp/CreatePvpStats";
+import ComponentInfoRows from "./ComponentInfoRows";
 
 const TableData = ({ data }) => (
    <table>
@@ -61,11 +62,13 @@ export default async function Profile({ params }) {
             {pvpStats ? (
                <CardBody>
                   <div className="d-flex justify-content-between">
-                     <TableData
+                     <ComponentInfoRows
                         data={[
                            [
                               "Rating",
-                              `${pvpStats.rating.toFixed(0)} (rd: ${pvpStats.rd.toFixed(0)})`
+                              pvpStats.rating.toFixed(0),
+                              (pvpStats.wins < 3 && pvpStats.losses < 3) && 'Provisional',
+                              `(rd: ${pvpStats.rd.toFixed(0)})`
                            ],
                            ["Wins", pvpStats.wins],
                            ["Losses", pvpStats.losses]

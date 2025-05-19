@@ -8,6 +8,7 @@ export async function register(osuid, osuname) {
       rd: 350,
       vol: 0.06,
       games: 0,
+      songs: 0,
       matches: []
    };
    const player = await collection.findOneAndUpdate(

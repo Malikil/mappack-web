@@ -15,7 +15,7 @@ export default async function Leaderboard() {
       .find(
          {
             ...adminFilter,
-            [`${gamemode}.pve.games`]: { $gt: 0 }
+            $or: [{ [`${gamemode}.pve.songs`]: { $gt: 10 } }]
          },
          { sort: [`${gamemode}.pve.rating`, -1], limit: 100 }
       )
@@ -24,7 +24,11 @@ export default async function Leaderboard() {
       .find(
          {
             ...adminFilter,
-            [`${gamemode}.pvp`]: { $exists: true }
+            //[`${gamemode}.pvp`]: { $exists: true },
+            $or: [
+               { [`${gamemode}.pvp.wins`]: { $gt: 2 } },
+               { [`${gamemode}.pvp.losses`]: { $gt: 2 } }
+            ]
          },
          { sort: [`${gamemode}.pvp.rating`, -1], limit: 100 }
       )
@@ -87,7 +91,7 @@ export default async function Leaderboard() {
                               <CardText>
                                  Rating: {p[gamemode].pve.rating.toFixed()}
                                  <br />
-                                 Games: {p[gamemode].pve.games}
+                                 Playcount: {p[gamemode].pve.songs}
                               </CardText>
                            </CardBody>
                         </Card>

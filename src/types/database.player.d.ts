@@ -48,6 +48,7 @@ export interface PvPInfo extends Rating {
 export interface PvEInfo extends Rating {
    matches: PvEMatchHistory[];
    games: number;
+   songs: number;
 }
 
 export interface ModeInfo {

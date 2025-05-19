@@ -11,9 +11,9 @@ export default function PvEResultsCard({ data, osuid, mode }) {
             <div className="d-flex">
                <ComponentInfoRows
                   data={[
-                     ["Rating", data.rating.toFixed(0)],
+                     ["Rating", data.rating.toFixed(0), data.songs <= 10 && 'Provisional'],
                      ["Deviation", data.rd.toFixed(0)],
-                     ["Games", data.games]
+                     ["Games", data.games, `${data.songs} maps`]
                   ]}
                />
                {osuid && <AddPvESession userId={osuid} />}

@@ -52,14 +52,10 @@ async function getOsuToken() {
 }
 
 export async function debug() {
-   const maps = await getCurrentPack("fruits");
-   maps.forEach(map =>
-      console.log(
-         map.stars,
-         ", ",
-         Object.keys(map.ratings)
-            .map(k => map.ratings[k].rating)
-            .join(", ")
+   const playerDb = db.collection("players");
+   console.log(
+      await playerDb.updateMany({ },
+         { $unset: { pvp: '', pve: '' } }
       )
    );
    // ========== TEMPORARY MANUAL FETCH NEW CTB POOL ==========
