@@ -51,6 +51,8 @@ async function findMappackTag(packList, mode) {
    } else return pack.tag;
 }
 
+// Increase this function's max duration to 30s
+export const maxDuration = 30;
 /**
  * @param {NextRequest} req
  */

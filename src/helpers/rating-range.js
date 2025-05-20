@@ -1,9 +1,9 @@
 // How much PP does the rank 10k player have?
 const PP_EQUIVALENT = {
-   osu: 9029,
-   taiko: 5913, // 5k rank
-   fruits: 8261, // 1k rank
-   mania: 7228 // 4 key
+   osu: 9036,
+   taiko: 5922, // 5k rank
+   fruits: 8295, // 1k rank
+   mania: 7246 // 4 key
 };
 
 /**
