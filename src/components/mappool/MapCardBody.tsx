@@ -3,21 +3,25 @@
 import { convertTime } from "@/time";
 import { CardLink, CardSubtitle, Col, Container, Row } from "react-bootstrap";
 import { withinRange } from "@/helpers/rating-range";
+import { BeatmapVersion } from "@/types/database.beatmap";
+import { Rating } from "@/types/rating";
 
-/**
- * @param {object} props
- * @param {import("@/types/database.beatmap").DbBeatmap} props.beatmap
- * @param {boolean} [props.starsPlus]
- * @param {object[]} [props.mapActions]
- * @param {string} props.mapActions.title
- * @param {function(import("@/types/database.beatmap").DbBeatmap)} props.mapActions.action
- * @param {function(import("@/types/database.beatmap").DbBeatmap): boolean} [props.mapActions.condition]
- * @param {import("@/types/database.beatmap").Rating} [props.rating]
- * @param {boolean} [props.hideRatings]
- */
-export default function MapCardBody(props) {
-   const withinRangeClass = rating => {
-      if (withinRange(props.rating || {}, rating)) return "border border-2 border-success rounded";
+type MapCardBodyProps = {
+   className?: string;
+   beatmap: BeatmapVersion;
+   starsPlus?: boolean;
+   mapActions?: {
+      title: string;
+      action: (beatmap: BeatmapVersion) => void;
+      condition?: (beatmap: BeatmapVersion) => boolean;
+   }[];
+   rating?: Rating;
+   hideRatings?: boolean
+}
+
+export default function MapCardBody(props: MapCardBodyProps) {
+   const withinRangeClass = (rating: Rating) => {
+      if (withinRange(props.rating, rating)) return "border border-2 border-success rounded";
    };
    return (
       <div className={`d-flex flex-column ${props.className || ""}`}>
@@ -87,7 +91,7 @@ export default function MapCardBody(props) {
                      <CardLink
                         key={fn.title}
                         role="button"
-                        onClick={() => fn.action(props.beatmap, props.mod, props.rating)}
+                        onClick={() => fn.action(props.beatmap)}
                      >
                         {fn.title}
                      </CardLink>

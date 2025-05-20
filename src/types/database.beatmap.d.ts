@@ -13,19 +13,22 @@ export interface RatingSet {
 
 export type MappackActiveState = "pending" | "fresh" | "stale" | "completed";
 
-export interface DbBeatmap {
+export interface BeatmapVersion {
    id: number;
    setid: number;
-   artist: string;
-   title: string;
    version: string;
-   mapper: string;
    length: number;
    bpm: number;
    cs: number;
    ar: number;
    stars: number;
    ratings: ModRatings;
+}
+
+export interface DbBeatmap extends BeatmapVersion {
+   artist: string;
+   title: string;
+   mapper: string;
 }
 
 export interface DbMappack {

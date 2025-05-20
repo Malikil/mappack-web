@@ -5,13 +5,19 @@ import averageRating from "@/helpers/average-rating";
 import { Card, CardBody, CardImg, CardSubtitle, CardTitle, Col, Row } from "react-bootstrap";
 import MapCardBody from "@/components/mappool/MapCardBody";
 import { anyWithinRange } from "@/helpers/rating-range";
+import { DbMappack } from "@/types/database.beatmap";
+import { ModRatings, Rating } from "@/types/rating";
+import { DbPlayer } from "@/types/database.player";
+import interpolate from "color-interpolate";
+
+const palette = interpolate(['#4fc0ff', '#7cff4f', '#f6f05c', '#ff4e6f', '#c645b8', '#6563de', 'black']);
 
 export default async function Mappool() {
    const session = await auth();
-   const player = session && (await db.collection("players").findOne({ osuid: session.user.id }));
-   const playerRating = player && (player[player.gamemode]?.pvp || player[player.gamemode]?.pve);
+   const player = session && (await db.collection<DbPlayer>("players").findOne({ osuid: session.user.id }));
+   const playerRating: Rating = player && (player[player.gamemode]?.pvp || player[player.gamemode]?.pve);
 
-   const mapsCollection = db.collection("maps");
+   const mapsCollection = db.collection<DbMappack>("maps");
    const pools = await mapsCollection
       .aggregate([
          {
@@ -59,7 +65,26 @@ export default async function Mappool() {
             }
          }
       ])
-      .toArray();
+      .toArray() as {
+         _id: string;
+         download: string;
+         order: "fresh" | "stale";
+         maps: {
+            setid: number;
+            artist: string;
+            title: string;
+            versions: {
+               id: number;
+               version: string;
+               length: number;
+               bpm: number;
+               cs: number;
+               ar: number;
+               stars: number;
+               ratings: ModRatings;
+            }[]
+         }[]
+      }[];
    console.log(pools);
 
    return (
@@ -119,11 +144,10 @@ export default async function Mappool() {
                                                       return (
                                                          <span
                                                             key={bm.id}
-                                                            className={`${
-                                                               valid
-                                                                  ? "bg-success"
-                                                                  : "bg-body-secondary"
-                                                            } rounded`}
+                                                            className={`rounded ${valid ? '' : 'bg-body-secondary'}`}
+                                                            style={valid ? {
+                                                               backgroundColor: palette(Math.max(0, Math.min((bm.stars - 1) / 7.75, 1)))
+                                                            } : undefined}
                                                          >
                                                             &ensp;
                                                          </span>

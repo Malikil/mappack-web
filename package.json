@@ -13,6 +13,7 @@
       "@rainij/polynomial-regression-js": "^1.4.0",
       "bootstrap": "^5.3.3",
       "chart.js": "^4.4.6",
+      "color-interpolate": "^1.0.5",
       "glicko2": "^1.2.1",
       "google-auth-library": "^9.14.2",
       "google-spreadsheet": "^4.1.4",
