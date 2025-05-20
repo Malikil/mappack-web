@@ -2,16 +2,16 @@ import ModPool from "@/components/mappool/Modpool";
 import { redirect } from "next/navigation";
 import { combineRatings } from "@/helpers/rating-range";
 import { getMappool } from "@/app/api/db/mappool/functions";
+import { ModPool as ModPoolType } from "@/types/rating";
 
 export default async function PlayerPool({ params }) {
-   /** @type {number[]} */
-   const playerids = (await params).playerids.map(id => parseInt(id));
+   const playerids: number[] = (await params).playerids.map((id: string) => parseInt(id));
    if (playerids.includes(NaN)) redirect("/mappool");
 
    const { maps: maplist, players, error } = await getMappool(playerids);
    if (error) redirect("/mappool");
 
-   const targetRating = combineRatings(...players.map(p => p.pvp));
+   const targetRating = combineRatings(...players.map(p => p.osu.pvp));
 
    return (
       <div>
@@ -22,7 +22,7 @@ export default async function PlayerPool({ params }) {
             </div>
          </div>
          <div className="d-flex flex-column gap-3">
-            {Object.keys(maplist).map(mod => (
+            {Object.keys(maplist).map((mod: ModPoolType) => (
                <ModPool
                   maps={maplist[mod]}
                   modshort={mod}

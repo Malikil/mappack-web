@@ -9,8 +9,9 @@ import { DbMappack } from "@/types/database.beatmap";
 import { ModRatings, Rating } from "@/types/rating";
 import { DbPlayer } from "@/types/database.player";
 import interpolate from "color-interpolate";
+import { buildUrl } from "osu-web.js";
 
-const palette = interpolate(['#4fc0ff', '#7cff4f', '#f6f05c', '#ff4e6f', '#c645b8', '#6563de', 'black']);
+const palette = interpolate(["#4fc0ff", "#7cff4f", "#f6f05c", "#ff4e6f", "#c645b8", "#6563de", "black"]);
 
 export default async function Mappool() {
    const session = await auth();
@@ -18,7 +19,8 @@ export default async function Mappool() {
    const playerRating: Rating = player && (player[player.gamemode]?.pvp || player[player.gamemode]?.pve);
 
    const mapsCollection = db.collection<DbMappack>("maps");
-   const pools = await mapsCollection
+   // prettier-ignore
+   const pools = (await mapsCollection
       .aggregate([
          {
             $match: {
@@ -65,7 +67,7 @@ export default async function Mappool() {
             }
          }
       ])
-      .toArray() as {
+      .toArray()) as {
          _id: string;
          download: string;
          order: "fresh" | "stale";
@@ -82,8 +84,8 @@ export default async function Mappool() {
                ar: number;
                stars: number;
                ratings: ModRatings;
-            }[]
-         }[]
+            }[];
+         }[];
       }[];
    console.log(pools);
 
@@ -137,17 +139,28 @@ export default async function Mappool() {
                                                 <CardSubtitle>{mapset.artist}</CardSubtitle>
                                                 <CardSubtitle className="d-flex gap-1 mt-1">
                                                    {mapset.versions.map(bm => {
-                                                      const valid = anyWithinRange(
-                                                         bm.ratings,
-                                                         playerRating
-                                                      );
+                                                      const valid = anyWithinRange(bm.ratings, playerRating);
                                                       return (
                                                          <span
                                                             key={bm.id}
-                                                            className={`rounded ${valid ? '' : 'bg-body-secondary'}`}
-                                                            style={valid ? {
-                                                               backgroundColor: palette(Math.max(0, Math.min((bm.stars - 1) / 7.75, 1)))
-                                                            } : undefined}
+                                                            className={`rounded ${
+                                                               valid ? "" : "bg-body-secondary"
+                                                            }`}
+                                                            style={
+                                                               valid
+                                                                  ? {
+                                                                       backgroundColor: palette(
+                                                                          Math.max(
+                                                                             0,
+                                                                             Math.min(
+                                                                                (bm.stars - 1) / 7.75,
+                                                                                1
+                                                                             )
+                                                                          )
+                                                                       )
+                                                                    }
+                                                                  : undefined
+                                                            }
                                                          >
                                                             &ensp;
                                                          </span>
@@ -158,6 +171,17 @@ export default async function Mappool() {
                                           </Col>
                                        </Row>
                                        <div className="collapse" id={`collapse${mapset.setid}`}>
+                                          <div className="my-2">
+                                             <CardSubtitle>
+                                                <Link
+                                                   href={buildUrl.beatmapset(mapset.setid)}
+                                                   target="_blank"
+                                                   rel="noopener noreferrer"
+                                                >
+                                                   Beatmap Listing
+                                                </Link>
+                                             </CardSubtitle>
+                                          </div>
                                           <div className="d-flex gap-1 flex-wrap">
                                              {mapset.versions.map(bm => (
                                                 <Card
@@ -170,9 +194,7 @@ export default async function Mappool() {
                                                 >
                                                    <CardBody className="d-flex flex-column">
                                                       <CardTitle className="d-flex gap-2">
-                                                         <div className="text-break">
-                                                            {bm.version}
-                                                         </div>
+                                                         <div className="text-break">{bm.version}</div>
                                                          <div className="ms-auto">{bm.id}</div>
                                                       </CardTitle>
                                                       <MapCardBody

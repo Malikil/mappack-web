@@ -4,6 +4,7 @@ import {
    Card,
    CardBody,
    CardImg,
+   CardLink,
    CardSubtitle,
    CardTitle,
    Col,
@@ -12,19 +13,19 @@ import {
 } from "react-bootstrap";
 import styles from "./mappool.module.css";
 import MapCardBody from "./MapCardBody";
+import { DbBeatmap } from "@/types/database.beatmap";
+import { MapAction } from "@/types/mappool";
+import { Rating } from "@/types/rating";
 
-/**
- * @param {object} props
- * @param {import("@/types/database.beatmap").DbBeatmap} props.beatmap
- * @param {boolean} [props.starsPlus]
- * @param {object[]} [props.mapActions]
- * @param {string} props.mapActions.title
- * @param {function(import("@/types/database.beatmap").DbBeatmap)} props.mapActions.action
- * @param {function(import("@/types/database.beatmap").DbBeatmap): boolean} [props.mapActions.condition]
- * @param {import("@/types/database.beatmap").Rating} [props.rating]
- * @param {boolean} [props.hideRatings]
- */
-export default function MapCard(props) {
+export type MapCardProps = {
+   beatmap: DbBeatmap;
+   starsPlus?: boolean;
+   mapActions?: MapAction[];
+   rating?: Rating;
+   hideRatings?: boolean;
+}
+
+export default function MapCard(props: MapCardProps) {
    return (
       <Card className={styles.mapcard}>
          <CardBody className="d-flex flex-column">
@@ -46,7 +47,19 @@ export default function MapCard(props) {
                   <Col>{props.beatmap.mapper}</Col>
                </Row>
             </Container>
-            <MapCardBody {...props} />
+            <MapCardBody
+               {...props}
+               mapActions={[
+                  {
+                     title: "Beatmap",
+                     action: <CardLink
+                        href={`https://osu.ppy.sh/beatmapsets/${props.beatmap.setid}#osu/${props.beatmap.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                     >Beatmap</CardLink>
+                  }
+               ]}
+            />
          </CardBody>
       </Card>
    );

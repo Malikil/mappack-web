@@ -1,7 +1,6 @@
-/**
- * @param {...import("@/types/rating").Rating} ratings
- */
-export function withinRange(...ratings) {
+import { ModRatings, Rating } from "@/types/rating";
+
+export function withinRange(...ratings: { rating: number, rd: number }[]) {
    ratings = ratings.filter(r => r);
    const range = Math.sqrt(ratings.reduce((sum, r) => sum + r.rd * r.rd, 0));
    const { min, max } = ratings.reduce(
@@ -16,19 +15,11 @@ export function withinRange(...ratings) {
    return diff <= range;
 }
 
-/**
- *
- * @param {import("@/types/rating").ModRatings} mapRatings
- * @param {import("@/types/rating").Rating} candidateRating
- */
-export function anyWithinRange(mapRatings, candidateRating) {
+export function anyWithinRange(mapRatings: ModRatings, candidateRating: Rating) {
    return Object.keys(mapRatings).some(key => withinRange(mapRatings[key], candidateRating));
 }
 
-/**
- * @param {...import("@/types/rating").Rating} ratings
- */
-export function combineRatings(...ratings) {
+export function combineRatings(...ratings: Rating[]) {
    const agg = ratings.reduce(
       (agg, r) => ({
          rating: agg.rating + r.rating,

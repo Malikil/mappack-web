@@ -24,7 +24,7 @@ export default async function LobbyPool({ searchParams }) {
       fm: []
    };
    Object.keys(maplist).forEach(
-      mod => (maplist[mod] = parsedParams[mod].map(m => mappools.find(p => p.id === m)).filter(m => m))
+      mod => (maplist[mod] = parsedParams[mod]?.map(m => mappools.find(p => p.id === m)).filter(m => m) || [])
    );
    console.log(maplist);
 

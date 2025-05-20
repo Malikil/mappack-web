@@ -1,6 +1,9 @@
 import { combineRatings, withinRange } from "@/helpers/rating-range";
 import db from "../connection";
 import { getCurrentPack } from "@/helpers/currentPack";
+import { DbPlayer } from "@/types/database.player";
+import { ModPool, Rating, SimpleMod } from "@/types/rating";
+import { DbBeatmap } from "@/types/database.beatmap";
 
 const NM_MAPCOUNT = 4,
    HD_MAPCOUNT = 3,
@@ -8,12 +11,9 @@ const NM_MAPCOUNT = 4,
    DT_MAPCOUNT = 3,
    FM_MAPCOUNT = 3;
 
-/**
- * @param {number[]} playerIds
- */
-export async function getMappool(playerIds) {
+export async function getMappool(playerIds: number[]) {
    const mode = "osu";
-   const playersDb = db.collection("players");
+   const playersDb = db.collection<DbPlayer>("players");
    const players = await playersDb
       .find({ osuid: { $in: playerIds }, [`${mode}.pvp`]: { $exists: true } })
       .toArray();
@@ -24,15 +24,15 @@ export async function getMappool(playerIds) {
    );
    const targetRating = combineRatings(...players.map(p => p[mode].pvp));
    console.log("Target rating", targetRating);
-   const checkWithinRange = rating => withinRange(targetRating, rating);
-   const sortFunc = mod => (a, b) => {
+   const checkWithinRange = (rating: Rating) => withinRange(targetRating, rating);
+   const sortFunc = (mod: SimpleMod) => (a: DbBeatmap, b: DbBeatmap) => {
       const adiff = Math.abs(targetRating.rating - a.ratings[mod].rating);
       const bdiff = Math.abs(targetRating.rating - b.ratings[mod].rating);
       return adiff - bdiff;
    };
    const filterFunc =
-      (maplist, ...mods) =>
-      candidate => {
+      (maplist: Record<ModPool, DbBeatmap[]>, ...mods: ModPool[]) =>
+      (candidate: DbBeatmap) => {
          const counts = {
             nm: NM_MAPCOUNT,
             hd: HD_MAPCOUNT,
@@ -49,7 +49,7 @@ export async function getMappool(playerIds) {
 
    const currentMaps = await getCurrentPack(mode);
    const maplist = currentMaps.reduce(
-      (agg, map) => {
+      (agg: Record<ModPool, DbBeatmap[]>, map) => {
          const candidate = {
             nm: checkWithinRange(map.ratings.nm),
             hd: checkWithinRange(map.ratings.hd),
@@ -122,7 +122,7 @@ export async function getMappool(playerIds) {
          hr: maplist.hr.slice(0, HR_MAPCOUNT),
          dt: maplist.dt.slice(0, DT_MAPCOUNT),
          fm: maplist.fm.slice(0, FM_MAPCOUNT)
-      },
+      } as Record<ModPool, DbBeatmap[]>,
       players
    };
 }

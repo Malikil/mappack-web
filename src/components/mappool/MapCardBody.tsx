@@ -5,19 +5,16 @@ import { CardLink, CardSubtitle, Col, Container, Row } from "react-bootstrap";
 import { withinRange } from "@/helpers/rating-range";
 import { BeatmapVersion } from "@/types/database.beatmap";
 import { Rating } from "@/types/rating";
+import { MapAction } from "@/types/mappool";
 
-type MapCardBodyProps = {
+export type MapCardBodyProps = {
    className?: string;
    beatmap: BeatmapVersion;
    starsPlus?: boolean;
-   mapActions?: {
-      title: string;
-      action: (beatmap: BeatmapVersion) => void;
-      condition?: (beatmap: BeatmapVersion) => boolean;
-   }[];
+   mapActions?: MapAction[];
    rating?: Rating;
-   hideRatings?: boolean
-}
+   hideRatings?: boolean;
+};
 
 export default function MapCardBody(props: MapCardBodyProps) {
    const withinRangeClass = (rating: Rating) => {
@@ -77,28 +74,27 @@ export default function MapCardBody(props: MapCardBodyProps) {
                </Container>
             </>
          )}
-         <div className="d-flex">
-            <CardLink
-               href={`https://osu.ppy.sh/beatmapsets/${props.beatmap.setid}#osu/${props.beatmap.id}`}
-               target="_blank"
-               rel="noopener noreferrer"
-            >
-               Beatmap
-            </CardLink>
-            {props.mapActions
-               ?.map(fn =>
-                  !fn.condition || fn.condition(props.beatmap) ? (
-                     <CardLink
-                        key={fn.title}
-                        role="button"
-                        onClick={() => fn.action(props.beatmap)}
-                     >
-                        {fn.title}
-                     </CardLink>
-                  ) : null
-               )
-               .filter(p => p)}
-         </div>
+         {props.mapActions && (
+            <div className="d-flex">
+               {props.mapActions
+                  .map(fn =>
+                     !fn.condition || fn.condition(props.beatmap) ? (
+                        typeof fn.action === "function" ? (
+                           <CardLink
+                              key={fn.title}
+                              role="button"
+                              onClick={() => (fn.action as (beatmap: BeatmapVersion) => void)(props.beatmap)}
+                           >
+                              {fn.title}
+                           </CardLink>
+                        ) : (
+                           fn.action
+                        )
+                     ) : null
+                  )
+                  .filter(p => p)}
+            </div>
+         )}
       </div>
    );
 }
