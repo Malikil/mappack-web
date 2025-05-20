@@ -3,7 +3,7 @@ import { LegacyClient } from "osu-web.js";
 import db from "../connection";
 import { matchResultValue } from "@/app/profile/[playerid]/pve/functions";
 import { getCurrentPack } from "@/helpers/currentPack";
-import { convertPP } from "@/helpers/rating-range";
+import { convertPP } from "@/helpers/rankPredictor";
 
 /**
  * @typedef SongResultMap

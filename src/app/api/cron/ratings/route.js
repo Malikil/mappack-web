@@ -74,20 +74,20 @@ export async function GET(req) {
                      ...updateOne.update.$unset,
                      [`${mode}.pvp`]: ""
                   };
-               // Increase rating deviation if they're still active
-               // TODO figure out a good way to gently nudge these values towards what would be expected
+               // Increase rating deviation if they're still active and nudge their rating towards
+               // an average value
                else
                   updateOne.update.$set = {
                      ...updateOne.update.$set,
-                     [`${mode}.pvp.rd`]: player[mode].pvp.rd * 1.05
-                     // [`${mode}.pvp.rating`]:
-                     //    (player[mode].pvp.rating * 9 +
-                     //       convertPP(osu.statistics_rulesets[mode].pp, mode)) /
-                     //    10
+                     [`${mode}.pvp.rd`]: player[mode].pvp.rd * 1.05,
+                     [`${mode}.pvp.rating`]:
+                        (player[mode].pvp.rating * 9 +
+                           convertPP(osu.statistics_rulesets[mode].pp, mode)) /
+                        10
                   };
             }
          });
-         // If there are updates to perform, do them
+         // If there are updates to perform, add them to the list
          if (Object.keys(updateOne.update).length > 0) updates.push({ updateOne });
       }
    }

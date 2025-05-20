@@ -3,7 +3,7 @@
 import db from "@/app/api/db/connection";
 import { createMappool, cyclePools } from "@/helpers/addPool";
 import { getCurrentPack } from "@/helpers/currentPack";
-import { convertPP } from "@/helpers/rating-range";
+import { convertPP } from "@/helpers/rankPredictor";
 import { delay } from "@/time";
 import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
 import { Client, LegacyClient } from "osu-web.js";
