@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Client, GameMode } from "osu-web.js";
 import db from "../../db/connection";
-import { AnyBulkWriteOperation, FindCursor, UpdateFilter, UpdateOneModel } from "mongodb";
+import { AnyBulkWriteOperation, FindCursor, UpdateFilter } from "mongodb";
 import { DbPlayer } from "@/types/database.player";
 import { convertPP } from "@/helpers/rankPredictor";
 

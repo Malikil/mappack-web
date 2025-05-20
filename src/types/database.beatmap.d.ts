@@ -1,3 +1,4 @@
+import { GameMode } from "osu-web.js";
 import { ModRatings, Rating } from "./rating";
 
 /**
@@ -9,6 +10,8 @@ export interface RatingSet {
    hr: Rating;
    dt: Rating;
 }
+
+export type MappackActiveState = "pending" | "fresh" | "stale" | "completed";
 
 export interface DbBeatmap {
    id: number;
@@ -23,4 +26,12 @@ export interface DbBeatmap {
    ar: number;
    stars: number;
    ratings: ModRatings;
+}
+
+export interface DbMappack {
+   name: string;
+   download: string;
+   maps: DbBeatmap[];
+   active: MappackActiveState;
+   mode: GameMode;
 }

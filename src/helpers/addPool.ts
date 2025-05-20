@@ -1,14 +1,18 @@
 import db from "@/app/api/db/connection";
-import { Client } from "osu-web.js";
+import { Client, GameMode } from "osu-web.js";
 import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
+import { DbBeatmap, DbMappack } from "@/types/database.beatmap";
+import { DbHistory } from "@/types/database.history";
+import { UndocumentedBeatmapsetResponse } from "@/types/undocumented.beatmapset";
+import { ModRatings } from "@/types/rating";
 
 const INIT_MAP_RD = 100;
 
-async function getPreviousMapScalings(mode) {
+async function getPreviousMapScalings(mode: GameMode) {
    console.log("Get previous map scalings");
-   const mapsDb = db.collection("maps");
+   const mapsDb = db.collection<DbMappack>("maps");
    const maplist = mapsDb.find({ mode });
-   const datasets = { x: [], y: [] };
+   const datasets = { x: [] as number[][], y: [] as number[][] };
    for await (const pool of maplist) {
       pool.maps.forEach(map => {
          const { nm, hd, hr, dt } = map.ratings;
@@ -21,25 +25,17 @@ async function getPreviousMapScalings(mode) {
    return polyReg;
 }
 
-/**
- * @param {string} accessToken
- * @param {string} packName
- * @param {string} download
- * @param {number[]} mapsets
- * @param {import("osu-web.js").GameMode} gamemode
- * @param {boolean} alsoFruits
- */
 export async function createMappool(
-   accessToken,
-   packName,
-   download,
-   mapsets,
-   gamemode = "osu",
-   alsoFruits = false
+   accessToken: string,
+   packName: string,
+   download: string,
+   mapsets: number[],
+   gamemode: GameMode = "osu",
+   alsoFruits: boolean = false
 ) {
    console.log(`Create pool ${packName}`);
    // Make sure this pack hasn't been used yet
-   const historyDb = db.collection("history");
+   const historyDb = db.collection<DbHistory>("history");
    if (await historyDb.findOne({ mode: gamemode, packs: packName })) throw new Error("409");
 
    const osuClient = new Client(accessToken);
@@ -49,19 +45,17 @@ export async function createMappool(
    const ctbPredictor =
       gamemode === "osu" && alsoFruits && (await getPreviousMapScalings("fruits"));
 
-   /** @type {(import("@/types/database.beatmap").DbBeatmap & { mode: import("osu-web.js").GameMode })[]} */
-   const maplist = await mapsets
+   const maplist: (DbBeatmap & { mode: GameMode; })[] = await mapsets
       .reduce(
          (prom, setId) =>
             prom.then(async arr => {
                console.log(`Fetch mapset ${setId}`);
-               /** @type {import("@/types/undocumented.beatmapset").UndocumentedBeatmapsetResponse} */
-               const mapset = await osuClient.getUndocumented(`beatmapsets/${setId}`);
+               const mapset = await osuClient.getUndocumented<UndocumentedBeatmapsetResponse>(`beatmapsets/${setId}`);
                console.log(mapset.title);
                return arr.concat(
                   (
                      await Promise.all(
-                        mapset.beatmaps.map(async bm => {
+                        mapset.beatmaps.map(async (bm): Promise<(DbBeatmap & { mode: GameMode })[]> => {
                            // Ignore maps from other modes
                            // For taiko/mania, always reject other modes
                            if (gamemode === "mania" || gamemode === "taiko") {
@@ -82,21 +76,21 @@ export async function createMappool(
                               cs: bm.cs,
                               ar: bm.ar,
                               stars: bm.difficulty_rating,
-                              mode: bm.mode
+                              mode: bm.mode,
+                              ratings: null
                            };
                            console.log(bm.id, mapData);
 
                            // Get the ctb difficulty if it's a converted map
-                           const altData = bm.mode === "osu" &&
+                           const altData: DbBeatmap & { mode: GameMode; } = bm.mode === "osu" &&
                               (alsoFruits || gamemode === "fruits") && {
                                  ...mapData,
                                  stars:
-                                    console.log(bm.id, "Fetch ctb attributes") ||
                                     // The old star rating is acceptable if there's a network error here (for now)
                                     (
                                        await osuClient.beatmaps
                                           .getBeatmapAttributes(bm.id, "fruits")
-                                          .catch(err => console.error(bm.id, err))
+                                          .catch(err => { console.error(bm.id, err); return null; })
                                     )?.star_rating ||
                                     mapData.stars,
                                  mode: "fruits"
@@ -151,7 +145,7 @@ export async function createMappool(
                      .filter(m => m)
                );
             }),
-         Promise.resolve([])
+         Promise.resolve<(DbBeatmap & { mode: GameMode; })[]>([])
       )
       .catch(err => {
          console.error(err);
