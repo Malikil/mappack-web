@@ -1,8 +1,10 @@
 import { createMappool, cyclePools } from "@/helpers/addPool";
 import { NextRequest, NextResponse } from "next/server";
-import { Client } from "osu-web.js";
+import { Client, GameMode } from "osu-web.js";
 import db from "../db/connection";
 import { days } from "@/time";
+import { UndocumentedBeatmappack, UndocumentedBeatmappackCompact, UndocumentedBeatmappackResponse } from "@/types/undocumented.beatmappacks";
+import { DbHistory } from "@/types/database.history";
 
 async function getOsuToken() {
    console.log("Get osu token");
@@ -21,12 +23,8 @@ async function getOsuToken() {
    return osuResponse.access_token;
 }
 
-/**
- * @param {import("@/types/undocumented.beatmappacks").UndocumentedBeatmappackCompact[]} packList
- * @param {import("osu-web.js").GameMode} mode
- */
-async function findMappackTag(packList, mode) {
-   const history = await db.collection("history").findOne({ mode });
+async function findMappackTag(packList: UndocumentedBeatmappackCompact[], mode: GameMode) {
+   const history = await db.collection<DbHistory>("history").findOne({ mode });
    const modeMapping = {
       osu: null,
       taiko: 1,
@@ -53,28 +51,23 @@ async function findMappackTag(packList, mode) {
 
 // Increase this function's max duration to 30s
 export const maxDuration = 30;
-/**
- * @param {NextRequest} req
- */
-export async function GET(req) {
+export async function GET(req: NextRequest) {
    if (req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`)
       return new NextResponse("Unauthorized", { status: 401 });
 
    // Get recent beatmap packs
    const accessToken = await getOsuToken();
    const client = new Client(accessToken);
-   /** @type {import("@/types/undocumented.beatmappacks").UndocumentedBeatmappackResponse} */
-   const packs = await client.getUndocumented("beatmaps/packs");
+   const packs = await client.getUndocumented("beatmaps/packs") as UndocumentedBeatmappackResponse;
    console.log(packs.beatmap_packs.slice(0, 3), `+ ${packs.beatmap_packs.length - 3} more`);
-   /** @type {import("osu-web.js").GameMode[]} */
-   const modesToFetch = ["osu"];
+   const modesToFetch: GameMode[] = ["osu"];
    // On even weeks, fetch a ctb pool. On odd weeks, duplicate the std pool into ctb
    // Take the integer component after dividing the day-of-year by 7. That way even if the cron job
    // was delayed enough to technically roll over to Tuesday, the even/odd is still preserved
    const now = new Date();
    const yearBegin = new Date(now.getFullYear(), 0, 1);
    // On the first week of each calendar year this may result in a duplication. But that's fine
-   const alsoFruits = !!((((now - yearBegin) / days(7)) | 0) % 2);
+   const alsoFruits = !!((((now.getTime() - yearBegin.getTime()) / days(7)) | 0) % 2);
    if (!alsoFruits) modesToFetch.push("fruits");
 
    await modesToFetch.reduce(
@@ -82,8 +75,7 @@ export async function GET(req) {
          wait.then(async () => {
             const mappackTag = await findMappackTag(packs.beatmap_packs, mode);
             console.log(`Found mappack ${mappackTag}`);
-            /** @type {import("@/types/undocumented.beatmappacks").UndocumentedBeatmappack} */
-            const mappack = await client.getUndocumented(`beatmaps/packs/${mappackTag}`);
+            const mappack = await client.getUndocumented(`beatmaps/packs/${mappackTag}`) as UndocumentedBeatmappack;
             console.log(`Add mappack ${mappack.tag}`);
             await createMappool(
                accessToken,
