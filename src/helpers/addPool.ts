@@ -75,6 +75,7 @@ export async function createMappool(
                               bpm: bm.bpm,
                               cs: bm.cs,
                               ar: bm.ar,
+                              od: bm.accuracy,
                               stars: bm.difficulty_rating,
                               mode: bm.mode,
                               ratings: null

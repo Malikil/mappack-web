@@ -1,16 +1,14 @@
+import { GameMode } from "osu-web.js";
+
 // How much PP does the rank 10k player have?
 const PP_EQUIVALENT = {
-   osu: 9036,
-   taiko: 5922, // 5k rank
-   fruits: 8295, // 1k rank
-   mania: 7246 // 4 key
+   osu: 9037,
+   taiko: 5924, // 5k rank
+   fruits: 8296, // 1k rank
+   mania: 7247 // 4 key
 };
 
-/**
- * @param {number} pp
- * @param {import("osu-web.js").GameMode} mode
- */
-export function convertPP(pp, mode = "osu") {
+export function convertPP(pp: number, mode: GameMode = "osu") {
    const ppmod = PP_EQUIVALENT[mode];
    // Below 1000 PP, rating == pp
    if (pp < 1000) return pp;

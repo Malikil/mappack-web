@@ -19,7 +19,6 @@ export default async function Mappool() {
    const playerRating: Rating = player && (player[player.gamemode]?.pvp || player[player.gamemode]?.pve);
 
    const mapsCollection = db.collection<DbMappack>("maps");
-   // prettier-ignore
    const pools = (await mapsCollection
       .aggregate([
          {
@@ -42,6 +41,7 @@ export default async function Mappool() {
                      bpm: "$maps.bpm",
                      cs: "$maps.cs",
                      ar: "$maps.ar",
+                     od: "$maps.od",
                      stars: "$maps.stars",
                      ratings: "$maps.ratings"
                   }
@@ -82,6 +82,7 @@ export default async function Mappool() {
                bpm: number;
                cs: number;
                ar: number;
+               od: number;
                stars: number;
                ratings: ModRatings;
             }[];
