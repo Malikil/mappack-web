@@ -7,16 +7,19 @@ import { matchResultValue, parseMpLobby } from "./functions";
 import { withinRange } from "@/helpers/rating-range";
 import { getCurrentPack } from "@/helpers/currentPack";
 import { auth } from "@/auth";
+import { SimpleMod } from "@/types/rating";
+import { DbPlayer, ModeInfo, PvEMatchHistory } from "@/types/database.player";
+import { DbBeatmap } from "@/types/database.beatmap";
 
-export async function generateAttack(osuid, mapcount = 7) {
-   const playersDb = db.collection("players");
+export async function generateAttack(osuid: number, mapcount = 7) {
+   const playersDb = db.collection<DbPlayer>("players");
    const player = await playersDb.findOne({ osuid });
    const pveStats = player[player.gamemode]?.pve;
    console.log(`Target range: ${pveStats.rating.toFixed(1)} ±${pveStats.rd.toFixed(1)}`);
    const packMaps = await getCurrentPack(player.gamemode || "osu");
    let availableMaps = packMaps
       .flatMap(map =>
-         Object.keys(map.ratings).map(mod => ({
+         Object.keys(map.ratings).map((mod: SimpleMod) => ({
             id: map.id,
             setid: map.setid,
             mod,
@@ -38,8 +41,17 @@ export async function generateAttack(osuid, mapcount = 7) {
    return selectedMaps.map(m => `${m.id}+${m.mod.toUpperCase()}`);
 }
 
-export async function submitPve(formData, matchesData) {
-   const { results: matches, mp } = formData ? await parseMpLobby(formData.get("mp")) : matchesData;
+export async function submitPve(formData: FormData, matchesData: {
+    results: {
+        [user_id: string]: {
+            map: number;
+            mod: SimpleMod;
+            score: number;
+        }[];
+    };
+    mp: number;
+}) {
+   const { results: matches, mp } = formData ? await parseMpLobby(formData.get("mp").toString()) : matchesData;
    if (!matches || Object.keys(matches).length < 1)
       return {
          http: {
@@ -49,42 +61,14 @@ export async function submitPve(formData, matchesData) {
       };
    console.log(matches);
    const session = await auth();
-   /** @type {import("osu-web.js").GameMode} */
-   const mode = session
-      ? (await db.collection("players").findOne({ osuid: session.user.id })).gamemode || "osu"
-      : "osu";
+   const playersdb = db.collection<DbPlayer>("players");
+   const mode = (await playersdb.findOne({ osuid: session.user.id })).gamemode || "osu";
    // Create the rating calculator
    const calculator = new Glicko2();
 
    // Get the maps from database
-   const mapsdb = db.collection("maps");
+   const mapsdb = db.collection<DbBeatmap>("maps");
    const packMaps = await getCurrentPack(mode);
-   /**
-    * @type {{
-    *   id: number,
-    *   setid: number,
-    *   version: string,
-    *   ratings: {
-    *     nm: {
-    *       calc: Player,
-    *       played: boolean
-    *     },
-    *     hd: {
-    *       calc: Player,
-    *       played: boolean
-    *     },
-    *     hr: {
-    *       calc: Player,
-    *       played: boolean
-    *     },
-    *     dt: {
-    *       calc: Player,
-    *       played: boolean
-    *     }
-    *   },
-    *   played: boolean
-    * }[]}
-    */
    const fullMaplistForCalculator = packMaps.map(map => ({
       // Create rating objects for each map here, then flag them as (un)played for updating later
       id: map.id,
@@ -126,10 +110,8 @@ export async function submitPve(formData, matchesData) {
       },
       played: false
    }));
-   /** @type {[Player, Player, number][]} */
-   const calculatorResults = [];
+   const calculatorResults: [Player, Player, number][] = [];
    // For each player, create matchups for them
-   const playersdb = db.collection("players");
    const playerCalculatorPairs = (
       await Promise.all(
          // This can be parallel given that no data is being written to db. Only fetched.
@@ -145,16 +127,16 @@ export async function submitPve(formData, matchesData) {
                return;
             // Get the player's current rating
             const playerId = parseInt(playerIdKey);
-            const ratingSet = {
+            const ratingSet: ModeInfo = {
                pve: {
                   rating: 1500,
                   rd: 350,
                   vol: 0.06,
                   matches: [],
-                  games: 0
+                  games: 0,
+                  songs: 0
                }
             };
-            /** @type {import("@/types/database.player").DbPlayer} */
             const player = await playersdb.findOneAndUpdate(
                { osuid: playerId },
                {
@@ -183,7 +165,7 @@ export async function submitPve(formData, matchesData) {
                player[mode].pve.rd,
                player[mode].pve.vol
             );
-            const history = {
+            const history: PvEMatchHistory = {
                mp,
                prevRating: player[mode].pve.rating,
                ratingDiff: 0,
@@ -202,7 +184,7 @@ export async function submitPve(formData, matchesData) {
                   calculatorResults.push([
                      playerCalc,
                      mapCalc.ratings[songResult.mod].calc,
-                     matchResultValue(songResult.score)
+                     matchResultValue(songResult.score, mode)
                   ]);
                   // Add the song to history
                   history.songs.push({
@@ -219,7 +201,7 @@ export async function submitPve(formData, matchesData) {
 
             return { playerId, playerCalc, history };
          })
-      ).catch(err => console.warn(err.message))
+      ).catch<{ playerId: number, playerCalc: Player, history: PvEMatchHistory }[]>(err => { console.warn(err.message); return null; })
    )?.filter(v => v);
    if (!playerCalculatorPairs)
       return {
@@ -271,8 +253,7 @@ export async function submitPve(formData, matchesData) {
          const setObject = Object.fromEntries(
             Object.keys(mapInfo.ratings)
                .filter(k => mapInfo.ratings[k].played)
-               .map(k => {
-                  /** @type {Player} */
+               .map((k: SimpleMod) => {
                   const modRating = mapInfo.ratings[k].calc;
                   return [
                      `maps.$.ratings.${k}`,

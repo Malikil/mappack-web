@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Table } from "react-bootstrap";
 
 export default function Mappools() {
    return (
@@ -7,11 +8,7 @@ export default function Mappools() {
          <ul>
             <li>
                Maps are taken from officially released mappacks. A list of packs is available{" "}
-               <Link
-                  href="https://osu.ppy.sh/beatmaps/packs"
-                  target="_blank"
-                  rel="noopener noreferrer"
-               >
+               <Link href="https://osu.ppy.sh/beatmaps/packs" target="_blank" rel="noopener noreferrer">
                   here
                </Link>
             </li>
@@ -19,15 +16,34 @@ export default function Mappools() {
             <li>Two packs will be active at a time</li>
             <li>Each difficulty is taken individually</li>
             <li>
-               Maps are given a rating on the system. The initial rating is determined from the
-               map&apos;s star rating
+               Maps are given a rating on the system. The initial rating is determined from the map&apos;s
+               star rating
             </li>
+            <li>As different maps are used in matches, the map&apos;s rating will also be adjusted</li>
             <li>
-               As different maps are used in matches, the map&apos;s rating will also be adjusted
-            </li>
-            <li>
-               In all modes, the system will attempt to select maps where the player&apos;s expected
-               score is 600k
+               Depending on the game mode, the system will attempt to select maps where the player&apos;s
+               expected score is within a certain range:
+               <Table>
+                  <thead>
+                     <tr>
+                        <th>Mode</th>
+                        <th>Minimum</th>
+                        <th>Maximum</th>
+                     </tr>
+                  </thead>
+                  <tbody>
+                     <tr>
+                        <td>osu!</td>
+                        <td>300k</td>
+                        <td>900k</td>
+                     </tr>
+                     <tr>
+                        <td>Catch</td>
+                        <td>500k</td>
+                        <td>900k</td>
+                     </tr>
+                  </tbody>
+               </Table>
             </li>
          </ul>
       </div>
