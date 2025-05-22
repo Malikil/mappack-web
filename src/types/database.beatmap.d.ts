@@ -23,6 +23,10 @@ export interface BeatmapVersion {
    ar: number;
    od: number;
    stars: number;
+   noteCount: {
+      circles: number;
+      sliders: number;
+   };
    ratings: ModRatings;
 }
 

@@ -69,11 +69,9 @@ export async function GET(req: NextRequest) {
                else
                   update.$set = {
                      ...update.$set,
-                     [`${mode}.pvp.rd`]: player[mode].pvp.rd * 1.05,
+                     [`${mode}.pvp.rd`]: Math.min(player[mode].pvp.rd * 1.05, 200),
                      [`${mode}.pvp.rating`]:
-                        (player[mode].pvp.rating * 9 +
-                           convertPP(osu.statistics_rulesets[mode].pp, mode)) /
-                        10
+                        (player[mode].pvp.rating * 9 + convertPP(osu.statistics_rulesets[mode].pp, mode)) / 10
                   };
             }
          });
