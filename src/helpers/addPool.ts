@@ -77,6 +77,10 @@ export async function createMappool(
                               ar: bm.ar,
                               od: bm.accuracy,
                               stars: bm.difficulty_rating,
+                              noteCount: {
+                                 circles: bm.count_circles,
+                                 sliders: bm.count_sliders
+                              },
                               mode: bm.mode,
                               ratings: null
                            };

@@ -1,5 +1,18 @@
 import React from "react";
-import { BeatmapVersion } from "./database.beatmap";
+import { ModRatings } from "./rating";
+
+export interface BeatmapVersion {
+   id: number;
+   setid: number;
+   version: string;
+   length: number;
+   bpm: number;
+   cs: number;
+   ar: number;
+   od: number;
+   stars: number;
+   ratings: ModRatings;
+}
 
 export interface MapAction {
    title: string;

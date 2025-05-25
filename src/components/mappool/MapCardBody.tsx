@@ -3,7 +3,7 @@
 import { convertTime } from "@/time";
 import { CardLink, CardSubtitle, Col, Container, Row } from "react-bootstrap";
 import { withinRange } from "@/helpers/rating-range";
-import { BeatmapVersion } from "@/types/database.beatmap";
+import { BeatmapVersion } from "@/types/mappool";
 import { Rating } from "@/types/rating";
 import { MapAction } from "@/types/mappool";
 

@@ -1,5 +1,6 @@
 import { GameMode } from "osu-web.js";
 import { ModRatings, Rating } from "./rating";
+import { BeatmapVersion } from "./mappool";
 
 /**
  * @deprecated Use ModRatings
@@ -13,27 +14,14 @@ export interface RatingSet {
 
 export type MappackActiveState = "pending" | "fresh" | "stale" | "completed";
 
-export interface BeatmapVersion {
-   id: number;
-   setid: number;
-   version: string;
-   length: number;
-   bpm: number;
-   cs: number;
-   ar: number;
-   od: number;
-   stars: number;
-   noteCount: {
-      circles: number;
-      sliders: number;
-   };
-   ratings: ModRatings;
-}
-
 export interface DbBeatmap extends BeatmapVersion {
    artist: string;
    title: string;
    mapper: string;
+   noteCount: {
+      circles: number;
+      sliders: number;
+   };
 }
 
 export interface DbMappack {
