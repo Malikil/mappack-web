@@ -18,7 +18,7 @@ export type MapCardBodyProps = {
 
 export default function MapCardBody(props: MapCardBodyProps) {
    const withinRangeClass = (rating: Rating) => {
-      if (withinRange(props.rating, rating)) return "border border-2 border-success rounded";
+      if (props.rating && withinRange(props.rating, rating)) return "border border-2 border-success rounded";
    };
    return (
       <div className={`d-flex flex-column ${props.className || ""}`}>

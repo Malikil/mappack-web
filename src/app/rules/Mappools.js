@@ -42,6 +42,16 @@ export default function Mappools() {
                         <td>500k</td>
                         <td>900k</td>
                      </tr>
+                     <tr>
+                        <td>Taiko</td>
+                        <td></td>
+                        <td></td>
+                     </tr>
+                     <tr>
+                        <td>Mania</td>
+                        <td></td>
+                        <td></td>
+                     </tr>
                   </tbody>
                </Table>
             </li>
