@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import db from "../api/db/connection";
+import { playersDb } from "../api/db/connection";
 import { Button } from "react-bootstrap";
 import { revalidatePath } from "next/cache";
 import { register } from "../api/db/register/functions";
@@ -9,8 +9,7 @@ export default async function Profile() {
    const session = await auth();
 
    if (!session) return redirect("/");
-   const playersCollection = db.collection("players");
-   const player = await playersCollection.findOne({
+   const player = await playersDb.findOne({
       osuid: session.user.id,
       hideLeaderboard: { $exists: false }
    });

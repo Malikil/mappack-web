@@ -1,17 +1,15 @@
-import db from "@/app/api/db/connection";
+import { historyDb, mappacksDb } from "@/app/api/db/connection";
 import { Client, GameMode } from "osu-web.js";
 import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
-import { DbBeatmap, DbMappack } from "@/types/database.beatmap";
-import { DbHistory } from "@/types/database.history";
+import { DbBeatmap } from "@/types/database.beatmap";
 import { UndocumentedBeatmapsetResponse } from "@/types/undocumented.beatmapset";
-import { ModRatings } from "@/types/rating";
+import { DbMappack } from "@/types/database.mappack";
 
 const INIT_MAP_RD = 100;
 
 async function getPreviousMapScalings(mode: GameMode) {
    console.log("Get previous map scalings");
-   const mapsDb = db.collection<DbMappack>("maps");
-   const maplist = mapsDb.find({ mode });
+   const maplist = mappacksDb.find({ mode });
    const datasets = { x: [] as number[][], y: [] as number[][] };
    for await (const pool of maplist) {
       pool.maps.forEach(map => {
@@ -35,22 +33,22 @@ export async function createMappool(
 ) {
    console.log(`Create pool ${packName}`);
    // Make sure this pack hasn't been used yet
-   const historyDb = db.collection<DbHistory>("history");
    if (await historyDb.findOne({ mode: gamemode, packs: packName })) throw new Error("409");
 
    const osuClient = new Client(accessToken);
    const predictor = await getPreviousMapScalings(gamemode);
    // Rather than fetch the latest std pack all over again when prepping ctb pools, just calc both
    // ratings duing the std fetch
-   const ctbPredictor =
-      gamemode === "osu" && alsoFruits && (await getPreviousMapScalings("fruits"));
+   const ctbPredictor = gamemode === "osu" && alsoFruits && (await getPreviousMapScalings("fruits"));
 
-   const maplist: (DbBeatmap & { mode: GameMode; })[] = await mapsets
+   const maplist: (DbBeatmap & { mode: GameMode })[] = await mapsets
       .reduce(
          (prom, setId) =>
             prom.then(async arr => {
                console.log(`Fetch mapset ${setId}`);
-               const mapset = await osuClient.getUndocumented<UndocumentedBeatmapsetResponse>(`beatmapsets/${setId}`);
+               const mapset = await osuClient.getUndocumented<UndocumentedBeatmapsetResponse>(
+                  `beatmapsets/${setId}`
+               );
                console.log(mapset.title);
                return arr.concat(
                   (
@@ -65,6 +63,7 @@ export async function createMappool(
                            else if (bm.mode === "mania" || bm.mode === "taiko") return null;
 
                            const mapData = {
+                              _id: bm.id,
                               id: bm.id,
                               setid: mapset.id,
                               artist: mapset.artist,
@@ -87,7 +86,7 @@ export async function createMappool(
                            console.log(bm.id, mapData);
 
                            // Get the ctb difficulty if it's a converted map
-                           const altData: DbBeatmap & { mode: GameMode; } = bm.mode === "osu" &&
+                           const altData: DbBeatmap & { mode: GameMode } = bm.mode === "osu" &&
                               (alsoFruits || gamemode === "fruits") && {
                                  ...mapData,
                                  stars:
@@ -95,9 +94,11 @@ export async function createMappool(
                                     (
                                        await osuClient.beatmaps
                                           .getBeatmapAttributes(bm.id, "fruits")
-                                          .catch(err => { console.error(bm.id, err); return null; })
-                                    )?.star_rating ||
-                                    mapData.stars,
+                                          .catch(err => {
+                                             console.error(bm.id, err);
+                                             return null;
+                                          })
+                                    )?.star_rating || mapData.stars,
                                  mode: "fruits"
                               };
                            console.log(bm.id, "altData", altData);
@@ -105,13 +106,7 @@ export async function createMappool(
                            // Reduce initial rd for maps, the initial rating is already based on their
                            // stars and past experience
                            const ratings = predictor.predict([
-                                 [
-                                    mapData.stars,
-                                    mapData.length,
-                                    mapData.bpm,
-                                    mapData.ar,
-                                    mapData.cs
-                                 ]
+                                 [mapData.stars, mapData.length, mapData.bpm, mapData.ar, mapData.cs]
                               ])[0],
                               vol = 0.06;
                            mapData.ratings = {
@@ -125,13 +120,7 @@ export async function createMappool(
                               // If this is a converted map in a ctb pack, the original predictor needs
                               // to be used instead
                               const altRatings = (ctbPredictor || predictor).predict([
-                                    [
-                                       altData.stars,
-                                       altData.length,
-                                       altData.bpm,
-                                       altData.ar,
-                                       altData.cs
-                                    ]
+                                    [altData.stars, altData.length, altData.bpm, altData.ar, altData.cs]
                                  ])[0],
                                  vol = 0.06;
                               altData.ratings = {
@@ -150,7 +139,7 @@ export async function createMappool(
                      .filter(m => m)
                );
             }),
-         Promise.resolve<(DbBeatmap & { mode: GameMode; })[]>([])
+         Promise.resolve<(DbBeatmap & { mode: GameMode })[]>([])
       )
       .catch(err => {
          console.error(err);
@@ -158,7 +147,7 @@ export async function createMappool(
       });
 
    // Prepare the insert object
-   const insert = [
+   const insert: DbMappack[] = [
       {
          name: packName,
          download,
@@ -223,15 +212,13 @@ export async function createMappool(
    }
 
    // Add to database
-   const collection = db.collection("maps");
-   const result = await collection.insertMany(insert);
+   const result = await mappacksDb.insertMany(insert);
    const histResult = await historyDb.bulkWrite(history);
    console.log(result, histResult);
 }
 
 export async function cyclePools() {
-   const collection = db.collection("maps");
-   if (!(await collection.findOne({ active: "pending" })))
+   if (!(await mappacksDb.findOne({ active: "pending" })))
       return {
          http: {
             status: 400,
@@ -239,7 +226,7 @@ export async function cyclePools() {
          }
       };
 
-   const result = await collection.bulkWrite([
+   const result = await mappacksDb.bulkWrite([
       {
          deleteMany: {
             filter: { active: "completed" }

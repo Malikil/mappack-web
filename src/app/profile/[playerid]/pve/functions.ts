@@ -1,4 +1,3 @@
-//import db from "@/app/api/db/connection";
 import { SimpleMod } from "@/types/rating";
 import { GameMode, LegacyClient, Mod } from "osu-web.js";
 
@@ -6,10 +5,11 @@ import { GameMode, LegacyClient, Mod } from "osu-web.js";
  * Returns the match result to use, assuming player first then map second
  */
 export function matchResultValue(score: number, gamemode: GameMode) {
-   const min: number = {
-      osu: 300000,
-      fruits: 500000
-   }[gamemode] || 300000;
+   const min: number =
+      {
+         osu: 300000,
+         fruits: 500000
+      }[gamemode] || 300000;
    const max: number = 900000;
    if (score < min) return 0;
    if (score > max) return 1;
@@ -71,24 +71,24 @@ export async function parseMpLobby(link: string) {
                      scoreAgg[score.user_id].push(scoreResult);
                   }
                });
-            // else {
-            //    const v1Score = await db.collection("v1meta").findOne({ _id: game.beatmap_id });
-            //    if (v1Score)
-            //       game.scores.forEach(score => {
-            //          console.log(
-            //             `Convert v1 score ${score.score} -> ${convertV1Score(score, v1Score.score)}`
-            //          );
-            //          const scoreResult = {
-            //             map: game.beatmap_id,
-            //             mod: parseSongMods(game.mods, score.enabled_mods),
-            //             score: convertV1Score(score, v1Score.score)
-            //          };
-            //          if (scoreResult.mod && scoreResult.score) {
-            //             if (!(score.user_id in scoreAgg)) scoreAgg[score.user_id] = [];
-            //             scoreAgg[score.user_id].push(scoreResult);
-            //          }
-            //       });
-            // }
+         // else {
+         //    const v1Score = await db.collection("v1meta").findOne({ _id: game.beatmap_id });
+         //    if (v1Score)
+         //       game.scores.forEach(score => {
+         //          console.log(
+         //             `Convert v1 score ${score.score} -> ${convertV1Score(score, v1Score.score)}`
+         //          );
+         //          const scoreResult = {
+         //             map: game.beatmap_id,
+         //             mod: parseSongMods(game.mods, score.enabled_mods),
+         //             score: convertV1Score(score, v1Score.score)
+         //          };
+         //          if (scoreResult.mod && scoreResult.score) {
+         //             if (!(score.user_id in scoreAgg)) scoreAgg[score.user_id] = [];
+         //             scoreAgg[score.user_id].push(scoreResult);
+         //          }
+         //       });
+         // }
          return scoreAgg;
       }, Promise.resolve({}));
       return { results, mp: matchIdSegment };

@@ -1,6 +1,6 @@
 import { Glicko2 } from "glicko2";
 import { LegacyClient } from "osu-web.js";
-import db from "../connection";
+import { mappacksDb, playersDb } from "../connection";
 import { matchResultValue } from "@/app/profile/[playerid]/pve/functions";
 import { getCurrentPack } from "@/helpers/currentPack";
 import { convertPP } from "@/helpers/rankPredictor";
@@ -26,7 +26,7 @@ import { convertPP } from "@/helpers/rankPredictor";
  * @param {import("osu-web.js").GameMode} mode
  */
 export async function createPvpRegistration(osuid, ppRaw, mode = "osu") {
-   const player = await db.collection("players").findOneAndUpdate(
+   const player = await playersDb.findOneAndUpdate(
       { osuid, [`${mode}.pvp`]: { $exists: false } },
       {
          $set: {
@@ -86,8 +86,7 @@ export async function parseMpLobby(link) {
                const winner = game.scores.sort((a, b) => b.score - a.score)[0].user_id;
                agg.resultScore[winner] = (agg.resultScore[winner] || 0) + 1;
                // Make sure the loser is still counted
-               agg.resultScore[game.scores[1].user_id] =
-                  agg.resultScore[game.scores[1].user_id] || 0;
+               agg.resultScore[game.scores[1].user_id] = agg.resultScore[game.scores[1].user_id] || 0;
                return agg;
             },
             { maps: [], scores: {}, resultScore: {} }
@@ -114,7 +113,7 @@ export async function parseMpLobby(link) {
  */
 export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, loserScores }) {
    console.log(winnerScores, loserScores);
-   const playersDb = db.collection("players");
+   //const playersDb = db.collection("players");
    const winner = await playersDb.findOne({
       $or: [{ osuid: parseInt(winnerId) }, { osuname: winnerId }]
    });
@@ -125,9 +124,8 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
    const loserRating = loser.osu.pvp;
    console.log(winner, loser);
    // Get the played maps
-   const mapsDb = db.collection("maps");
    const maplist = await getCurrentPack("osu");
-   const staleMaplist = await db.collection("maps").findOne({ mode: "osu", active: "completed" });
+   const staleMaplist = await mappacksDb.findOne({ mode: "osu", active: "completed" });
    const playedMaps = maps.map(item => {
       const { map, mod } = item;
       /** @type {import("@/types/database.beatmap").DbBeatmap} */
@@ -144,11 +142,7 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
 
    // Create the rating calculator
    const calculator = new Glicko2();
-   const winnerPlayer = calculator.makePlayer(
-      winnerRating.rating,
-      winnerRating.rd,
-      winnerRating.vol
-   );
+   const winnerPlayer = calculator.makePlayer(winnerRating.rating, winnerRating.rd, winnerRating.vol);
    const loserPlayer = calculator.makePlayer(loserRating.rating, loserRating.rd, loserRating.vol);
    // Update player ratings
    calculator.updateRatings([[winnerPlayer, loserPlayer, 1]]);
@@ -302,11 +296,10 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
 
    // Update song ratings in database
    const uniqueMaps = songlistCombined.reduce((unique, candidate) => {
-      if (!unique.find(m => m.map.id === candidate.map.id && m.mod === candidate.mod))
-         unique.push(candidate);
+      if (!unique.find(m => m.map.id === candidate.map.id && m.mod === candidate.mod)) unique.push(candidate);
       return unique;
    }, []);
-   const mapsResult = await mapsDb.bulkWrite(
+   const mapsResult = await mappacksDb.bulkWrite(
       uniqueMaps.map(outcome => {
          const ratingField = `maps.$.ratings.${outcome.mod}`;
          const updatedRating = {

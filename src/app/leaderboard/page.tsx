@@ -1,13 +1,14 @@
 import { Card, CardBody, CardHeader, CardImg, CardText, CardTitle } from "react-bootstrap";
-import db from "../api/db/connection";
+import { playersDb } from "../api/db/connection";
 import { buildUrl } from "osu-web.js";
 import Link from "next/link";
 import { auth } from "@/auth";
+import { Filter } from "mongodb";
+import { DbPlayer } from "@/types/database.player";
 
 export default async function Leaderboard() {
    const session = await auth();
-   let adminFilter = { hideLeaderboard: { $exists: false } };
-   const playersDb = db.collection("players");
+   let adminFilter: Filter<DbPlayer> = { hideLeaderboard: { $exists: false } };
    const user = await playersDb.findOne({ osuid: session?.user.id });
    const gamemode = user?.gamemode || "osu";
    if (user && user.admin) adminFilter = {};
@@ -25,10 +26,7 @@ export default async function Leaderboard() {
          {
             ...adminFilter,
             //[`${gamemode}.pvp`]: { $exists: true },
-            $or: [
-               { [`${gamemode}.pvp.wins`]: { $gt: 2 } },
-               { [`${gamemode}.pvp.losses`]: { $gt: 2 } }
-            ]
+            $or: [{ [`${gamemode}.pvp.wins`]: { $gt: 2 } }, { [`${gamemode}.pvp.losses`]: { $gt: 2 } }]
          },
          { sort: [`${gamemode}.pvp.rating`, -1], limit: 100 }
       )
@@ -47,11 +45,7 @@ export default async function Leaderboard() {
                   }}
                >
                   {pvpPlayers.map(p => (
-                     <Link
-                        key={p.osuid}
-                        href={`/profile/${p.osuid}`}
-                        className="text-decoration-none"
-                     >
+                     <Link key={p.osuid} href={`/profile/${p.osuid}`} className="text-decoration-none">
                         <Card>
                            <CardImg src={buildUrl.userAvatar(p.osuid)} alt="Avatar" />
                            <CardBody>
@@ -79,11 +73,7 @@ export default async function Leaderboard() {
                   }}
                >
                   {pvePlayers.map(p => (
-                     <Link
-                        key={p.osuid}
-                        href={`/profile/${p.osuid}`}
-                        className="text-decoration-none"
-                     >
+                     <Link key={p.osuid} href={`/profile/${p.osuid}`} className="text-decoration-none">
                         <Card>
                            <CardImg src={buildUrl.userAvatar(p.osuid)} alt="Avatar" />
                            <CardBody>

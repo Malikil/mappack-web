@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Card, CardBody, CardTitle } from "react-bootstrap";
-import { debug, updateV1Meta } from "./actions";
+import { debug } from "./actions";
 import { serverActionToast } from "@/toaster";
 
 export default function AdminActions() {
@@ -10,7 +10,7 @@ export default function AdminActions() {
          <CardBody>
             <CardTitle>Actions</CardTitle>
             <div className="d-flex flex-column gap-2">
-               <Button
+               {/* <Button
                   onClick={() =>
                      serverActionToast(updateV1Meta(), {
                         pending: "In progress",
@@ -19,7 +19,7 @@ export default function AdminActions() {
                   }
                >
                   Update V1 meta
-               </Button>
+               </Button> */}
                <Button
                   onClick={() =>
                      serverActionToast(debug(), {

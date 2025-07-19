@@ -1,4 +1,4 @@
-import db from "@/app/api/db/connection";
+import { playersDb } from "@/app/api/db/connection";
 import { auth, signOut } from "@/auth";
 import Link from "next/link";
 import GamemodeButton from "./GamemodeButton";
@@ -6,7 +6,7 @@ import Image from "next/image";
 
 export default async function AvatarMenu() {
    const session = await auth();
-   const player = await db.collection("players").findOne({ osuid: session.user.id });
+   const player = await playersDb.findOne({ osuid: session.user.id });
    return (
       <ul className="dropdown-menu dropdown-menu-end">
          {player?.admin && (
@@ -31,13 +31,7 @@ export default async function AvatarMenu() {
                   <li className="d-flex align-items-center">
                      <GamemodeButton className="dropdown-item" mode="osu" text="osu!" />
                      {player.gamemode === "osu" && (
-                        <Image
-                           src="/mode-osu.png"
-                           alt="osu active"
-                           height={24}
-                           width={24}
-                           className="me-2"
-                        />
+                        <Image src="/mode-osu.png" alt="osu active" height={24} width={24} className="me-2" />
                      )}
                   </li>
                   <li className="d-flex align-items-center">

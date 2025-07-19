@@ -5,7 +5,7 @@ import Osu from "next-auth/providers/osu";
 export const { handlers, signIn, signOut, auth } = NextAuth({
    providers: [
       Osu({
-         authorization: "https://osu.ppy.sh/oauth/authorize?scope=identify public"
+         authorization: "https://osu.ppy.sh/oauth/authorize?scope=identify"
       })
    ],
    callbacks: {

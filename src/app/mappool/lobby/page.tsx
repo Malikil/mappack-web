@@ -1,20 +1,17 @@
-import db from "@/app/api/db/connection";
+import { mappacksDb } from "@/app/api/db/connection";
 import ModPool from "@/components/mappool/Modpool";
+import { ModPool as ModPoolType } from "@/types/rating";
 
 export default async function LobbyPool({ searchParams }) {
    const stringParams = await searchParams;
    const parsedParams = Object.fromEntries(
-      Object.keys(stringParams).map(k => [
-         k,
-         (stringParams[k].split(",") || []).map(v => parseInt(v))
-      ])
+      Object.keys(stringParams).map(k => [k, (stringParams[k].split(",") || []).map(v => parseInt(v))])
    );
    parsedParams.l = decodeURIComponent(stringParams.l);
 
    // Get all maps. If pools are rotated while the match is ongoing, the previous maps will still need
    // to be visible on the lobby's pool page
-   const mapsCollection = db.collection("maps");
-   const pools = await mapsCollection.find({ mode: stringParams.m || 'osu' }).toArray();
+   const pools = await mappacksDb.find({ mode: stringParams.m || "osu" }).toArray();
    const mappools = [].concat(...pools.map(p => p.maps));
    const maplist = {
       nm: [],
@@ -32,7 +29,7 @@ export default async function LobbyPool({ searchParams }) {
       <div>
          <div className="fs-3">{parsedParams.l}</div>
          <div className="d-flex flex-column gap-3">
-            {Object.keys(maplist).map(mod => (
+            {Object.keys(maplist).map((mod: ModPoolType ) => (
                <ModPool
                   maps={maplist[mod]}
                   modshort={mod}

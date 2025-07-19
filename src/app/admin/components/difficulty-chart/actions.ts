@@ -1,15 +1,14 @@
 "use server";
 
-import db from "@/app/api/db/connection";
+import { playersDb, mappacksDb } from "@/app/api/db/connection";
 import { auth } from "@/auth";
 
 export async function fetchScatterData() {
    const session = await auth();
    const mode = session
-      ? (await db.collection("players").findOne({ osuid: session.user.id })).gamemode || "osu"
+      ? (await playersDb.findOne({ osuid: session.user.id })).gamemode || "osu"
       : "osu";
-   const mapsDb = db.collection("maps");
-   const pools = mapsDb.find({ mode });
+   const pools = mappacksDb.find({ mode });
    const modRatios = {
       hd: 0,
       hr: 0,

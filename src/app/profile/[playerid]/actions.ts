@@ -1,9 +1,8 @@
-import db from "@/app/api/db/connection";
+import { playersDb } from "@/app/api/db/connection";
 import { redirect } from "next/navigation";
 
-export async function getOpponentMappool(userid, formData) {
-   const opp = formData.get("opponent");
-   const playersDb = db.collection("players");
+export async function getOpponentMappool(userid: number, formData: FormData) {
+   const opp = formData.get("opponent") as string;
    const opponent = await playersDb.findOne({
       $or: [{ osuid: parseInt(opp) }, { osuname: opp }]
    });

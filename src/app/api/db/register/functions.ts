@@ -1,8 +1,7 @@
-import db from "../connection";
+import { playersDb } from "../connection";
 
-export async function register(osuid, osuname) {
+export async function register(osuid: number, osuname: string) {
    console.log(`Register player ${osuid}`);
-   const collection = db.collection("players");
    const pve = {
       rating: 1500,
       rd: 350,
@@ -11,7 +10,7 @@ export async function register(osuid, osuname) {
       songs: 0,
       matches: []
    };
-   const player = await collection.findOneAndUpdate(
+   const player = await playersDb.findOneAndUpdate(
       { osuid },
       {
          $set: {

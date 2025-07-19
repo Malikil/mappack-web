@@ -4,7 +4,7 @@ import { Button, Card, CardBody, CardHeader, CardTitle, Form, FormControl } from
 import { getOpponentMappool } from "./actions";
 import MatchHistoryItem from "./pvp/MatchHistoryItem";
 import PvEResultsCard from "./pve/PvEResultsCard";
-import db from "@/app/api/db/connection";
+import { playersDb } from "@/app/api/db/connection";
 import Image from "next/image";
 import { buildUrl } from "osu-web.js";
 import CreatePvpStats from "./pvp/CreatePvpStats";
@@ -26,15 +26,11 @@ const TableData = ({ data }) => (
 export default async function Profile({ params }) {
    const playerid = parseInt((await params).playerid);
    const session = await auth();
-   const playersCollection = db.collection("players");
-   const player = await playersCollection.findOne({
+   const player = await playersDb.findOne({
       osuid: playerid
       //hideLeaderboard: { $exists: false }
    });
-   const user =
-      playerid === session?.user.id
-         ? player
-         : await playersCollection.findOne({ osuid: session?.user.id });
+   const user = playerid === session?.user.id ? player : await playersDb.findOne({ osuid: session?.user.id });
 
    // If there's no player, or if we're trying to view a hidden player when we're not an admin
    if (!player || (player.hideLeaderboard && !user.admin)) return redirect("/leaderboard");
@@ -67,7 +63,7 @@ export default async function Profile({ params }) {
                            [
                               "Rating",
                               pvpStats.rating.toFixed(0),
-                              (pvpStats.wins < 3 && pvpStats.losses < 3) && 'Provisional',
+                              pvpStats.wins < 3 && pvpStats.losses < 3 && "Provisional",
                               `(rd: ${pvpStats.rd.toFixed(0)})`
                            ],
                            ["Wins", pvpStats.wins],
@@ -97,9 +93,7 @@ export default async function Profile({ params }) {
                </CardBody>
             ) : (
                <CardBody className="d-flex justify-content-between align-items-center">
-                  <span>
-                     Play a match to create PvP stats{user === player && ", or click the button"}
-                  </span>
+                  <span>Play a match to create PvP stats{user === player && ", or click the button"}</span>
                   {user === player && <CreatePvpStats playerid={playerid} gamemode={gamemode} />}
                </CardBody>
             )}

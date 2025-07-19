@@ -1,6 +1,6 @@
 "use server";
 
-import db from "@/app/api/db/connection";
+import { mappacksDb, playersDb } from "@/app/api/db/connection";
 import { Glicko2, Player } from "glicko2";
 import { revalidatePath } from "next/cache";
 import { matchResultValue, parseMpLobby } from "./functions";
@@ -8,11 +8,9 @@ import { withinRange } from "@/helpers/rating-range";
 import { getCurrentPack } from "@/helpers/currentPack";
 import { auth } from "@/auth";
 import { SimpleMod } from "@/types/rating";
-import { DbPlayer, ModeInfo, PvEMatchHistory } from "@/types/database.player";
-import { DbBeatmap } from "@/types/database.beatmap";
+import { ModeInfo, PvEMatchHistory } from "@/types/database.player";
 
 export async function generateAttack(osuid: number, mapcount = 7) {
-   const playersDb = db.collection<DbPlayer>("players");
    const player = await playersDb.findOne({ osuid });
    const pveStats = player[player.gamemode]?.pve;
    console.log(`Target range: ${pveStats.rating.toFixed(1)} ±${pveStats.rd.toFixed(1)}`);
@@ -41,17 +39,22 @@ export async function generateAttack(osuid: number, mapcount = 7) {
    return selectedMaps.map(m => `${m.id}+${m.mod.toUpperCase()}`);
 }
 
-export async function submitPve(formData: FormData, matchesData: {
-    results: {
-        [user_id: string]: {
+export async function submitPve(
+   formData: FormData,
+   matchesData: {
+      results: {
+         [user_id: string]: {
             map: number;
             mod: SimpleMod;
             score: number;
-        }[];
-    };
-    mp: number;
-}) {
-   const { results: matches, mp } = formData ? await parseMpLobby(formData.get("mp").toString()) : matchesData;
+         }[];
+      };
+      mp: number;
+   }
+) {
+   const { results: matches, mp } = formData
+      ? await parseMpLobby(formData.get("mp").toString())
+      : matchesData;
    if (!matches || Object.keys(matches).length < 1)
       return {
          http: {
@@ -61,13 +64,11 @@ export async function submitPve(formData: FormData, matchesData: {
       };
    console.log(matches);
    const session = await auth();
-   const playersdb = db.collection<DbPlayer>("players");
-   const mode = (await playersdb.findOne({ osuid: session.user.id })).gamemode || "osu";
+   const mode = (await playersDb.findOne({ osuid: session.user.id })).gamemode || "osu";
    // Create the rating calculator
    const calculator = new Glicko2();
 
    // Get the maps from database
-   const mapsdb = db.collection<DbBeatmap>("maps");
    const packMaps = await getCurrentPack(mode);
    const fullMaplistForCalculator = packMaps.map(map => ({
       // Create rating objects for each map here, then flag them as (un)played for updating later
@@ -76,35 +77,19 @@ export async function submitPve(formData: FormData, matchesData: {
       version: map.version,
       ratings: {
          nm: {
-            calc: calculator.makePlayer(
-               map.ratings.nm.rating,
-               map.ratings.nm.rd,
-               map.ratings.nm.vol
-            ),
+            calc: calculator.makePlayer(map.ratings.nm.rating, map.ratings.nm.rd, map.ratings.nm.vol),
             played: false
          },
          hd: {
-            calc: calculator.makePlayer(
-               map.ratings.hd.rating,
-               map.ratings.hd.rd,
-               map.ratings.hd.vol
-            ),
+            calc: calculator.makePlayer(map.ratings.hd.rating, map.ratings.hd.rd, map.ratings.hd.vol),
             played: false
          },
          hr: {
-            calc: calculator.makePlayer(
-               map.ratings.hr.rating,
-               map.ratings.hr.rd,
-               map.ratings.hr.vol
-            ),
+            calc: calculator.makePlayer(map.ratings.hr.rating, map.ratings.hr.rd, map.ratings.hr.vol),
             played: false
          },
          dt: {
-            calc: calculator.makePlayer(
-               map.ratings.dt.rating,
-               map.ratings.dt.rd,
-               map.ratings.dt.vol
-            ),
+            calc: calculator.makePlayer(map.ratings.dt.rating, map.ratings.dt.rd, map.ratings.dt.vol),
             played: false
          }
       },
@@ -121,10 +106,7 @@ export async function submitPve(formData: FormData, matchesData: {
          Object.keys(matches).map(async playerIdKey => {
             // Sanity check: Only update a player if one of their maps is on the maplist
             // If none of their maps are on the list, exit early
-            if (
-               matches[playerIdKey].every(a => !fullMaplistForCalculator.find(b => b.id === a.map))
-            )
-               return;
+            if (matches[playerIdKey].every(a => !fullMaplistForCalculator.find(b => b.id === a.map))) return;
             // Get the player's current rating
             const playerId = parseInt(playerIdKey);
             const ratingSet: ModeInfo = {
@@ -137,7 +119,7 @@ export async function submitPve(formData: FormData, matchesData: {
                   songs: 0
                }
             };
-            const player = await playersdb.findOneAndUpdate(
+            const player = await playersDb.findOneAndUpdate(
                { osuid: playerId },
                {
                   $setOnInsert: {
@@ -201,7 +183,10 @@ export async function submitPve(formData: FormData, matchesData: {
 
             return { playerId, playerCalc, history };
          })
-      ).catch<{ playerId: number, playerCalc: Player, history: PvEMatchHistory }[]>(err => { console.warn(err.message); return null; })
+      ).catch<{ playerId: number; playerCalc: Player; history: PvEMatchHistory }[]>(err => {
+         console.warn(err.message);
+         return null;
+      })
    )?.filter(v => v);
    if (!playerCalculatorPairs)
       return {
@@ -215,7 +200,7 @@ export async function submitPve(formData: FormData, matchesData: {
    calculator.updateRatings(calculatorResults);
 
    // Save results to database
-   const playersDbWriteResult = await playersdb.bulkWrite(
+   const playersDbWriteResult = await playersDb.bulkWrite(
       playerCalculatorPairs.map(({ playerId, playerCalc, history }) => {
          const updatedRating = playerCalc.getRating();
          history.ratingDiff = updatedRating - history.prevRating;
@@ -248,7 +233,7 @@ export async function submitPve(formData: FormData, matchesData: {
 
    // Figure out which maps to update
    const updateMaps = fullMaplistForCalculator.filter(map => map.played);
-   const mapsDbWriteResult = await mapsdb.bulkWrite(
+   const mapsDbWriteResult = await mappacksDb.bulkWrite(
       updateMaps.map(mapInfo => {
          const setObject = Object.fromEntries(
             Object.keys(mapInfo.ratings)

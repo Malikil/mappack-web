@@ -1,10 +1,13 @@
 import { createMappool, cyclePools } from "@/helpers/addPool";
 import { NextRequest, NextResponse } from "next/server";
 import { Client, GameMode } from "osu-web.js";
-import db from "../db/connection";
+import { historyDb } from "../db/connection";
 import { days } from "@/time";
-import { UndocumentedBeatmappack, UndocumentedBeatmappackCompact, UndocumentedBeatmappackResponse } from "@/types/undocumented.beatmappacks";
-import { DbHistory } from "@/types/database.history";
+import {
+   UndocumentedBeatmappack,
+   UndocumentedBeatmappackCompact,
+   UndocumentedBeatmappackResponse
+} from "@/types/undocumented.beatmappacks";
 
 async function getOsuToken() {
    console.log("Get osu token");
@@ -24,7 +27,7 @@ async function getOsuToken() {
 }
 
 async function findMappackTag(packList: UndocumentedBeatmappackCompact[], mode: GameMode) {
-   const history = await db.collection<DbHistory>("history").findOne({ mode });
+   const history = await historyDb.findOne({ mode });
    const modeMapping = {
       osu: null,
       taiko: 1,

@@ -1,13 +1,11 @@
-import db from "../api/db/connection";
+import { mappacksDb, playersDb } from "../api/db/connection";
 import Link from "next/link";
 import { auth } from "@/auth";
 import averageRating from "@/helpers/average-rating";
 import { Card, CardBody, CardImg, CardSubtitle, CardTitle, Col, Row } from "react-bootstrap";
 import MapCardBody from "@/components/mappool/MapCardBody";
 import { anyWithinRange } from "@/helpers/rating-range";
-import { DbMappack } from "@/types/database.beatmap";
 import { ModRatings, Rating } from "@/types/rating";
-import { DbPlayer } from "@/types/database.player";
 import interpolate from "color-interpolate";
 import { buildUrl } from "osu-web.js";
 
@@ -15,11 +13,10 @@ const palette = interpolate(["#4fc0ff", "#7cff4f", "#f6f05c", "#ff4e6f", "#c645b
 
 export default async function Mappool() {
    const session = await auth();
-   const player = session && (await db.collection<DbPlayer>("players").findOne({ osuid: session.user.id }));
+   const player = session && (await playersDb.findOne({ osuid: session.user.id }));
    const playerRating: Rating = player && (player[player.gamemode]?.pvp || player[player.gamemode]?.pve);
 
-   const mapsCollection = db.collection<DbMappack>("maps");
-   const pools = (await mapsCollection
+   const pools = (await mappacksDb
       .aggregate([
          {
             $match: {
@@ -68,26 +65,26 @@ export default async function Mappool() {
          }
       ])
       .toArray()) as {
-         _id: string;
-         download: string;
-         order: "fresh" | "stale";
-         maps: {
-            setid: number;
-            artist: string;
-            title: string;
-            versions: {
-               id: number;
-               version: string;
-               length: number;
-               bpm: number;
-               cs: number;
-               ar: number;
-               od: number;
-               stars: number;
-               ratings: ModRatings;
-            }[];
+      _id: string;
+      download: string;
+      order: "fresh" | "stale";
+      maps: {
+         setid: number;
+         artist: string;
+         title: string;
+         versions: {
+            id: number;
+            version: string;
+            length: number;
+            bpm: number;
+            cs: number;
+            ar: number;
+            od: number;
+            stars: number;
+            ratings: ModRatings;
          }[];
       }[];
+   }[];
    console.log(pools);
 
    return (

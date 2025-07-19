@@ -1,7 +1,6 @@
 import { combineRatings, withinRange } from "@/helpers/rating-range";
-import db from "../connection";
+import { playersDb } from "../connection";
 import { getCurrentPack } from "@/helpers/currentPack";
-import { DbPlayer } from "@/types/database.player";
 import { ModPool, Rating, SimpleMod } from "@/types/rating";
 import { DbBeatmap } from "@/types/database.beatmap";
 
@@ -13,7 +12,6 @@ const NM_MAPCOUNT = 4,
 
 export async function getMappool(playerIds: number[]) {
    const mode = "osu";
-   const playersDb = db.collection<DbPlayer>("players");
    const players = await playersDb
       .find({ osuid: { $in: playerIds }, [`${mode}.pvp`]: { $exists: true } })
       .toArray();

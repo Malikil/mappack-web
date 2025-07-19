@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Client, GameMode } from "osu-web.js";
-import db from "../../db/connection";
+import { playersDb } from "../../db/connection";
 import { AnyBulkWriteOperation, FindCursor, UpdateFilter } from "mongodb";
 import { DbPlayer } from "@/types/database.player";
 import { convertPP } from "@/helpers/rankPredictor";
@@ -40,8 +40,7 @@ export async function GET(req: NextRequest) {
 
    const accessToken = await getOsuToken();
    const client = new Client(accessToken);
-   const playerDb = db.collection<DbPlayer>("players");
-   const playerList = batchCursor(playerDb.find({ hideLeaderboard: { $exists: false } }), 50);
+   const playerList = batchCursor(playersDb.find({ hideLeaderboard: { $exists: false } }), 50);
    const modes: GameMode[] = ["osu", "fruits", "taiko", "mania"];
    const updates: AnyBulkWriteOperation<DbPlayer>[] = [];
    for await (const playerBatch of playerList) {
@@ -88,7 +87,7 @@ export async function GET(req: NextRequest) {
    // console.log(
    //    util.inspect(updates, { depth: null, colors: true, compact: 3, breakLength: 80 })
    // );
-   return playerDb.bulkWrite(updates).then(
+   return playersDb.bulkWrite(updates).then(
       res => {
          console.log(res);
          return new NextResponse("OK");
