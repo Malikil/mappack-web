@@ -1,10 +1,11 @@
 "use server";
 
-import { mappacksDb } from "@/app/api/db/connection";
+import { mappacksDb, mapsDb } from "@/app/api/db/connection";
 import { createMappool, cyclePools } from "@/helpers/addPool";
 import { getCurrentPack } from "@/helpers/currentPack";
 import { convertPP } from "@/helpers/rankPredictor";
 import { delay } from "@/time";
+import { DbBeatmap } from "@/types/database.beatmap";
 import { DbMappack } from "@/types/database.mappack";
 import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
 import { Client, LegacyClient } from "osu-web.js";
@@ -35,7 +36,19 @@ async function getPreviousMapScalings(mode) {
 }
 
 export async function debug() {
-   
+   const packs = mappacksDb.find();
+   const maplist: DbBeatmap[] = [];
+   for await (const pack of packs) {
+      for (const map of pack.maps) {
+         const mapConvert: DbBeatmap = {
+            ...map,
+            mode: pack.mode
+         };
+         maplist.push(mapConvert);
+      }
+   }
+   const result = await mapsDb.insertMany(maplist);
+   console.log(result);
 }
 
 // export async function updateV1Meta() {

@@ -1,3 +1,4 @@
+import { DbBeatmap } from "@/types/database.beatmap";
 import { DbHistory } from "@/types/database.history";
 import { DbMappack } from "@/types/database.mappack";
 import { DbPlayer } from "@/types/database.player";
@@ -13,6 +14,7 @@ const client = new MongoClient(process.env.MONGO_CONNECTION, {
 });
 export const db = client.db("packchallenge");
 export const mappacksDb = db.collection<DbMappack>("mappacks");
+export const mapsDb = db.collection<DbBeatmap>("maps");
 export const playersDb = db.collection<DbPlayer>("players");
 export const historyDb = db.collection<DbHistory>("history");
 
