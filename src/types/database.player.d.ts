@@ -1,5 +1,5 @@
 import { GameMode } from "osu-web.js";
-import { Rating } from "./rating";
+import { ModPool, Rating, SimpleMod } from "./rating";
 
 export interface MatchHistoryMap {
    id: number;
@@ -13,10 +13,10 @@ export interface MatchHistorySong {
    score: number;
 }
 export interface PvEMatchHistorySong extends MatchHistorySong {
-   mod: "nm" | "hd" | "hr" | "dt";
+   mod: SimpleMod;
 }
 export interface PvPMatchHistorySong extends MatchHistorySong {
-   mod: "nm" | "hd" | "hr" | "dt" | "fm";
+   mod: ModPool;
    opponentScore: number;
 }
 

@@ -12,7 +12,7 @@ const client = new MongoClient(process.env.MONGO_CONNECTION, {
    }
 });
 export const db = client.db("packchallenge");
-export const mappacksDb = db.collection<DbMappack>("maps");
+export const mappacksDb = db.collection<DbMappack>("mappacks");
 export const playersDb = db.collection<DbPlayer>("players");
 export const historyDb = db.collection<DbHistory>("history");
 
