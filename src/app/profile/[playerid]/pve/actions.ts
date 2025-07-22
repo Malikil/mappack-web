@@ -1,14 +1,18 @@
 "use server";
-
-import { mappacksDb, playersDb } from "@/app/api/db/connection";
+import util from "util";
+import { historyDb, mappacksDb, mapsDb, playersDb } from "@/app/api/db/connection";
 import { Glicko2, Player } from "glicko2";
 import { revalidatePath } from "next/cache";
 import { matchResultValue, parseMpLobby } from "./functions";
 import { withinRange } from "@/helpers/rating-range";
 import { getCurrentPack } from "@/helpers/currentPack";
-import { auth } from "@/auth";
 import { SimpleMod } from "@/types/rating";
-import { ModeInfo, PvEMatchHistory } from "@/types/database.player";
+import { DbPlayer, ModeInfo, PvEMatchHistory } from "@/types/database.player";
+import { GameMode } from "osu-web.js";
+import { DbBeatmap } from "@/types/database.beatmap";
+import { addMapsToDatabase } from "@/helpers/addPool";
+import { getOsuToken } from "@/helpers/osuToken";
+import { UpdateFilter, UpdateOneModel } from "mongodb";
 
 export async function generateAttack(osuid: number, mapcount = 7) {
    const player = await playersDb.findOne({ osuid });
@@ -39,22 +43,19 @@ export async function generateAttack(osuid: number, mapcount = 7) {
    return selectedMaps.map(m => `${m.id}+${m.mod.toUpperCase()}`);
 }
 
-export async function submitPve(
-   formData: FormData,
-   matchesData: {
-      results: {
-         [user_id: string]: {
-            map: number;
-            mod: SimpleMod;
-            score: number;
-         }[];
+export async function submitPve(formData: FormData) {
+   const mpLink = formData.get("mp").toString();
+   const matchIdSegment = parseInt(mpLink.slice(mpLink.lastIndexOf("/") + 1));
+   if (await historyDb.findOne({ _id: "mpLinks", items: matchIdSegment }))
+      return {
+         http: {
+            status: 400,
+            message: "MP link already submitted"
+         }
       };
-      mp: number;
-   }
-) {
-   const { results: matches, mp } = formData
-      ? await parseMpLobby(formData.get("mp").toString())
-      : matchesData;
+   // Add the mp link to history
+   historyDb.updateOne({ _id: "mpLinks" }, { $push: { items: matchIdSegment } });
+   const { matches, maps } = await parseMpLobby(matchIdSegment);
    if (!matches || Object.keys(matches).length < 1)
       return {
          http: {
@@ -63,205 +64,177 @@ export async function submitPve(
          }
       };
    console.log(matches);
-   const session = await auth();
-   const mode = (await playersDb.findOne({ osuid: session.user.id })).gamemode || "osu";
    // Create the rating calculator
    const calculator = new Glicko2();
-
-   // Get the maps from database
-   const packMaps = await getCurrentPack(mode);
-   const fullMaplistForCalculator = packMaps.map(map => ({
-      // Create rating objects for each map here, then flag them as (un)played for updating later
-      id: map.id,
-      setid: map.setid,
-      version: map.version,
-      ratings: {
-         nm: {
-            calc: calculator.makePlayer(map.ratings.nm.rating, map.ratings.nm.rd, map.ratings.nm.vol),
-            played: false
-         },
-         hd: {
-            calc: calculator.makePlayer(map.ratings.hd.rating, map.ratings.hd.rd, map.ratings.hd.vol),
-            played: false
-         },
-         hr: {
-            calc: calculator.makePlayer(map.ratings.hr.rating, map.ratings.hr.rd, map.ratings.hr.vol),
-            played: false
-         },
-         dt: {
-            calc: calculator.makePlayer(map.ratings.dt.rating, map.ratings.dt.rd, map.ratings.dt.vol),
-            played: false
-         }
-      },
-      played: false
-   }));
    const calculatorResults: [Player, Player, number][] = [];
-   // For each player, create matchups for them
-   const playerCalculatorPairs = (
-      await Promise.all(
-         // This can be parallel given that no data is being written to db. Only fetched.
-         // The order of items in the matchups object also doesn't matter
-         // And when a map is marked as played, it is simply switching from false to true. Nothing
-         // will switch it back to false ever
-         Object.keys(matches).map(async playerIdKey => {
-            // Sanity check: Only update a player if one of their maps is on the maplist
-            // If none of their maps are on the list, exit early
-            if (matches[playerIdKey].every(a => !fullMaplistForCalculator.find(b => b.id === a.map))) return;
-            // Get the player's current rating
-            const playerId = parseInt(playerIdKey);
-            const ratingSet: ModeInfo = {
-               pve: {
-                  rating: 1500,
-                  rd: 350,
-                  vol: 0.06,
-                  matches: [],
-                  games: 0,
-                  songs: 0
+   // Get each player's data
+   const playerCalculatorPairs = await Promise.all(
+      // This can be parallel given that no data is being written to db. Only fetched.
+      Object.keys(matches).map(async playerIdKey => {
+         // Get the player's current rating
+         const playerId = parseInt(playerIdKey);
+         const ratingSet: ModeInfo = {
+            pve: {
+               rating: 1500,
+               rd: 350,
+               vol: 0.06,
+               matches: [],
+               games: 0,
+               songs: 0
+            }
+         };
+         const dbplayer = await playersDb.findOneAndUpdate(
+            { osuid: playerId },
+            {
+               $setOnInsert: {
+                  osuname: `#${playerIdKey}`,
+                  osu: ratingSet,
+                  fruits: ratingSet,
+                  taiko: ratingSet,
+                  mania: ratingSet,
+                  hideLeaderboard: true
                }
-            };
-            const player = await playersDb.findOneAndUpdate(
-               { osuid: playerId },
-               {
-                  $setOnInsert: {
-                     osuname: `#${playerIdKey}`,
-                     osu: ratingSet,
-                     fruits: ratingSet,
-                     taiko: ratingSet,
-                     mania: ratingSet,
-                     hideLeaderboard: true
-                  }
-               },
-               { upsert: true, returnDocument: "after" }
-            );
-            // This is about the earliest spot to check if the mp has already been used
-            // Considering that at the moment the player setup depends on the maps being
-            // already set up
-            // Make sure the lobby hasn't been used in either pve or pvp
-            if (
-               player[mode].pve.matches.find(h => h.mp === mp) ||
-               player[mode].pvp?.matches.find(h => h.mp === mp)
-            )
-               throw new Error("History already exists");
-            const playerCalc = calculator.makePlayer(
-               player[mode].pve.rating,
-               player[mode].pve.rd,
-               player[mode].pve.vol
-            );
-            const history: PvEMatchHistory = {
-               mp,
-               prevRating: player[mode].pve.rating,
+            },
+            { upsert: true, returnDocument: "after" }
+         );
+         const playerCalc: Partial<Record<GameMode, Player>> = {};
+         const history: Partial<Record<GameMode, PvEMatchHistory>> = {};
+
+         return { playerId, dbplayer, playerCalc, history };
+      })
+   );
+   const maplist = await mapsDb
+      .find({ $or: maps })
+      .map<{ map: DbBeatmap; ratings: Partial<Record<SimpleMod, Player>> }>(map => ({ map, ratings: {} }))
+      .toArray();
+   // Get map info for any maps not in the database
+   maplist.push(
+      ...(await addMapsToDatabase(
+         await getOsuToken(),
+         maps.filter(m => !maplist.find(exist => exist.map.id === m.id && exist.map.mode === m.mode))
+      ).then(dblist => dblist.map(dbmap => ({ map: dbmap, ratings: {} }))))
+   );
+
+   // Create matches for all scores and prep the player's history
+   Object.keys(matches).forEach(playerIdStr => {
+      const playerId = parseInt(playerIdStr);
+      const matchInfo = matches[playerIdStr];
+      const playerInfo = playerCalculatorPairs.find(pcp => pcp.playerId === playerId);
+      matchInfo.forEach(score => {
+         const mapInfo = maplist.find(m => m.map.id === score.map && m.map.mode === score.mode);
+         // If the map isn't in the list, it's an unranked map and should be ignored
+         if (!mapInfo) return;
+
+         // Prep the player's history
+         if (!(score.mode in playerInfo.history))
+            playerInfo.history[score.mode] = {
+               mp: matchIdSegment,
+               prevRating: playerInfo.dbplayer[score.mode].pve.rating,
                ratingDiff: 0,
                songs: []
             };
-            // Find the appropriate rating object from the maplist
-            matches[playerIdKey].forEach(songResult => {
-               const mapCalc = fullMaplistForCalculator.find(m => m.id === songResult.map);
-               // The song results aren't filtered yet to current maps
-               // Only handle known maps
-               if (mapCalc) {
-                  // Set the map as played
-                  mapCalc.played = true;
-                  mapCalc.ratings[songResult.mod].played = true;
-                  // Create the match result
-                  calculatorResults.push([
-                     playerCalc,
-                     mapCalc.ratings[songResult.mod].calc,
-                     matchResultValue(songResult.score, mode)
-                  ]);
-                  // Add the song to history
-                  history.songs.push({
-                     map: {
-                        id: mapCalc.id,
-                        setid: mapCalc.setid,
-                        version: mapCalc.version
-                     },
-                     mod: songResult.mod,
-                     score: songResult.score
-                  });
-               }
-            });
+         // Update the history
+         playerInfo.history[score.mode].songs.push({
+            map: {
+               id: mapInfo.map.id,
+               setid: mapInfo.map.setid,
+               version: mapInfo.map.version
+            },
+            mod: score.mod,
+            score: score.score
+         });
 
-            return { playerId, playerCalc, history };
-         })
-      ).catch<{ playerId: number; playerCalc: Player; history: PvEMatchHistory }[]>(err => {
-         console.warn(err.message);
-         return null;
-      })
-   )?.filter(v => v);
-   if (!playerCalculatorPairs)
-      return {
-         http: {
-            status: 400,
-            message: "History already exists"
+         // Create a glicko player for this gamemode if it doesn't already exist
+         if (!(score.mode in playerInfo.playerCalc)) {
+            const pveStats = playerInfo.dbplayer[score.mode].pve;
+            playerInfo.playerCalc[score.mode] = calculator.makePlayer(
+               pveStats.rating,
+               pveStats.rd,
+               pveStats.vol
+            );
          }
-      };
+         // Create a glicko player for the selected mod if it doesn't already exist
+         if (!(score.mod in mapInfo.ratings)) {
+            const mapStats = mapInfo.map.ratings[score.mod];
+            mapInfo.ratings[score.mod] = calculator.makePlayer(mapStats.rating, mapStats.rd, mapStats.vol);
+         }
+
+         // Calculate the score result
+         calculatorResults.push([
+            playerInfo.playerCalc[score.mode],
+            mapInfo.ratings[score.mod],
+            matchResultValue(score.score, score.mode)
+         ]);
+      });
+   });
 
    // Update matches
    calculator.updateRatings(calculatorResults);
 
    // Save results to database
    const playersDbWriteResult = await playersDb.bulkWrite(
-      playerCalculatorPairs.map(({ playerId, playerCalc, history }) => {
-         const updatedRating = playerCalc.getRating();
-         history.ratingDiff = updatedRating - history.prevRating;
-         return {
-            updateOne: {
-               filter: { osuid: playerId },
-               update: {
-                  $set: {
-                     [`${mode}.pve.rating`]: updatedRating,
-                     [`${mode}.pve.rd`]: playerCalc.getRd(),
-                     [`${mode}.pve.vol`]: playerCalc.getVol()
-                  },
-                  $inc: {
-                     [`${mode}.pve.games`]: 1,
-                     [`${mode}.pve.songs`]: history.songs.length
-                  },
-                  $push: {
-                     [`${mode}.pve.matches`]: {
-                        $each: [history],
-                        $position: 0,
-                        $slice: 5
-                     }
+      playerCalculatorPairs
+         .map(({ playerId, playerCalc, history }) => {
+            const updateFilter: UpdateFilter<DbPlayer> = {
+               $set: {},
+               $inc: {},
+               $push: {}
+            };
+            const playedModes = Object.keys(playerCalc) as GameMode[];
+            if (playedModes.length < 1) return;
+            for (const mode of playedModes) {
+               const updatedRating = playerCalc[mode].getRating();
+               history[mode].ratingDiff = updatedRating - history[mode].prevRating;
+               updateFilter.$set[`${mode}.pve.rating`] = updatedRating;
+               updateFilter.$set[`${mode}.pve.rd`] = playerCalc[mode].getRd();
+               updateFilter.$set[`${mode}.pve.vol`] = playerCalc[mode].getVol();
+               updateFilter.$inc[`${mode}.pve.games`] = 1;
+               updateFilter.$inc[`${mode}.pve.songs`] = history[mode].songs.length;
+               updateFilter.$push = {
+                  ...updateFilter.$push,
+                  [`${mode}.pve.matches`]: {
+                     $each: [history[mode]],
+                     $position: 0,
+                     $slice: 5
                   }
-               }
+               };
             }
-         };
-      })
+            return {
+               updateOne: {
+                  filter: { osuid: playerId },
+                  update: updateFilter
+               }
+            };
+         })
+         .filter(v => v)
    );
    console.log("Players", playersDbWriteResult);
 
    // Figure out which maps to update
-   const updateMaps = fullMaplistForCalculator.filter(map => map.played);
-   const mapsDbWriteResult = await mappacksDb.bulkWrite(
-      updateMaps.map(mapInfo => {
-         const setObject = Object.fromEntries(
-            Object.keys(mapInfo.ratings)
-               .filter(k => mapInfo.ratings[k].played)
-               .map((k: SimpleMod) => {
-                  const modRating = mapInfo.ratings[k].calc;
-                  return [
-                     `maps.$.ratings.${k}`,
-                     {
-                        rating: modRating.getRating(),
-                        rd: modRating.getRd(),
-                        vol: modRating.getVol()
-                     }
-                  ];
-               })
-         );
-         return {
-            updateOne: {
-               filter: {
-                  $or: [{ active: "fresh" }, { active: "stale" }],
-                  "maps.id": mapInfo.id
-               },
-               update: {
-                  $set: setObject
-               }
+   const mapsDbWriteResult = await mapsDb.bulkWrite(
+      maplist
+         .map(({ map, ratings }) => {
+            const updateFilter: UpdateFilter<DbBeatmap> = {
+               $set: {}
+            };
+            const playedMods = Object.keys(ratings) as SimpleMod[];
+            if (playedMods.length < 1) return;
+            for (const mod of playedMods) {
+               const modRating = ratings[mod];
+               updateFilter.$set[`ratings.${mod}`] = {
+                  rating: modRating.getRating(),
+                  rd: modRating.getRd(),
+                  vol: modRating.getVol()
+               };
             }
-         };
-      })
+            return {
+               updateOne: {
+                  filter: { id: map.id, mode: map.mode },
+                  update: updateFilter
+               }
+            };
+         })
+         .filter(v => v)
    );
    console.log("Maps", mapsDbWriteResult);
 

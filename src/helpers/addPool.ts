@@ -1,4 +1,4 @@
-import { historyDb, mappacksDb } from "@/app/api/db/connection";
+import { historyDb, mappacksDb, mapsDb } from "@/app/api/db/connection";
 import { Client, GameMode } from "osu-web.js";
 import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
 import { DbBeatmap } from "@/types/database.beatmap";
@@ -9,7 +9,18 @@ const INIT_MAP_RD = 100;
 
 async function getPreviousMapScalings(mode: GameMode) {
    console.log("Get previous map scalings");
-   const maplist = mappacksDb.find({ mode });
+   const maplist = mappacksDb.aggregate<Omit<DbMappack, "maps"> & { maps: DbBeatmap[] }>([
+      { $match: { mode } },
+      {
+         $lookup: {
+            from: "maps",
+            localField: "maps",
+            foreignField: "id",
+            pipeline: [{ $match: { mode } }],
+            as: "maps"
+         }
+      }
+   ]);
    const datasets = { x: [] as number[][], y: [] as number[][] };
    for await (const pool of maplist) {
       pool.maps.forEach(map => {
@@ -23,6 +34,16 @@ async function getPreviousMapScalings(mode: GameMode) {
    return polyReg;
 }
 
+export async function addMapsToDatabase(
+   accessToken: string,
+   maps: {
+      id: number;
+      mode: GameMode;
+   }[]
+): Promise<DbBeatmap[]> {
+   return [];
+}
+
 export async function createMappool(
    accessToken: string,
    packName: string,
@@ -33,7 +54,7 @@ export async function createMappool(
 ) {
    console.log(`Create pool ${packName}`);
    // Make sure this pack hasn't been used yet
-   if (await historyDb.findOne({ mode: gamemode, packs: packName })) throw new Error("409");
+   if (await historyDb.findOne({ _id: `${gamemode}Packs`, items: packName })) throw new Error("409");
 
    const osuClient = new Client(accessToken);
    const predictor = await getPreviousMapScalings(gamemode);
@@ -41,7 +62,7 @@ export async function createMappool(
    // ratings duing the std fetch
    const ctbPredictor = gamemode === "osu" && alsoFruits && (await getPreviousMapScalings("fruits"));
 
-   const maplist: (DbBeatmap & { mode: GameMode })[] = await mapsets
+   const maplist: DbBeatmap[] = await mapsets
       .reduce(
          (prom, setId) =>
             prom.then(async arr => {
@@ -53,7 +74,7 @@ export async function createMappool(
                return arr.concat(
                   (
                      await Promise.all(
-                        mapset.beatmaps.map(async (bm): Promise<(DbBeatmap & { mode: GameMode })[]> => {
+                        mapset.beatmaps.map(async (bm): Promise<DbBeatmap[]> => {
                            // Ignore maps from other modes
                            // For taiko/mania, always reject other modes
                            if (gamemode === "mania" || gamemode === "taiko") {
@@ -62,8 +83,7 @@ export async function createMappool(
                            // For ctb/std only reject taiko/mania maps
                            else if (bm.mode === "mania" || bm.mode === "taiko") return null;
 
-                           const mapData = {
-                              _id: bm.id,
+                           const mapData: DbBeatmap = {
                               id: bm.id,
                               setid: mapset.id,
                               artist: mapset.artist,
@@ -86,7 +106,7 @@ export async function createMappool(
                            console.log(bm.id, mapData);
 
                            // Get the ctb difficulty if it's a converted map
-                           const altData: DbBeatmap & { mode: GameMode } = bm.mode === "osu" &&
+                           const altData: DbBeatmap = bm.mode === "osu" &&
                               (alsoFruits || gamemode === "fruits") && {
                                  ...mapData,
                                  stars:
@@ -139,7 +159,7 @@ export async function createMappool(
                      .filter(m => m)
                );
             }),
-         Promise.resolve<(DbBeatmap & { mode: GameMode })[]>([])
+         Promise.resolve<DbBeatmap[]>([])
       )
       .catch(err => {
          console.error(err);
@@ -151,13 +171,7 @@ export async function createMappool(
       {
          name: packName,
          download,
-         maps: maplist
-            .filter(m => m.mode === gamemode)
-            .map(m => {
-               const res = { ...m };
-               delete res.mode;
-               return res;
-            }),
+         maps: maplist.filter(m => m.mode === gamemode).map(m => m.id),
          active: "pending",
          mode: gamemode
       }
@@ -165,10 +179,10 @@ export async function createMappool(
    const history = [
       {
          updateOne: {
-            filter: { mode: gamemode },
+            filter: { _id: `${gamemode}Packs` },
             update: {
                $push: {
-                  packs: {
+                  items: {
                      $each: [packName],
                      $position: 0,
                      $slice: 50
@@ -184,22 +198,16 @@ export async function createMappool(
       insert.push({
          name: packName,
          download,
-         maps: maplist
-            .filter(m => m.mode === "fruits")
-            .map(m => {
-               const res = { ...m };
-               delete res.mode;
-               return res;
-            }),
+         maps: maplist.filter(m => m.mode === "fruits").map(m => m.id),
          active: "pending",
          mode: "fruits"
       });
       history.push({
          updateOne: {
-            filter: { mode: "fruits" },
+            filter: { _id: "fruitsPacks" },
             update: {
                $push: {
-                  packs: {
+                  items: {
                      $each: [packName],
                      $position: 0,
                      $slice: 50
@@ -212,6 +220,8 @@ export async function createMappool(
    }
 
    // Add to database
+   const mapsResult = await mapsDb.insertMany(maplist, { ordered: false }).catch(err => console.warn(err));
+   console.log(mapsResult);
    const result = await mappacksDb.insertMany(insert);
    const histResult = await historyDb.bulkWrite(history);
    console.log(result, histResult);

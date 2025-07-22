@@ -24,6 +24,15 @@ export default async function Mappool() {
                $or: [{ active: "fresh" }, { active: "stale" }]
             }
          },
+         {
+            $lookup: {
+               from: "maps",
+               localField: "maps",
+               foreignField: "id",
+               pipeline: [{ $match: { mode: player?.gamemode || "osu" } }],
+               as: "maps"
+            }
+         },
          { $unwind: "$maps" },
          {
             $group: {

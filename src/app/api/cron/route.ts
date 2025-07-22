@@ -8,6 +8,7 @@ import {
    UndocumentedBeatmappackCompact,
    UndocumentedBeatmappackResponse
 } from "@/types/undocumented.beatmappacks";
+import { DbHistory } from "@/types/database.history";
 
 async function getOsuToken() {
    console.log("Get osu token");
@@ -27,7 +28,7 @@ async function getOsuToken() {
 }
 
 async function findMappackTag(packList: UndocumentedBeatmappackCompact[], mode: GameMode) {
-   const history = await historyDb.findOne({ mode });
+   const history = (await historyDb.findOne({ _id: `${mode}Packs` })) as DbHistory & { type: "string" };
    const modeMapping = {
       osu: null,
       taiko: 1,
@@ -36,11 +37,11 @@ async function findMappackTag(packList: UndocumentedBeatmappackCompact[], mode: 
    };
    // Find the latest pack first
    const pack = packList.find(p => p.ruleset_id == modeMapping[mode]);
-   if (history?.packs.includes(pack.name)) {
+   if (history.items.includes(pack.name)) {
       // Find the highest number that's not on history
       const numberIndex = pack.name.lastIndexOf("#");
       let i = parseInt(pack.name.slice(numberIndex + 1)) - 1;
-      while (history.packs.includes(`${pack.name.slice(0, numberIndex)}#${i}`)) i--;
+      while (history.items.includes(`${pack.name.slice(0, numberIndex)}#${i}`)) i--;
       // Construct the appropriate tag
       const modeTag = {
          osu: "",
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest) {
    // Get recent beatmap packs
    const accessToken = await getOsuToken();
    const client = new Client(accessToken);
-   const packs = await client.getUndocumented("beatmaps/packs") as UndocumentedBeatmappackResponse;
+   const packs = await client.getUndocumented<UndocumentedBeatmappackResponse>("beatmaps/packs");
    console.log(packs.beatmap_packs.slice(0, 3), `+ ${packs.beatmap_packs.length - 3} more`);
    const modesToFetch: GameMode[] = ["osu"];
    // On even weeks, fetch a ctb pool. On odd weeks, duplicate the std pool into ctb
@@ -78,7 +79,9 @@ export async function GET(req: NextRequest) {
          wait.then(async () => {
             const mappackTag = await findMappackTag(packs.beatmap_packs, mode);
             console.log(`Found mappack ${mappackTag}`);
-            const mappack = await client.getUndocumented(`beatmaps/packs/${mappackTag}`) as UndocumentedBeatmappack;
+            const mappack = await client.getUndocumented<UndocumentedBeatmappack>(
+               `beatmaps/packs/${mappackTag}`
+            );
             console.log(`Add mappack ${mappack.tag}`);
             await createMappool(
                accessToken,
