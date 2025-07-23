@@ -1,6 +1,6 @@
 "use server";
-import util from "util";
-import { historyDb, mappacksDb, mapsDb, playersDb } from "@/app/api/db/connection";
+
+import { historyDb, mapsDb, playersDb } from "@/app/api/db/connection";
 import { Glicko2, Player } from "glicko2";
 import { revalidatePath } from "next/cache";
 import { matchResultValue, parseMpLobby } from "./functions";
@@ -12,7 +12,7 @@ import { GameMode } from "osu-web.js";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { addMapsToDatabase } from "@/helpers/addPool";
 import { getOsuToken } from "@/helpers/osuToken";
-import { UpdateFilter, UpdateOneModel } from "mongodb";
+import { UpdateFilter } from "mongodb";
 
 export async function generateAttack(osuid: number, mapcount = 7) {
    const player = await playersDb.findOne({ osuid });
@@ -53,16 +53,23 @@ export async function submitPve(formData: FormData) {
             message: "MP link already submitted"
          }
       };
-   // Add the mp link to history
-   historyDb.updateOne({ _id: "mpLinks" }, { $push: { items: matchIdSegment } });
    const { matches, maps } = await parseMpLobby(matchIdSegment);
-   if (!matches || Object.keys(matches).length < 1)
+   if (!matches)
+      return {
+         http: {
+            status: 400,
+            message: "Please finish the lobby before submitting"
+         }
+      };
+   if (Object.keys(matches).length < 1)
       return {
          http: {
             status: 400,
             message: "No songs found"
          }
       };
+   // Add the mp link to history
+   historyDb.updateOne({ _id: "mpLinks" }, { $push: { items: matchIdSegment } });
    console.log(matches);
    // Create the rating calculator
    const calculator = new Glicko2();
@@ -108,12 +115,16 @@ export async function submitPve(formData: FormData) {
       .map<{ map: DbBeatmap; ratings: Partial<Record<SimpleMod, Player>> }>(map => ({ map, ratings: {} }))
       .toArray();
    // Get map info for any maps not in the database
-   maplist.push(
-      ...(await addMapsToDatabase(
-         await getOsuToken(),
-         maps.filter(m => !maplist.find(exist => exist.map.id === m.id && exist.map.mode === m.mode))
-      ).then(dblist => dblist.map(dbmap => ({ map: dbmap, ratings: {} }))))
+   const missing = maps.filter(
+      m => !maplist.find(exist => exist.map.id === m.id && exist.map.mode === m.mode)
    );
+   console.log("missing", missing);
+   if (missing.length > 0)
+      maplist.push(
+         ...(await addMapsToDatabase(await getOsuToken(), missing).then(dblist =>
+            dblist.map(dbmap => ({ map: dbmap, ratings: {} }))
+         ))
+      );
 
    // Create matches for all scores and prep the player's history
    Object.keys(matches).forEach(playerIdStr => {

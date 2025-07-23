@@ -49,6 +49,8 @@ export async function parseMpLobby(mp: number) {
    try {
       const mpLobby = await osuClient.getMultiplayerLobby({ mp });
       console.log(mpLobby.games.length);
+      // Only accept finished lobbies
+      if (!mpLobby.match.end_time) return {};
       const maps: Partial<Record<GameMode, Set<number>>> = {};
       const results: {
          [user_id: string]: {
@@ -81,8 +83,11 @@ export async function parseMpLobby(mp: number) {
       }, {});
       return {
          matches: results,
-         maps: Object.keys(maps).flatMap<{ id: number; mode: GameMode }>(mode =>
-            maps[mode].entries().map((id: number) => ({ id, mode }))
+         maps: Object.keys(maps).flatMap<{ id: number; mode: GameMode }>((mode: GameMode) =>
+            maps[mode]
+               .values()
+               .map(id => ({ id, mode }))
+               .toArray()
          )
       };
    } catch (err) {
