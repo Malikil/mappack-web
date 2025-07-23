@@ -1,31 +1,17 @@
-import { Glicko2 } from "glicko2";
-import { LegacyClient } from "osu-web.js";
-import { mappacksDb, playersDb } from "../connection";
+import { Glicko2, Player } from "glicko2";
+import { GameMode, LegacyClient } from "osu-web.js";
+import { mapsDb, playersDb } from "../connection";
 import { matchResultValue } from "@/app/profile/[playerid]/pve/functions";
-import { getCurrentPack } from "@/helpers/currentPack";
+import { getCurrentPack, getPreviousPack } from "@/helpers/currentPack";
 import { convertPP } from "@/helpers/rankPredictor";
+import { MpLobbyResults, SongResultMap } from "@/types/multiplayer";
+import { DbBeatmap } from "@/types/database.beatmap";
+import { SimpleMod } from "@/types/rating";
+import { UpdateOneModel } from "mongodb";
 
-/**
- * @typedef SongResultMap
- * @prop {number} map
- * @prop {'nm'|'hd'|'hr'|'dt'|'fm'} mod
- */
-/**
- * @typedef MpLobbyResults
- * @prop {number} mp
- * @prop {SongResultMap[]} maps
- * @prop {[number, 'hd'|'hr'|'hdhr'|null][]} winnerScores
- * @prop {[number, 'hd'|'hr'|'hdhr'|null][]} loserScores
- * @prop {number} winnerId
- * @prop {number} loserId
- */
+const MATCH_HISTORY_SIZE = 10;
 
-/**
- * @param {number} osuid
- * @param {number} ppRaw
- * @param {import("osu-web.js").GameMode} mode
- */
-export async function createPvpRegistration(osuid, ppRaw, mode = "osu") {
+export async function createPvpRegistration(osuid: number, ppRaw: number, mode: GameMode = "osu") {
    const player = await playersDb.findOneAndUpdate(
       { osuid, [`${mode}.pvp`]: { $exists: false } },
       {
@@ -45,13 +31,9 @@ export async function createPvpRegistration(osuid, ppRaw, mode = "osu") {
    return player;
 }
 
-/**
- * @param {string} link
- * @returns {Promise<MpLobbyResults>}
- */
-export async function parseMpLobby(link) {
+export async function parseMpLobby(link: string): Promise<MpLobbyResults> {
    const osuClient = new LegacyClient(process.env.OSU_LEGACY_KEY);
-   const matchIdSegment = link.slice(link.lastIndexOf("/") + 1);
+   const matchIdSegment = parseInt(link.slice(link.lastIndexOf("/") + 1));
    try {
       console.log(`Fetch multiplayer lobby ${matchIdSegment}`);
       const mpLobby = await osuClient.getMultiplayerLobby({ mp: matchIdSegment });
@@ -64,7 +46,7 @@ export async function parseMpLobby(link) {
                const mod =
                   game.mods.length === 0
                      ? "fm"
-                     : (game.mods.filter(v => v !== "NF")[0] || "nm").toLowerCase();
+                     : ((game.mods.filter(v => v !== "NF")[0] || "nm").toLowerCase() as SimpleMod);
                agg.maps.push({
                   map: game.beatmap_id,
                   mod
@@ -89,14 +71,14 @@ export async function parseMpLobby(link) {
                agg.resultScore[game.scores[1].user_id] = agg.resultScore[game.scores[1].user_id] || 0;
                return agg;
             },
-            { maps: [], scores: {}, resultScore: {} }
+            { maps: [] as SongResultMap[], scores: {}, resultScore: {} }
          );
       const matchPlacement = Object.keys(result.resultScore).sort(
          (a, b) => result.resultScore[b] - result.resultScore[a]
       );
       console.log(result);
       return {
-         mp: parseInt(matchIdSegment),
+         mp: matchIdSegment,
          maps: result.maps,
          winnerScores: result.scores[matchPlacement[0]].map(item => [item.score, item.mod]),
          loserScores: result.scores[matchPlacement[1]].map(item => [item.score, item.mod]),
@@ -108,34 +90,33 @@ export async function parseMpLobby(link) {
    }
 }
 
-/**
- * @param {MpLobbyResults} arg0
- */
-export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, loserScores }) {
+export async function addMatchData({
+   mp,
+   winnerId,
+   loserId,
+   maps,
+   winnerScores,
+   loserScores
+}: MpLobbyResults) {
    console.log(winnerScores, loserScores);
    //const playersDb = db.collection("players");
    const winner = await playersDb.findOne({
-      $or: [{ osuid: parseInt(winnerId) }, { osuname: winnerId }]
+      osuid: winnerId
    });
    const winnerRating = winner.osu.pvp;
    const loser = await playersDb.findOne({
-      $or: [{ osuid: parseInt(loserId) }, { osuname: loserId }]
+      osuid: loserId
    });
    const loserRating = loser.osu.pvp;
    console.log(winner, loser);
    // Get the played maps
    const maplist = await getCurrentPack("osu");
-   const staleMaplist = await mappacksDb.findOne({ mode: "osu", active: "completed" });
+   const staleMaplist = await getPreviousPack("osu");
    const playedMaps = maps.map(item => {
       const { map, mod } = item;
-      /** @type {import("@/types/database.beatmap").DbBeatmap} */
-      const dbmap = maplist.find(m => m.id === map) || staleMaplist.maps.find(m => m.id === map);
+      const dbmap = maplist.find(m => m.id === map) || staleMaplist.find(m => m.id === map);
       return {
-         map: {
-            id: dbmap.id,
-            setid: dbmap.setid,
-            version: dbmap.version
-         },
+         map: dbmap,
          mod
       };
    });
@@ -170,14 +151,19 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
                               rating: loserRating.rating
                            },
                            songs: playedMaps.map((m, i) => ({
-                              ...m,
+                              map: {
+                                 id: m.map.id,
+                                 setid: m.map.setid,
+                                 version: m.map.version
+                              },
+                              mod: m.mod,
                               score: winnerScores[i][0],
                               opponentScore: loserScores[i][0]
                            }))
                         }
                      ],
                      $position: 0,
-                     $slice: 5
+                     $slice: MATCH_HISTORY_SIZE
                   }
                }
             }
@@ -206,14 +192,19 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
                               rating: winnerRating.rating
                            },
                            songs: playedMaps.map((m, i) => ({
-                              ...m,
+                              map: {
+                                 id: m.map.id,
+                                 setid: m.map.setid,
+                                 version: m.map.version
+                              },
+                              mod: m.mod,
                               score: loserScores[i][0],
                               opponentScore: winnerScores[i][0]
                            }))
                         }
                      ],
                      $position: 0,
-                     $slice: 5
+                     $slice: MATCH_HISTORY_SIZE
                   }
                }
             }
@@ -224,14 +215,10 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
 
    // Update map ratings
    const songlistCombined = playedMaps.flatMap((result, i) => {
-      const map = maplist.find(map => map.id === result.map.id);
-      // If the map isn't in the maplist, skip it
-      // This could be because the pool has rotated since the match started
-      if (!map) return [];
-
+      const { map, mod } = result;
       const wscore = winnerScores[i][0];
       const lscore = loserScores[i][0];
-      if (result.mod === "fm") {
+      if (mod === "fm") {
          const wmod = winnerScores[i][1];
          const lmod = loserScores[i][1];
          // If they used the same mods, treat it like a map from a specific modpool
@@ -241,7 +228,7 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
             else {
                const r = map.ratings[wmod];
                const resultObj = {
-                  ...result,
+                  map,
                   calc: calculator.makePlayer(r.rating, r.rd, r.vol),
                   mod: wmod
                };
@@ -252,11 +239,17 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
             }
          else {
             // They used different mods, handle each individually
-            const resultArr = [];
+            const resultArr: {
+               map: DbBeatmap;
+               mod: SimpleMod;
+               calc: Player;
+               score: number;
+               player: Player;
+            }[] = [];
             if (wmod !== "hdhr") {
                const r = map.ratings[wmod];
                resultArr.push({
-                  ...result,
+                  map,
                   mod: wmod,
                   calc: calculator.makePlayer(r.rating, r.rd, r.vol),
                   score: wscore,
@@ -266,7 +259,7 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
             if (lmod !== "hdhr") {
                const r = map.ratings[lmod];
                resultArr.push({
-                  ...result,
+                  map,
                   mod: lmod,
                   calc: calculator.makePlayer(r.rating, r.rd, r.vol),
                   score: lscore,
@@ -278,8 +271,8 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
       } else {
          // Not from FM pool
          console.log(result);
-         const r = map.ratings[result.mod];
-         const resultObj = { ...result, calc: calculator.makePlayer(r.rating, r.rd, r.vol) };
+         const r = map.ratings[mod];
+         const resultObj = { map, mod, calc: calculator.makePlayer(r.rating, r.rd, r.vol) };
          return [
             { ...resultObj, score: wscore, player: winnerPlayer },
             { ...resultObj, score: lscore, player: loserPlayer }
@@ -287,40 +280,54 @@ export async function addMatchData({ mp, winnerId, loserId, maps, winnerScores, 
       }
    });
 
-   const calculatorMatches = songlistCombined.map(result => [
+   const calculatorMatches: [Player, Player, number][] = songlistCombined.map(result => [
       result.player,
       result.calc,
-      matchResultValue(result.score)
+      matchResultValue(result.score, "osu")
    ]);
    calculator.updateRatings(calculatorMatches);
 
    // Update song ratings in database
-   const uniqueMaps = songlistCombined.reduce((unique, candidate) => {
-      if (!unique.find(m => m.map.id === candidate.map.id && m.mod === candidate.mod)) unique.push(candidate);
-      return unique;
-   }, []);
-   const mapsResult = await mappacksDb.bulkWrite(
-      uniqueMaps.map(outcome => {
-         const ratingField = `maps.$.ratings.${outcome.mod}`;
-         const updatedRating = {
-            rating: outcome.calc.getRating(),
-            rd: outcome.calc.getRd(),
-            vol: outcome.calc.getVol()
-         };
-         return {
-            updateOne: {
-               filter: {
-                  $or: [{ active: "fresh" }, { active: "stale" }],
-                  "maps.id": outcome.map.id
-               },
-               update: {
-                  $set: {
-                     [ratingField]: updatedRating
-                  }
-               }
+   const uniqueMaps = songlistCombined.reduce(
+      (unique, candidate) => {
+         let exist = unique.find(m => m.map.id === candidate.map.id);
+         if (!exist) {
+            exist = { map: candidate.map, mod: [] };
+            unique.push(exist);
+         }
+         if (!exist.mod.find(m => m.mod === candidate.mod))
+            exist.mod.push({ mod: candidate.mod, calc: candidate.calc });
+
+         return unique;
+      },
+      [] as {
+         map: DbBeatmap;
+         mod: {
+            mod: SimpleMod;
+            calc: Player;
+            //player: Player;
+            //score: number;
+         }[];
+      }[]
+   );
+   const mapsResult = await mapsDb.bulkWrite(
+      uniqueMaps.map(outcome => ({
+         updateOne: {
+            filter: { id: outcome.map.id, mode: outcome.map.mode },
+            update: {
+               $set: Object.fromEntries(
+                  outcome.mod.map(mod => [
+                     `ratings.${mod.mod}`,
+                     {
+                        rating: mod.calc.getRating(),
+                        rd: mod.calc.getRd(),
+                        vol: mod.calc.getVol()
+                     }
+                  ])
+               )
             }
-         };
-      })
+         } as UpdateOneModel<DbBeatmap>
+      }))
    );
    console.log(mapsResult);
 }

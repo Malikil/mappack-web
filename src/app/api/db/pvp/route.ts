@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { addMatchData, createPvpRegistration, parseMpLobby } from "./functions";
 
-/**
- * @param {NextRequest} req
- */
-export const POST = async req => {
+export const POST = async (req: NextRequest) => {
    const auth = req.headers.get("Authorization");
    if (auth !== process.env.MATCH_SUBMIT_AUTH)
       return new NextResponse("Bad auth key", { status: 401 });
@@ -21,10 +18,7 @@ export const POST = async req => {
    return new NextResponse(null, { status: 200 });
 };
 
-/**
- * @param {NextRequest} req
- */
-export const PUT = async req => {
+export const PUT = async (req: NextRequest) => {
    const auth = req.headers.get("Authorization");
    if (auth !== process.env.MATCH_SUBMIT_AUTH)
       return new NextResponse("Bad auth key", { status: 401 });

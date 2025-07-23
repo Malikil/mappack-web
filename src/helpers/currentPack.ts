@@ -22,3 +22,21 @@ export async function getCurrentPack(mode: GameMode = "osu") {
    const maps = ([] as DbBeatmap[]).concat(...pools.map(p => p.maps));
    return maps;
 }
+
+export async function getPreviousPack(mode: GameMode) {
+   const pools = await mappacksDb
+      .aggregate<Omit<DbMappack, "maps"> & { maps: DbBeatmap[] }>([
+         { $match: { mode, active: "completed" } },
+         {
+            $lookup: {
+               from: "maps",
+               localField: "maps",
+               foreignField: "id",
+               pipeline: [{ $match: { mode } }],
+               as: "maps"
+            }
+         }
+      ])
+      .toArray();
+   return pools[0].maps;
+}
