@@ -11,7 +11,7 @@ export default function NavbarItems() {
          </li>
          <li className="nav-item">
             <Link className="nav-link" href="/maps">
-               Maplist
+               Maps
             </Link>
          </li>
          <li className="nav-item">
