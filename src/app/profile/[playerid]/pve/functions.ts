@@ -86,8 +86,8 @@ export async function parseMpLobby(mp: number) {
          maps: Object.keys(maps).flatMap<{ id: number; mode: GameMode }>((mode: GameMode) =>
             maps[mode]
                .values()
-               .map(id => ({ id, mode }))
                .toArray()
+               .map(id => ({ id, mode }))
          )
       };
    } catch (err) {
