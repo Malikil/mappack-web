@@ -43,6 +43,7 @@ export async function debug() {
       { id: 4815740, mode: "fruits" },
       { id: 5183851, mode: "osu" },
       { id: 5026766, mode: "osu" },
+      { id: 5026766, mode: "fruits" },
       { id: 5204711, mode: "fruits" }
    ]);
    console.log(result);

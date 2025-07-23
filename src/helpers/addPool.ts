@@ -1,5 +1,5 @@
 import { historyDb, mappacksDb, mapsDb } from "@/app/api/db/connection";
-import { Client, GameMode } from "osu-web.js";
+import { Beatmap, Beatmapset, Client, GameMode } from "osu-web.js";
 import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { UndocumentedBeatmapsetResponse } from "@/types/undocumented.beatmapset";
@@ -7,6 +7,7 @@ import { DbMappack } from "@/types/database.mappack";
 import { splitArray } from "./list-splitter";
 
 const INIT_MAP_RD = 100;
+const INIT_MAP_VOL = 0.06;
 
 async function getPreviousMapScalings(mode: GameMode) {
    console.log("Get previous map scalings");
@@ -26,13 +27,79 @@ async function getPreviousMapScalings(mode: GameMode) {
    for await (const pool of maplist) {
       pool.maps.forEach(map => {
          const { nm, hd, hr, dt } = map.ratings;
-         datasets.x.push([map.stars, map.length, map.bpm, map.ar, map.cs]);
+         datasets.x.push([
+            map.stars,
+            map.length,
+            map.bpm,
+            map.ar,
+            map.cs,
+            map.noteCount.circles,
+            map.noteCount.sliders
+         ]);
          datasets.y.push([nm.rating, hd.rating, hr.rating, dt.rating]);
       });
    }
    const polyReg = new PolynomialRegressor(2);
    polyReg.fit(datasets.x, datasets.y);
    return polyReg;
+}
+
+function prepBeatmapData(
+   osuBeatmap: Beatmap & { beatmapset: Beatmapset },
+   predictor: PolynomialRegressor
+): DbBeatmap {
+   const [[nm, hd, hr, dt]] = predictor.predict([
+      [
+         osuBeatmap.difficulty_rating,
+         osuBeatmap.total_length,
+         osuBeatmap.bpm,
+         osuBeatmap.ar,
+         osuBeatmap.cs,
+         osuBeatmap.count_circles,
+         osuBeatmap.count_sliders
+      ]
+   ]);
+   return {
+      id: osuBeatmap.id,
+      setid: osuBeatmap.beatmapset_id,
+      artist: osuBeatmap.beatmapset.artist,
+      title: osuBeatmap.beatmapset.title,
+      version: osuBeatmap.version,
+      mapper: osuBeatmap.beatmapset.creator,
+      mode: osuBeatmap.mode,
+      stars: osuBeatmap.difficulty_rating,
+      length: osuBeatmap.total_length,
+      bpm: osuBeatmap.bpm,
+      ar: osuBeatmap.ar,
+      cs: osuBeatmap.cs,
+      od: osuBeatmap.accuracy,
+      noteCount: {
+         circles: osuBeatmap.count_circles,
+         sliders: osuBeatmap.count_sliders
+      },
+      ratings: {
+         nm: {
+            rating: nm,
+            rd: INIT_MAP_RD,
+            vol: INIT_MAP_VOL
+         },
+         hd: {
+            rating: hd,
+            rd: INIT_MAP_RD,
+            vol: INIT_MAP_VOL
+         },
+         hr: {
+            rating: hr,
+            rd: INIT_MAP_RD,
+            vol: INIT_MAP_VOL
+         },
+         dt: {
+            rating: dt,
+            rd: INIT_MAP_RD,
+            vol: INIT_MAP_VOL
+         }
+      }
+   };
 }
 
 export async function addMapsToDatabase(
@@ -42,20 +109,56 @@ export async function addMapsToDatabase(
       mode: GameMode;
    }[]
 ): Promise<DbBeatmap[]> {
-   console.log("Fetch data for beatmaps list", maps);
+   // Convert maps list to object with id key and modes array
+   const modes = maps.reduce((obj, map) => {
+      if (!(map.id in obj)) obj[map.id] = new Set();
+      obj[map.id].add(map.mode);
+      return obj;
+   }, {} as { [mapid: number]: Set<GameMode> });
+   const maplist = Object.keys(modes).map(id => parseInt(id));
+   console.log("Fetch data for beatmaps list", modes);
    // Get the map info from osu
    const client = new Client(accessToken);
-   const predictors: Partial<Record<GameMode, PolynomialRegressor>> = {};
+   const predictors = {
+      cache: {} as Partial<Record<GameMode, PolynomialRegressor>>,
+      async get(mode: GameMode): Promise<PolynomialRegressor> {
+         if (!this.cache[mode]) this.cache[mode] = await getPreviousMapScalings(mode);
+         return this.cache[mode];
+      }
+   };
    const resultList: DbBeatmap[] = [];
-   for (const sublist of splitArray(maps)) {
-      const osuBeatmaps = await client.beatmaps.getBeatmaps({ query: { ids: sublist.map(m => m.id) } });
-      osuBeatmaps.forEach((osuBeatmap, i) => {
+   for (const sublist of splitArray(maplist)) {
+      const osuBeatmaps = await client.beatmaps.getBeatmaps({ query: { ids: sublist } });
+      for (const osuBeatmap of osuBeatmaps) {
          // Ignore maps without leaderboards
-         if (osuBeatmap.ranked < 1) return;
-         console.log(i, osuBeatmap);
-      });
+         if (osuBeatmap.ranked < 1) continue;
+         console.log(osuBeatmap.id, modes[osuBeatmap.id]);
+         // Cycle through the modes we want to fetch.
+         // If the mode is different we need to get additional attributes
+         // Initial case for the default mode, so we don't have to hit the API twice
+         if (modes[osuBeatmap.id].delete(osuBeatmap.mode)) {
+            const predictor = await predictors.get(osuBeatmap.mode);
+            const dbbm = prepBeatmapData(osuBeatmap, predictor);
+            resultList.push(dbbm);
+         }
+         // Handle any remaining modes
+         for (const mode of modes[osuBeatmap.id]) {
+            if (mode !== osuBeatmap.mode) {
+               const attributes = await client.beatmaps.getBeatmapAttributes(osuBeatmap.id, mode);
+               osuBeatmap.difficulty_rating = attributes.star_rating;
+               osuBeatmap.mode = mode;
+               const predictor = await predictors.get(mode);
+               resultList.push(prepBeatmapData(osuBeatmap, predictor));
+            }
+         }
+      }
    }
-   return [];
+   // Add the maplist to database. Ignore duplicates
+   const dbWriteResult = await mapsDb
+      .insertMany(resultList, { ordered: false })
+      .catch(err => console.warn(err));
+   console.log(dbWriteResult);
+   return resultList;
 }
 
 export async function createMappool(
@@ -140,7 +243,15 @@ export async function createMappool(
                            // Reduce initial rd for maps, the initial rating is already based on their
                            // stars and past experience
                            const ratings = predictor.predict([
-                                 [mapData.stars, mapData.length, mapData.bpm, mapData.ar, mapData.cs]
+                                 [
+                                    mapData.stars,
+                                    mapData.length,
+                                    mapData.bpm,
+                                    mapData.ar,
+                                    mapData.cs,
+                                    mapData.noteCount.circles,
+                                    mapData.noteCount.sliders
+                                 ]
                               ])[0],
                               vol = 0.06;
                            mapData.ratings = {
@@ -154,7 +265,15 @@ export async function createMappool(
                               // If this is a converted map in a ctb pack, the original predictor needs
                               // to be used instead
                               const altRatings = (ctbPredictor || predictor).predict([
-                                    [altData.stars, altData.length, altData.bpm, altData.ar, altData.cs]
+                                    [
+                                       altData.stars,
+                                       altData.length,
+                                       altData.bpm,
+                                       altData.ar,
+                                       altData.cs,
+                                       altData.noteCount.circles,
+                                       altData.noteCount.sliders
+                                    ]
                                  ])[0],
                                  vol = 0.06;
                               altData.ratings = {
