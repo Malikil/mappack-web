@@ -6,7 +6,12 @@ export default function NavbarItems() {
       <ul className="navbar-nav">
          <li className="nav-item">
             <Link className="nav-link" href="/mappool">
-               Current Pool
+               Current Rotation
+            </Link>
+         </li>
+         <li className="nav-item">
+            <Link className="nav-link" href="/maps">
+               Maplist
             </Link>
          </li>
          <li className="nav-item">

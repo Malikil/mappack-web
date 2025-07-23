@@ -5,28 +5,25 @@ import { Scatter } from "react-chartjs-2";
 import "chart.js/auto";
 import { useEffect, useState } from "react";
 import { fetchScatterData } from "./actions";
-import useGamemode from "@/hooks/useGamemode";
 
 export default function DifficultyChart() {
-   const { gamemode } = useGamemode();
    const [data, setData] = useState({
       hd: 0,
       hr: 0,
       dt: 0,
-      chart: null
+      chart: null,
+      mapCount: 0
    });
    useEffect(() => {
-      console.log(gamemode);
-      if (gamemode)
-         fetchScatterData(gamemode).then(scatterData => {
-            setData({
-               ...scatterData,
-               chart: {
-                  datasets: scatterData.chart
-               }
-            });
+      fetchScatterData().then(scatterData => {
+         setData({
+            ...scatterData,
+            chart: {
+               datasets: scatterData.chart
+            }
          });
-   }, [gamemode]);
+      });
+   }, []);
 
    return (
       <Card className="flex-grow-1">
@@ -42,7 +39,7 @@ export default function DifficultyChart() {
                         tooltip: {
                            callbacks: {
                               label: ctx =>
-                                 `${ctx.raw.label || ctx.dataset.label} ${ctx.formattedValue}`
+                                 `${(ctx.raw as any).label || ctx.dataset.label} ${ctx.formattedValue}`
                            }
                         }
                      },
