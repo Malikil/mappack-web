@@ -1,8 +1,9 @@
 "use server";
 
 import { mappacksDb, mapsDb } from "@/app/api/db/connection";
-import { createMappool, cyclePools } from "@/helpers/addPool";
+import { addMapsToDatabase, createMappool, cyclePools } from "@/helpers/addPool";
 import { getCurrentPack } from "@/helpers/currentPack";
+import { getOsuToken } from "@/helpers/osuToken";
 import { convertPP } from "@/helpers/rankPredictor";
 import { delay } from "@/time";
 import { DbBeatmap } from "@/types/database.beatmap";
@@ -38,7 +39,13 @@ async function getPreviousMapScalings(mode: GameMode) {
 }
 
 export async function debug() {
-   //getPreviousMapScalings("osu");
+   const result = await addMapsToDatabase(await getOsuToken(), [
+      { id: 4815740, mode: "fruits" },
+      { id: 5183851, mode: "osu" },
+      { id: 5026766, mode: "osu" },
+      { id: 5204711, mode: "fruits" }
+   ]);
+   console.log(result);
 }
 
 // export async function updateV1Meta() {

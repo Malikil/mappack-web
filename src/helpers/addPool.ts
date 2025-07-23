@@ -4,6 +4,7 @@ import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { UndocumentedBeatmapsetResponse } from "@/types/undocumented.beatmapset";
 import { DbMappack } from "@/types/database.mappack";
+import { splitArray } from "./list-splitter";
 
 const INIT_MAP_RD = 100;
 
@@ -41,6 +42,19 @@ export async function addMapsToDatabase(
       mode: GameMode;
    }[]
 ): Promise<DbBeatmap[]> {
+   console.log("Fetch data for beatmaps list", maps);
+   // Get the map info from osu
+   const client = new Client(accessToken);
+   const predictors: Partial<Record<GameMode, PolynomialRegressor>> = {};
+   const resultList: DbBeatmap[] = [];
+   for (const sublist of splitArray(maps)) {
+      const osuBeatmaps = await client.beatmaps.getBeatmaps({ query: { ids: sublist.map(m => m.id) } });
+      osuBeatmaps.forEach((osuBeatmap, i) => {
+         // Ignore maps without leaderboards
+         if (osuBeatmap.ranked < 1) return;
+         console.log(i, osuBeatmap);
+      });
+   }
    return [];
 }
 
