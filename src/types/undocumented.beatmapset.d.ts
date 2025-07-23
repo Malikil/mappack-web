@@ -7,7 +7,7 @@ export interface UndocumentedBeatmapsetResponse extends Beatmapset {
    user_id: number;
    deleted_at: null;
    discussion_enabled: boolean;
-   beatmaps: Beatmap[];
+   beatmaps: (Beatmap & { max_combo: number })[];
    converts: Beatmap[];
    current_nominations: object[];
    description: object;

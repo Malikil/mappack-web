@@ -45,7 +45,10 @@ async function getPreviousMapScalings(mode: GameMode) {
 }
 
 function prepBeatmapData(
-   osuBeatmap: Beatmap & { beatmapset: Beatmapset },
+   osuBeatmap: Beatmap & {
+      max_combo: number;
+      beatmapset: Beatmapset;
+   },
    predictor: PolynomialRegressor
 ): DbBeatmap {
    const [[nm, hd, hr, dt]] = predictor.predict([
@@ -73,6 +76,7 @@ function prepBeatmapData(
       ar: osuBeatmap.ar,
       cs: osuBeatmap.cs,
       od: osuBeatmap.accuracy,
+      maxCombo: osuBeatmap.max_combo,
       noteCount: {
          circles: osuBeatmap.count_circles,
          sliders: osuBeatmap.count_sliders
@@ -213,6 +217,7 @@ export async function createMappool(
                               ar: bm.ar,
                               od: bm.accuracy,
                               stars: bm.difficulty_rating,
+                              maxCombo: bm.max_combo,
                               noteCount: {
                                  circles: bm.count_circles,
                                  sliders: bm.count_sliders
