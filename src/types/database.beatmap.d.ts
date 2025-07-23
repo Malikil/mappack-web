@@ -6,6 +6,7 @@ export interface DbBeatmap extends BeatmapVersion {
    title: string;
    mapper: string;
    mode: GameMode;
+   maxCombo: number;
    noteCount: {
       circles: number;
       sliders: number;

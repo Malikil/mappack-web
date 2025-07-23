@@ -11,7 +11,6 @@ export interface BeatmapVersion {
    ar: number;
    od: number;
    stars: number;
-   maxCombo: number;
    ratings: ModRatings;
 }
 
