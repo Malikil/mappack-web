@@ -52,11 +52,16 @@ export default function MapCard(props: MapCardProps) {
                mapActions={[
                   {
                      title: "Beatmap",
-                     action: <CardLink
-                        href={`https://osu.ppy.sh/beatmapsets/${props.beatmap.setid}#osu/${props.beatmap.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                     >Beatmap</CardLink>
+                     action: (
+                        <CardLink
+                           key="Beatmap"
+                           href={`https://osu.ppy.sh/beatmapsets/${props.beatmap.setid}#osu/${props.beatmap.id}`}
+                           target="_blank"
+                           rel="noopener noreferrer"
+                        >
+                           Beatmap
+                        </CardLink>
+                     )
                   }
                ]}
             />
