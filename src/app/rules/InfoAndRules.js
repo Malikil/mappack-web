@@ -6,7 +6,7 @@ import ScoreAttackRules from "./ScoreAttackRules";
 export default function InfoAndRules() {
    return (
       <div>
-         <Schedule />
+         {/* <Schedule /> */}
          <h2>Info and Rules</h2>
          <Mappools />
          <PvPRules />

@@ -87,7 +87,7 @@ export default async function Profile({ params }) {
                   <CardTitle>Match History</CardTitle>
                   <div className="d-flex flex-column gap-1">
                      {pvpStats.matches.map((match, i) => (
-                        <MatchHistoryItem key={i} match={match} />
+                        <MatchHistoryItem key={i} match={match} mode={gamemode} />
                      ))}
                   </div>
                </CardBody>

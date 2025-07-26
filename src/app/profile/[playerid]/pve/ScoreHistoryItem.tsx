@@ -1,27 +1,24 @@
 import { Card, CardBody, CardImg, CardSubtitle } from "react-bootstrap";
 import Link from "next/link";
-import { buildUrl } from "osu-web.js";
+import { buildUrl, GameMode } from "osu-web.js";
 import {
    ArrowDownRightCircle,
    ArrowUpRightCircle,
    DashCircle,
    PlusCircle
 } from "react-bootstrap-icons";
-import { getCurrentPack } from "@/helpers/currentPack";
+import { MatchHistoryMap, PvEMatchHistory } from "@/types/database.player";
+import { mapsDb } from "@/app/api/db/connection";
+import { DbBeatmap } from "@/types/database.beatmap";
 
-/**
- * @param {object} params
- * @param {import("@/types/database.player").PvEMatchHistory} params.match
- */
-export default async function ScoreHistoryItem({ match, mode }) {
-   const maplist = await getCurrentPack(mode);
+export default async function ScoreHistoryItem({ match, mode }: { match: PvEMatchHistory, mode: GameMode }) {
+   const maplist = await mapsDb.find({ $or: match.songs.map(map => ({ id: map.map.id, mode }))}).toArray();
    // Get map details
-   const details = (match.songs || match).map(songResult => {
+   const details = match.songs.map(songResult => {
       const dbmap = maplist.find(map => map.id === songResult.map.id);
-      if (!dbmap) return songResult;
       return {
          ...songResult,
-         map: dbmap
+         map: (dbmap || songResult.map) as DbBeatmap | MatchHistoryMap
       };
    });
 
@@ -78,7 +75,7 @@ export default async function ScoreHistoryItem({ match, mode }) {
                         <div>{m.map.version}</div>
                         <div className="d-flex mt-auto">
                            <span>{m.mod.toUpperCase()}</span>
-                           {m.map.ratings && (
+                           {'ratings' in m.map && (
                               <span className="ms-auto">
                                  {m.map.ratings[m.mod].rating.toFixed()}
                               </span>
