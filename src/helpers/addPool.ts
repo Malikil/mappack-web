@@ -1,5 +1,5 @@
 import { historyDb, mappacksDb, mapsDb } from "@/app/api/db/connection";
-import { Beatmap, Beatmapset, Client, GameMode } from "osu-web.js";
+import { Beatmap, Beatmapset, Client, FruitsBeatmapDifficultyAttributes, GameMode } from "osu-web.js";
 import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { UndocumentedBeatmapsetResponse } from "@/types/undocumented.beatmapset";
@@ -64,7 +64,7 @@ function prepBeatmapData(
          osuBeatmap.max_combo
       ]
    ]);
-   return {
+   const mapData: DbBeatmap = {
       id: osuBeatmap.id,
       setid: osuBeatmap.beatmapset_id,
       artist: osuBeatmap.beatmapset.artist,
@@ -106,6 +106,12 @@ function prepBeatmapData(
          }
       }
    };
+   // If the map is unranked, include dates to re-query later
+   if (osuBeatmap.ranked < 1) {
+      mapData.lastQuery = new Date();
+      mapData.lastUpdate = new Date(osuBeatmap.last_updated);
+   }
+   return mapData;
 }
 
 export async function addMapsToDatabase(
@@ -137,7 +143,7 @@ export async function addMapsToDatabase(
       const osuBeatmaps = await client.beatmaps.getBeatmaps({ query: { ids: sublist } });
       for (const osuBeatmap of osuBeatmaps) {
          // Ignore maps without leaderboards
-         if (osuBeatmap.ranked < 1) continue;
+         //if (osuBeatmap.ranked < 1) continue;
          console.log(osuBeatmap.id, modes[osuBeatmap.id]);
          // Cycle through the modes we want to fetch.
          // If the mode is different we need to get additional attributes
@@ -206,92 +212,114 @@ export async function createMappool(
                            // For ctb/std only reject taiko/mania maps
                            else if (bm.mode === "mania" || bm.mode === "taiko") return null;
 
-                           const mapData: DbBeatmap = {
-                              id: bm.id,
-                              setid: mapset.id,
-                              artist: mapset.artist,
-                              title: mapset.title,
-                              version: bm.version,
-                              mapper: mapset.creator,
-                              length: bm.total_length,
-                              bpm: bm.bpm,
-                              cs: bm.cs,
-                              ar: bm.ar,
-                              od: bm.accuracy,
-                              stars: bm.difficulty_rating,
-                              maxCombo: bm.max_combo,
-                              noteCount: {
-                                 circles: bm.count_circles,
-                                 sliders: bm.count_sliders
-                              },
-                              mode: bm.mode,
-                              ratings: null
-                           };
+                           const mapData: DbBeatmap = prepBeatmapData(
+                              { ...bm, beatmapset: { ...mapset, user_id: mapset.user_id.toString() } },
+                              predictor
+                           );
+                           // {
+                           //    id: bm.id,
+                           //    setid: mapset.id,
+                           //    artist: mapset.artist,
+                           //    title: mapset.title,
+                           //    version: bm.version,
+                           //    mapper: mapset.creator,
+                           //    length: bm.total_length,
+                           //    bpm: bm.bpm,
+                           //    cs: bm.cs,
+                           //    ar: bm.ar,
+                           //    od: bm.accuracy,
+                           //    stars: bm.difficulty_rating,
+                           //    maxCombo: bm.max_combo,
+                           //    noteCount: {
+                           //       circles: bm.count_circles,
+                           //       sliders: bm.count_sliders
+                           //    },
+                           //    mode: bm.mode,
+                           //    ratings: null
+                           // };
                            console.log(bm.id, mapData);
 
                            // Get the ctb difficulty if it's a converted map
-                           const altData: DbBeatmap = bm.mode === "osu" &&
-                              (alsoFruits || gamemode === "fruits") && {
-                                 ...mapData,
-                                 stars:
-                                    // The old star rating is acceptable if there's a network error here (for now)
-                                    (
-                                       await osuClient.beatmaps
-                                          .getBeatmapAttributes(bm.id, "fruits")
-                                          .catch(err => {
-                                             console.error(bm.id, err);
-                                             return null;
-                                          })
-                                    )?.star_rating || mapData.stars,
-                                 mode: "fruits"
-                              };
+                           const altData: DbBeatmap =
+                              bm.mode === "osu" &&
+                              (alsoFruits || gamemode === "fruits") &&
+                              prepBeatmapData(
+                                 {
+                                    ...bm,
+                                    difficulty_rating:
+                                       (
+                                          await osuClient.beatmaps
+                                             .getBeatmapAttributes(bm.id, "fruits")
+                                             .catch(err => {
+                                                console.error(bm.id, err);
+                                                return null as FruitsBeatmapDifficultyAttributes;
+                                             })
+                                       )?.star_rating || bm.difficulty_rating,
+                                    beatmapset: { ...mapset, user_id: mapset.user_id.toString() }
+                                 },
+                                 ctbPredictor || predictor
+                              );
+                           // {
+                           //    ...mapData,
+                           //    stars:
+                           //       // The old star rating is acceptable if there's a network error here (for now)
+                           //       (
+                           //          await osuClient.beatmaps
+                           //             .getBeatmapAttributes(bm.id, "fruits")
+                           //             .catch(err => {
+                           //                console.error(bm.id, err);
+                           //                return null;
+                           //             })
+                           //       )?.star_rating || mapData.stars,
+                           //    mode: "fruits"
+                           // };
                            console.log(bm.id, "altData", altData);
 
                            // Reduce initial rd for maps, the initial rating is already based on their
                            // stars and past experience
-                           const ratings = predictor.predict([
-                                 [
-                                    mapData.stars,
-                                    mapData.length,
-                                    mapData.bpm,
-                                    mapData.ar,
-                                    mapData.cs,
-                                    mapData.noteCount.circles,
-                                    mapData.noteCount.sliders,
-                                    mapData.maxCombo
-                                 ]
-                              ])[0],
-                              vol = 0.06;
-                           mapData.ratings = {
-                              nm: { rating: ratings[0], rd: INIT_MAP_RD, vol },
-                              hd: { rating: ratings[1], rd: INIT_MAP_RD, vol },
-                              hr: { rating: ratings[2], rd: INIT_MAP_RD, vol },
-                              dt: { rating: ratings[3], rd: INIT_MAP_RD, vol }
-                           };
+                           // const ratings = predictor.predict([
+                           //       [
+                           //          mapData.stars,
+                           //          mapData.length,
+                           //          mapData.bpm,
+                           //          mapData.ar,
+                           //          mapData.cs,
+                           //          mapData.noteCount.circles,
+                           //          mapData.noteCount.sliders,
+                           //          mapData.maxCombo
+                           //       ]
+                           //    ])[0],
+                           //    vol = 0.06;
+                           // mapData.ratings = {
+                           //    nm: { rating: ratings[0], rd: INIT_MAP_RD, vol },
+                           //    hd: { rating: ratings[1], rd: INIT_MAP_RD, vol },
+                           //    hr: { rating: ratings[2], rd: INIT_MAP_RD, vol },
+                           //    dt: { rating: ratings[3], rd: INIT_MAP_RD, vol }
+                           // };
 
-                           if (altData) {
-                              // If this is a converted map in a ctb pack, the original predictor needs
-                              // to be used instead
-                              const altRatings = (ctbPredictor || predictor).predict([
-                                    [
-                                       altData.stars,
-                                       altData.length,
-                                       altData.bpm,
-                                       altData.ar,
-                                       altData.cs,
-                                       altData.noteCount.circles,
-                                       altData.noteCount.sliders,
-                                       mapData.maxCombo
-                                    ]
-                                 ])[0],
-                                 vol = 0.06;
-                              altData.ratings = {
-                                 nm: { rating: altRatings[0], rd: INIT_MAP_RD, vol },
-                                 hd: { rating: altRatings[1], rd: INIT_MAP_RD, vol },
-                                 hr: { rating: altRatings[2], rd: INIT_MAP_RD, vol },
-                                 dt: { rating: altRatings[3], rd: INIT_MAP_RD, vol }
-                              };
-                           }
+                           // if (altData) {
+                           //    // If this is a converted map in a ctb pack, the original predictor needs
+                           //    // to be used instead
+                           //    const altRatings = (ctbPredictor || predictor).predict([
+                           //          [
+                           //             altData.stars,
+                           //             altData.length,
+                           //             altData.bpm,
+                           //             altData.ar,
+                           //             altData.cs,
+                           //             altData.noteCount.circles,
+                           //             altData.noteCount.sliders,
+                           //             mapData.maxCombo
+                           //          ]
+                           //       ])[0],
+                           //       vol = 0.06;
+                           //    altData.ratings = {
+                           //       nm: { rating: altRatings[0], rd: INIT_MAP_RD, vol },
+                           //       hd: { rating: altRatings[1], rd: INIT_MAP_RD, vol },
+                           //       hr: { rating: altRatings[2], rd: INIT_MAP_RD, vol },
+                           //       dt: { rating: altRatings[3], rd: INIT_MAP_RD, vol }
+                           //    };
+                           // }
                            console.log(bm.id, mapData.ratings, altData?.ratings);
                            return [mapData, altData];
                         })

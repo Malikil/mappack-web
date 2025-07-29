@@ -11,4 +11,6 @@ export interface DbBeatmap extends BeatmapVersion {
       circles: number;
       sliders: number;
    };
+   lastUpdate?: Date;
+   lastQuery?: Date;
 }
