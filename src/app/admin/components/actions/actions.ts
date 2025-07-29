@@ -8,7 +8,7 @@ import { getOsuToken } from "@/helpers/osuToken";
 import { convertPP } from "@/helpers/rankPredictor";
 import { delay } from "@/time";
 import { DbBeatmap } from "@/types/database.beatmap";
-import { DbMappack } from "@/types/database.mappack";
+import { DbMappack, MappackActiveState } from "@/types/database.mappack";
 import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
 import { Client, GameMode, LegacyClient } from "osu-web.js";
 
@@ -40,21 +40,41 @@ async function getPreviousMapScalings(mode: GameMode) {
 }
 
 export async function debug() {
-   addMatchData({
-      mp: 1,
-      winnerId: 3208718,
-      loserId: 5322521,
-      maps: [
-         { map: 4926327, mod: "nm" },
-         { map: 5086678, mod: "fm" }
-      ],
-      winnerScores: [
-         [900000, null],
-         [600000, "hr"]
-      ],
-      loserScores: [
-         [800000, null],
-         [700000, "hd"]
-      ]
-   });
+   const ctbReference = [
+      2588870, 2887892, 4258650, 4258652, 4045932, 4258651, 4041553, 4619760, 4528202, 4528206, 4528204,
+      4528205, 4528203, 4359942, 4482567, 4860140, 4598998, 4537972, 4533556, 4653094, 4787935, 4756503,
+      4760982, 4756502, 4787755, 5006431, 4755696, 4808969, 4865954, 4873192, 4908620, 4938348, 4938346,
+      4938352, 5055491, 4938354, 4941459, 4938787, 4947054, 4938788, 4938351, 4938350, 4934824, 4944781,
+      5004764, 5073559, 4987416, 4959291, 5073562, 4973153, 4954143, 4953095, 5073560, 5073561, 4962030,
+      4955439, 4980813, 4972785, 4955429, 4977207, 4955428, 4955427, 4961223, 4985230, 4985349, 4986710,
+      4987911, 4987910, 4982237, 5041696, 5069998
+   ];
+   // const banchoClient = new Client(
+   //    ""
+   // );
+   // const banchoMaps = await banchoClient.beatmaps.getBeatmaps({
+   //    query: { ids: ctbReference.map(m => m[0]) }
+   // });
+   const result = await mapsDb.bulkWrite(
+      ctbReference.map(id => {
+         return {
+            updateOne: {
+               filter: { id, mode: "fruits" },
+               update: [
+                  {
+                     $set: {
+                        "ratings.hd.rating": { $multiply: ["$ratings.nm.rating", 1.02] },
+                        "ratings.hd.rd": { $multiply: ["$ratings.nm.rd", 1.02] },
+                        "ratings.hr.rating": { $multiply: ["$ratings.nm.rating", 1.03] },
+                        "ratings.hr.rd": { $multiply: ["$ratings.nm.rd", 1.03] },
+                        "ratings.dt.rating": { $multiply: ["$ratings.nm.rating", 1.04] },
+                        "ratings.dt.rd": { $multiply: ["$ratings.nm.rd", 1.04] }
+                     }
+                  }
+               ]
+            }
+         };
+      })
+   );
+   console.log(result);
 }

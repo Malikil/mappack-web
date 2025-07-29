@@ -1,5 +1,6 @@
+import { ScoreParser } from "@/helpers/scorev1";
 import { SimpleMod } from "@/types/rating";
-import { GameMode, LegacyClient, Mod } from "osu-web.js";
+import { GameMode, LegacyClient, LegacyMatchScore, Mod } from "osu-web.js";
 
 /**
  * Returns the match result to use, assuming player first then map second
@@ -52,35 +53,42 @@ export async function parseMpLobby(mp: number) {
       // Only accept finished lobbies
       if (!mpLobby.match.end_time) return {};
       const maps: Partial<Record<GameMode, Set<number>>> = {};
-      const results: {
-         [user_id: string]: {
-            map: number;
-            mod: SimpleMod;
-            score: number;
-            mode: GameMode;
-         }[];
-      } = mpLobby.games.reduce((scoreAgg, game) => {
-         if (game.end_time && game.team_type === "Head To Head")
-            if (game.scoring_type === "Score V2") {
-               // Add to master maplist
-               if (!(game.play_mode in maps)) maps[game.play_mode] = new Set();
-               maps[game.play_mode].add(game.beatmap_id);
-               // Add individual player scores
-               game.scores.forEach(score => {
-                  const scoreResult = {
-                     map: game.beatmap_id,
-                     mod: parseSongMods(game.mods, score.enabled_mods),
-                     score: score.score,
-                     mode: game.play_mode
-                  };
-                  if (scoreResult.mod && scoreResult.score) {
-                     if (!(score.user_id in scoreAgg)) scoreAgg[score.user_id] = [];
-                     scoreAgg[score.user_id].push(scoreResult);
+      const results = await mpLobby.games.reduce(
+         (prom, game) =>
+            prom.then(async scoreAgg => {
+               if (game.end_time && game.team_type === "Head To Head") {
+                  const scoreType = game.scoring_type;
+                  if (scoreType !== "Score V2") return;
+                  // Add to master maplist
+                  if (!(game.play_mode in maps)) maps[game.play_mode] = new Set();
+                  maps[game.play_mode].add(game.beatmap_id);
+                  // Add individual player scores
+                  for (const score of game.scores) {
+                     const scoreResult = {
+                        map: game.beatmap_id,
+                        mod: parseSongMods(game.mods, score.enabled_mods),
+                        score: new ScoreParser(score, scoreType),
+                        mode: game.play_mode
+                     };
+                     if (scoreResult.mod && scoreResult.score) {
+                        if (!(score.user_id in scoreAgg)) scoreAgg[score.user_id] = [];
+                        scoreAgg[score.user_id].push(scoreResult);
+                     }
                   }
-               });
+               }
+               return scoreAgg;
+            }),
+         Promise.resolve(
+            {} as {
+               [user_id: string]: {
+                  map: number;
+                  mod: SimpleMod;
+                  score: ScoreParser;
+                  mode: GameMode;
+               }[];
             }
-         return scoreAgg;
-      }, {});
+         )
+      );
       return {
          matches: results,
          maps: Object.keys(maps).flatMap<{ id: number; mode: GameMode }>((mode: GameMode) =>

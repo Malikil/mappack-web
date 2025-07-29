@@ -135,6 +135,10 @@ export async function submitPve(formData: FormData) {
          const mapInfo = maplist.find(m => m.map.id === score.map && m.map.mode === score.mode);
          // If the map isn't in the list, it's an unranked map and should be ignored
          if (!mapInfo) return;
+         // Set the map info on the parser
+         score.score.setMap(mapInfo.map);
+         // If parsing the score fails, also skip the map
+         if (!score.score.getScore()) return;
 
          // Prep the player's history
          if (!(score.mode in playerInfo.history))
@@ -152,7 +156,7 @@ export async function submitPve(formData: FormData) {
                version: mapInfo.map.version
             },
             mod: score.mod,
-            score: score.score
+            score: score.score.getScore()
          });
 
          // Create a glicko player for this gamemode if it doesn't already exist
@@ -174,7 +178,7 @@ export async function submitPve(formData: FormData) {
          calculatorResults.push([
             playerInfo.playerCalc[score.mode],
             mapInfo.ratings[score.mod],
-            matchResultValue(score.score, score.mode)
+            matchResultValue(score.score.getScore(), score.mode)
          ]);
       });
    });

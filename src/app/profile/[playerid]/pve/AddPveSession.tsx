@@ -5,7 +5,7 @@ import { submitPve, generateAttack } from "./actions";
 import { serverActionToast } from "@/toaster";
 import { toast } from "react-toastify";
 
-export default function AddPvESession({ userId }) {
+export default function AddPvESession({ userId }: { userId: number }) {
    return (
       <div className="d-flex flex-column align-items-end gap-1 ms-auto">
          <Button

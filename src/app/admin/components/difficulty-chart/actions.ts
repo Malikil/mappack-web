@@ -2,13 +2,13 @@
 
 import { playersDb } from "@/app/api/db/connection";
 import { auth } from "@/auth";
-//import { mapsDb } from "@/app/api/db/connection";
-import { getCurrentPack } from "@/helpers/currentPack";
+import { mapsDb } from "@/app/api/db/connection";
+//import { getCurrentPack } from "@/helpers/currentPack";
 
 export async function fetchScatterData() {
    const session = await auth();
    const mode = session ? (await playersDb.findOne({ osuid: session.user.id })).gamemode || "osu" : "osu";
-   const maps = await getCurrentPack(mode);
+   const maps = mapsDb.find({ mode }); //await getCurrentPack(mode);
    const modRatios = {
       hd: 0,
       hr: 0,

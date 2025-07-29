@@ -34,7 +34,8 @@ async function getPreviousMapScalings(mode: GameMode) {
             map.ar,
             map.cs,
             map.noteCount.circles,
-            map.noteCount.sliders
+            map.noteCount.sliders,
+            map.maxCombo
          ]);
          datasets.y.push([nm.rating, hd.rating, hr.rating, dt.rating]);
       });
@@ -59,7 +60,8 @@ function prepBeatmapData(
          osuBeatmap.ar,
          osuBeatmap.cs,
          osuBeatmap.count_circles,
-         osuBeatmap.count_sliders
+         osuBeatmap.count_sliders,
+         osuBeatmap.max_combo
       ]
    ]);
    return {
@@ -255,7 +257,8 @@ export async function createMappool(
                                     mapData.ar,
                                     mapData.cs,
                                     mapData.noteCount.circles,
-                                    mapData.noteCount.sliders
+                                    mapData.noteCount.sliders,
+                                    mapData.maxCombo
                                  ]
                               ])[0],
                               vol = 0.06;
@@ -277,7 +280,8 @@ export async function createMappool(
                                        altData.ar,
                                        altData.cs,
                                        altData.noteCount.circles,
-                                       altData.noteCount.sliders
+                                       altData.noteCount.sliders,
+                                       mapData.maxCombo
                                     ]
                                  ])[0],
                                  vol = 0.06;
