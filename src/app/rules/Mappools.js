@@ -44,8 +44,8 @@ export default function Mappools() {
                      </tr>
                      <tr>
                         <td>Taiko</td>
-                        <td>tbd</td>
-                        <td></td>
+                        <td>300k</td>
+                        <td>900k</td>
                      </tr>
                      <tr>
                         <td>Mania</td>

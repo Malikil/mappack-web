@@ -12,7 +12,7 @@ import { mapsDb } from "@/app/api/db/connection";
 import { DbBeatmap } from "@/types/database.beatmap";
 
 export default async function ScoreHistoryItem({ match, mode }: { match: PvEMatchHistory, mode: GameMode }) {
-   const maplist = await mapsDb.find({ $or: match.songs.map(map => ({ id: map.map.id, mode }))}).toArray();
+   const maplist = await mapsDb.find({ $or: match.songs.map(map => ({ id: map.map.id, mode })) }).toArray();
    // Get map details
    const details = match.songs.map(songResult => {
       const dbmap = maplist.find(map => map.id === songResult.map.id);

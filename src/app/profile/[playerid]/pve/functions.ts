@@ -9,7 +9,8 @@ export function matchResultValue(score: number, gamemode: GameMode) {
    const min: number =
       {
          osu: 300000,
-         fruits: 500000
+         fruits: 500000,
+         taiko: 300000
       }[gamemode] || 300000;
    const max: number = 900000;
    if (score < min) return 0;
@@ -49,16 +50,17 @@ export async function parseMpLobby(mp: number) {
    const osuClient = new LegacyClient(process.env.OSU_LEGACY_KEY);
    try {
       const mpLobby = await osuClient.getMultiplayerLobby({ mp });
-      console.log(mpLobby.games.length);
+      console.log(`${mpLobby.games.length} songs played`);
       // Only accept finished lobbies
+      console.log(`Finished ${mpLobby.match.end_time}`);
       if (!mpLobby.match.end_time) return {};
+
       const maps: Partial<Record<GameMode, Set<number>>> = {};
       const results = await mpLobby.games.reduce(
          (prom, game) =>
             prom.then(async scoreAgg => {
                if (game.end_time && game.team_type === "Head To Head") {
                   const scoreType = game.scoring_type;
-                  if (scoreType !== "Score V2") return;
                   // Add to master maplist
                   if (!(game.play_mode in maps)) maps[game.play_mode] = new Set();
                   maps[game.play_mode].add(game.beatmap_id);

@@ -46,6 +46,18 @@ export default async function AvatarMenu() {
                         />
                      )}
                   </li>
+                  <li className="d-flex align-items-center">
+                     <GamemodeButton className="dropdown-item" mode="taiko" text="Taiko" />
+                     {player.gamemode === "taiko" && (
+                        <Image
+                           src="/mode-taiko.png"
+                           alt="taiko active"
+                           height={24}
+                           width={24}
+                           className="me-2"
+                        />
+                     )}
+                  </li>
                </ul>
             </li>
          )}

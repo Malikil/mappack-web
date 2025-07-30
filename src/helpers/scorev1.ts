@@ -35,6 +35,6 @@ export class ScoreParser {
       const comboComponent = 500000 * (this.#score.maxcombo / this.#map.maxCombo);
       // 20% miss count
       const missComponent = 200000 / Math.sqrt(this.#score.countmiss + 1);
-      return accComponent + comboComponent + missComponent;
+      return parseInt((accComponent + comboComponent + missComponent).toFixed());
    }
 }

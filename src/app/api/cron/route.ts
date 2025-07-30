@@ -54,6 +54,7 @@ async function findMappackTag(packList: UndocumentedBeatmappackCompact[], mode: 
 }
 
 // Increase this function's max duration to 30s
+// Max duration configurable is 60s without enabling fluid compute
 export const maxDuration = 30;
 export async function GET(req: NextRequest) {
    if (req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`)
@@ -64,7 +65,7 @@ export async function GET(req: NextRequest) {
    const client = new Client(accessToken);
    const packs = await client.getUndocumented<UndocumentedBeatmappackResponse>("beatmaps/packs");
    console.log(packs.beatmap_packs.slice(0, 3), `+ ${packs.beatmap_packs.length - 3} more`);
-   const modesToFetch: GameMode[] = ["osu"];
+   const modesToFetch: GameMode[] = ["osu", 'taiko'];
    // On even weeks, fetch a ctb pool. On odd weeks, duplicate the std pool into ctb
    // Take the integer component after dividing the day-of-year by 7. That way even if the cron job
    // was delayed enough to technically roll over to Tuesday, the even/odd is still preserved

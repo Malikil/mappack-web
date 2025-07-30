@@ -2,8 +2,12 @@ import { Card, CardBody, CardHeader, CardTitle } from "react-bootstrap";
 import ScoreHistoryItem from "./ScoreHistoryItem";
 import ComponentInfoRows from "../ComponentInfoRows";
 import AddPvESession from "./AddPveSession";
+import { PvEInfo } from "@/types/database.player";
+import { GameMode } from "osu-web.js";
 
-export default function PvEResultsCard({ data, osuid, mode }) {
+export default function PvEResultsCard(
+   { data, osuid, mode }: { data: PvEInfo; osuid: number; mode: GameMode }
+) {
    return (
       <Card>
          <CardHeader>Score Attack</CardHeader>

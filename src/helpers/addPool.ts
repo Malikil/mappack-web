@@ -4,10 +4,12 @@ import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { UndocumentedBeatmapsetResponse } from "@/types/undocumented.beatmapset";
 import { DbMappack } from "@/types/database.mappack";
-import { splitArray } from "./list-splitter";
+import { batchArray } from "./list-splitter";
+import { Rating } from "@/types/rating";
 
 const INIT_MAP_RD = 100;
 const INIT_MAP_VOL = 0.06;
+const clamp = (n: number, max: number, min: number) => Math.max(min, Math.min(n, max));
 
 async function getPreviousMapScalings(mode: GameMode) {
    console.log("Get previous map scalings");
@@ -24,9 +26,18 @@ async function getPreviousMapScalings(mode: GameMode) {
       }
    ]);
    const datasets = { x: [] as number[][], y: [] as number[][] };
+   const meta = {
+      max: 1500,
+      min: 1500
+   };
    for await (const pool of maplist) {
       pool.maps.forEach(map => {
          const { nm, hd, hr, dt } = map.ratings;
+         // Update the max and min
+         for (const rating of Object.values<Rating>(map.ratings)) {
+            meta.max = Math.max(meta.max, rating.rating + rating.rd * 2);
+            meta.min = Math.min(meta.min, Math.max(rating.rating - rating.rd * 2, rating.rd));
+         }
          datasets.x.push([
             map.stars,
             map.length,
@@ -40,8 +51,9 @@ async function getPreviousMapScalings(mode: GameMode) {
          datasets.y.push([nm.rating, hd.rating, hr.rating, dt.rating]);
       });
    }
-   const polyReg = new PolynomialRegressor(2);
+   const polyReg: PolynomialRegressor & { meta?: { max: number; min: number } } = new PolynomialRegressor(2);
    polyReg.fit(datasets.x, datasets.y);
+   polyReg.meta = meta;
    return polyReg;
 }
 
@@ -50,8 +62,9 @@ function prepBeatmapData(
       max_combo: number;
       beatmapset: Beatmapset;
    },
-   predictor: PolynomialRegressor
+   predictor: PolynomialRegressor & { meta?: { max: number; min: number } }
 ): DbBeatmap {
+   const { max, min } = predictor.meta;
    const [[nm, hd, hr, dt]] = predictor.predict([
       [
          osuBeatmap.difficulty_rating,
@@ -85,22 +98,22 @@ function prepBeatmapData(
       },
       ratings: {
          nm: {
-            rating: nm,
+            rating: clamp(nm, max, min),
             rd: INIT_MAP_RD,
             vol: INIT_MAP_VOL
          },
          hd: {
-            rating: hd,
+            rating: clamp(hd, max, min),
             rd: INIT_MAP_RD,
             vol: INIT_MAP_VOL
          },
          hr: {
-            rating: hr,
+            rating: clamp(hr, max, min),
             rd: INIT_MAP_RD,
             vol: INIT_MAP_VOL
          },
          dt: {
-            rating: dt,
+            rating: clamp(dt, max, min),
             rd: INIT_MAP_RD,
             vol: INIT_MAP_VOL
          }
@@ -139,7 +152,7 @@ export async function addMapsToDatabase(
       }
    };
    const resultList: DbBeatmap[] = [];
-   for (const sublist of splitArray(maplist)) {
+   for (const sublist of batchArray(maplist)) {
       const osuBeatmaps = await client.beatmaps.getBeatmaps({ query: { ids: sublist } });
       for (const osuBeatmap of osuBeatmaps) {
          // Ignore maps without leaderboards
