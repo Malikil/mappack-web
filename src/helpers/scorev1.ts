@@ -39,28 +39,31 @@ export class ScoreParser {
          fruits: {
             // katu = small droplet miss
             // c50 = small droplet catch
-            // c100 = large droplet catch
-            // c300 = note catch
+            // All droplets together seem to be worth 200k, independent of combo score
             accCalc: (score: LegacyMatchScore) =>
-               (100000 * (score.count300 + score.count100 + score.count50)) /
-               (score.count300 + score.count100 + score.count50 + score.countmiss + score.countkatu),
+               (200000 * score.count50) / (score.count50 + score.countkatu),
             comboCalc: (score: LegacyMatchScore, maxCombo: number) => {
+               // There's no note acc, every caught note is the same score. Thus no misses means max score
+               // Large droplet misses seem to be included in countmiss
+               if (score.countmiss < 1) return 800000;
                // From https://gist.github.com/bdach/414d5289f65b0399fa8f9732245a4f7c
                const log4_200 = Math.log(200) / Math.log(4);
-               const f = (x: number) => (x < 200 ? Math.log(x) / Math.log(4) : log4_200);
+               const f = (x: number) => (x < 2 ? 0.5 : x < 200 ? Math.log(x) / Math.log(4) : log4_200);
                const F = (x: number) => {
                   let sum = 0;
                   for (let i = 0; i < x; i++) sum += f(i);
                   return sum;
                };
                const Fmax = F(maxCombo);
-               const delta = (x: number) => (x * (1 + Math.log(200) - Math.log(x))) / Math.log(4);
+               console.log(Fmax);
+               const delta = (x: number) =>
+                  x > 200 ? delta(200) : (x * (1 + Math.log(200) - Math.log(x))) / Math.log(4);
+               console.log(F(score.maxcombo));
+               console.log(delta(score.maxcombo));
                // How long are the remaining combos?
                const comboSize = (maxCombo - score.maxcombo) / score.countmiss;
-               if (comboSize < 1) return (900000 * (Fmax - F(score.maxcombo))) / Fmax;
-               console.log(Fmax);
-               console.log(((score.countmiss - 1) * delta(comboSize)) / Fmax);
-               return 900000 * (1 - ((score.countmiss - 1) * delta(comboSize)) / Fmax);
+               if (comboSize < 1) return (800000 * (Fmax - F(score.maxcombo))) / Fmax;
+               return 800000 * (1 - ((score.countmiss - 1) * delta(comboSize)) / Fmax);
             },
             missComponent: 0
          },

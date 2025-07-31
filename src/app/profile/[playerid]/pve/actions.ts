@@ -69,7 +69,7 @@ export async function submitPve(formData: FormData) {
          }
       };
    // Add the mp link to history
-   //historyDb.updateOne({ _id: "mpLinks" }, { $push: { items: matchIdSegment } });
+   historyDb.updateOne({ _id: "mpLinks" }, { $push: { items: matchIdSegment } });
    console.log(matches);
    // Create the rating calculator
    const calculator = new Glicko2();
@@ -139,8 +139,6 @@ export async function submitPve(formData: FormData) {
          score.score.setMap(mapInfo.map);
          // If parsing the score fails, also skip the map
          if (!score.score.getScore()) return;
-         if (playerId === 3208718) console.log(score.map, score.score.getScore());
-         return;
 
          // Prep the player's history
          if (!(score.mode in playerInfo.history))
@@ -184,7 +182,6 @@ export async function submitPve(formData: FormData) {
          ]);
       });
    });
-   return;
 
    // Update matches
    calculator.updateRatings(calculatorResults);
