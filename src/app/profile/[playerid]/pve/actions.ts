@@ -8,11 +8,12 @@ import { withinRange } from "@/helpers/rating-range";
 import { getCurrentPack } from "@/helpers/currentPack";
 import { SimpleMod } from "@/types/rating";
 import { DbPlayer, ModeInfo, PvEMatchHistory } from "@/types/database.player";
-import { GameMode } from "osu-web.js";
+import { Client, GameMode } from "osu-web.js";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { addMapsToDatabase } from "@/helpers/addPool";
 import { getOsuToken } from "@/helpers/osuToken";
 import { UpdateFilter } from "mongodb";
+import { batchArray } from "@/helpers/list-splitter";
 
 export async function generateAttack(osuid: number, mapcount = 7) {
    const player = await playersDb.findOne({ osuid });
@@ -75,11 +76,19 @@ export async function submitPve(formData: FormData) {
    const calculator = new Glicko2();
    const calculatorResults: [Player, Player, number][] = [];
    // Get each player's data
-   const playerCalculatorPairs = await Promise.all(
-      // This can be parallel given that no data is being written to db. Only fetched.
-      Object.keys(matches).map(async playerIdKey => {
-         // Get the player's current rating
-         const playerId = parseInt(playerIdKey);
+   const playerIds = Object.keys(matches).map(id => parseInt(id));
+   const playerList: DbPlayer[] = await playersDb
+      .find({
+         osuid: { $in: playerIds }
+      })
+      .toArray();
+   // Look up anyone we don't already have
+   const missingPlayers = playerIds.filter(id => !playerList.find(p => p.osuid === id));
+   if (missingPlayers.length > 0) {
+      const client = new Client(await getOsuToken());
+      const addingUsers: DbPlayer[] = [];
+      for (const batch of batchArray(missingPlayers)) {
+         const banchoUsers = await client.users.getUsers({ query: { ids: batch } });
          const ratingSet: ModeInfo = {
             pve: {
                rating: 1500,
@@ -90,26 +99,34 @@ export async function submitPve(formData: FormData) {
                songs: 0
             }
          };
-         const dbplayer = await playersDb.findOneAndUpdate(
-            { osuid: playerId },
-            {
-               $setOnInsert: {
-                  osuname: `#${playerIdKey}`,
-                  osu: ratingSet,
-                  fruits: ratingSet,
-                  taiko: ratingSet,
-                  mania: ratingSet,
-                  hideLeaderboard: true
-               }
-            },
-            { upsert: true, returnDocument: "after" }
+         addingUsers.push(
+            ...banchoUsers.map(bu => ({
+               osuid: bu.id,
+               osuname: bu.username,
+               osu: ratingSet,
+               fruits: ratingSet,
+               taiko: ratingSet,
+               mania: ratingSet
+            }))
          );
-         const playerCalc: Partial<Record<GameMode, Player>> = {};
-         const history: Partial<Record<GameMode, PvEMatchHistory>> = {};
+      }
+      // Done looking everyone up, add to db
+      const addPlayerResult = await playersDb.insertMany(addingUsers);
+      console.log(addPlayerResult);
+      // Add to the player list
+      playerList.push(...addingUsers);
+   }
 
-         return { playerId, dbplayer, playerCalc, history };
-      })
-   );
+   const playerCalculatorPairs = playerList.map(dbp => {
+      const playerCalc: Partial<Record<GameMode, Player>> = {};
+      const history: Partial<Record<GameMode, PvEMatchHistory>> = {};
+      return {
+         playerId: dbp.osuid,
+         dbplayer: dbp,
+         playerCalc,
+         history
+      };
+   });
    const maplist = await mapsDb
       .find({ $or: maps })
       .map<{ map: DbBeatmap; ratings: Partial<Record<SimpleMod, Player>> }>(map => ({ map, ratings: {} }))

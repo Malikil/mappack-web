@@ -1,5 +1,6 @@
 "use server";
 
+import util from "util";
 import { historyDb, mappacksDb, mapsDb, playersDb } from "@/app/api/db/connection";
 import { addMatchData } from "@/app/api/db/pvp/functions";
 import { addMapsToDatabase, createMappool, cyclePools } from "@/helpers/addPool";
@@ -12,12 +13,14 @@ import { delay } from "@/time";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { DbHistory } from "@/types/database.history";
 import { DbMappack, MappackActiveState } from "@/types/database.mappack";
+import { DbPlayer } from "@/types/database.player";
 import {
    UndocumentedBeatmappack,
    UndocumentedBeatmappackCompact,
    UndocumentedBeatmappackResponse
 } from "@/types/undocumented.beatmappacks";
 import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
+import { UpdateFilter, UpdateOneModel } from "mongodb";
 import { Client, GameMode, LegacyClient, LegacyMatchScore } from "osu-web.js";
 
 async function getPreviousMapScalings(mode: GameMode) {
@@ -93,31 +96,10 @@ async function findMappackTag(packList: UndocumentedBeatmappackCompact[], mode: 
 }
 
 export async function debug() {
-   const score: LegacyMatchScore = {
-      slot: 1,
-      team: "Blue",
-      user_id: 3208718,
-      score: 77897420,
-      maxcombo: 865,
-      count50: 376,
-      count100: 9,
-      count300: 2477,
-      countmiss: 4,
-      countgeki: 499,
-      countkatu: 39,
-      perfect: false,
-      pass: true,
-      enabled_mods: []
-   };
-   const parser = new ScoreParser(score, "Score");
-   const map = await mapsDb.findOne({ id: 1641050, mode: "fruits" });
-   parser.setMap(map);
-   console.log(parser.getScore());
    // const newestPack = await mappacksDb.findOne({ mode: "taiko", active: "pending" });
    // const result = await mapsDb.deleteMany({ mode: "taiko", id: { $in: newestPack.maps } });
    // console.log(result);
    // Get recent beatmap packs
-   // const client = new Client(accessToken);
    // const packs = await client.getUndocumented<UndocumentedBeatmappackResponse>("beatmaps/packs");
    // console.log(packs.beatmap_packs.slice(0, 3), `+ ${packs.beatmap_packs.length - 3} more`);
    // const mappackTag = await findMappackTag(packs.beatmap_packs, "taiko");

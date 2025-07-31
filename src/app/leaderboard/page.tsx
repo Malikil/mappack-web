@@ -17,8 +17,8 @@ export default async function Leaderboard() {
    const pvePlayers = await playersDb
       .find(
          {
-            ...adminFilter,
-            $or: [{ [`${gamemode}.pve.songs`]: { $gt: 10 } }]
+            hideLeaderboard: { $ne: true },
+            [`${gamemode}.pve.songs`]: { $gt: 10 }
          },
          { sort: [`${gamemode}.pve.rating`, -1], limit: 100 }
       )
@@ -26,9 +26,8 @@ export default async function Leaderboard() {
    const pvpPlayers = await playersDb
       .find(
          {
-            ...adminFilter,
-            //[`${gamemode}.pvp`]: { $exists: true },
-            $or: [{ [`${gamemode}.pvp.wins`]: { $gt: 2 } }, { [`${gamemode}.pvp.losses`]: { $gt: 2 } }]
+            hideLeaderboard: { $ne: true },
+            $or: [{ [`${gamemode}.pvp.wins`]: { $gt: 2 } }, { [`${gamemode}.pvp.losses`]: { $gt: 3 } }]
          },
          { sort: [`${gamemode}.pvp.rating`, -1], limit: 100 }
       )

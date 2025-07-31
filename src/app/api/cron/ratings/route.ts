@@ -38,6 +38,8 @@ export async function GET(req: NextRequest) {
    if (req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`)
       return new NextResponse("Unauthorized", { status: 401 });
 
+   console.log("CRON is disabled");
+   return new NextResponse();
    const accessToken = await getOsuToken();
    const client = new Client(accessToken);
    const playerList = batchCursor(playersDb.find({ hideLeaderboard: { $exists: false } }), 50);

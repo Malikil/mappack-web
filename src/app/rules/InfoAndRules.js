@@ -1,12 +1,10 @@
 import Mappools from "./Mappools";
 import PvPRules from "./PvPRules";
-import Schedule from "./Schedule";
 import ScoreAttackRules from "./ScoreAttackRules";
 
 export default function InfoAndRules() {
    return (
       <div>
-         {/* <Schedule /> */}
          <h2>Info and Rules</h2>
          <Mappools />
          <PvPRules />
