@@ -3,12 +3,22 @@
 import { playersDb } from "@/app/api/db/connection";
 import { auth } from "@/auth";
 import { mapsDb } from "@/app/api/db/connection";
+import { DbBeatmap } from "@/types/database.beatmap";
 //import { getCurrentPack } from "@/helpers/currentPack";
 
 export async function fetchScatterData() {
    const session = await auth();
    const mode = session ? (await playersDb.findOne({ osuid: session.user.id })).gamemode || "osu" : "osu";
-   const maps = mapsDb.find({ mode }); //await getCurrentPack(mode);
+   const maps = mapsDb.aggregate<DbBeatmap & { rdSum: number }>([
+      { $match: { mode } },
+      {
+         $addFields: {
+            rdSum: { $add: ["$ratings.nm.rd", "$ratings.hd.rd", "$ratings.hr.rd", "$ratings.dt.rd"] }
+         }
+      },
+      { $sort: { rdSum: 1 } },
+      { $limit: 450 }
+   ]);
    const modRatios = {
       hd: 0,
       hr: 0,
