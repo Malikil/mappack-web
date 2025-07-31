@@ -96,6 +96,61 @@ async function findMappackTag(packList: UndocumentedBeatmappackCompact[], mode: 
 }
 
 export async function debug() {
+   const list = [
+      [
+         {
+            // V1 max: 293236
+            // Target: 175108
+            maxcombo: 99,
+            count300: 208,
+            count100: 27,
+            count50: 0,
+            countmiss: 7,
+            countkatu: 1
+         },
+         {
+            maxCombo: 242,
+            mode: "fruits"
+         }
+      ],
+      [
+         {
+            // V1 max: 183300
+            // Target: 607986
+            maxcombo: 42,
+            count300: 138,
+            count100: 13,
+            count50: 0,
+            countmiss: 12,
+            countkatu: 0
+         },
+         {
+            maxCombo: 163,
+            mode: "fruits"
+         }
+      ],
+      [
+         {
+            // V1 max: 1230432
+            // Target: 254048
+            maxcombo: 91,
+            count300: 569,
+            count100: 244,
+            count50: 0,
+            countmiss: 215,
+            countkatu: 0
+         },
+         {
+            maxCombo: 1027,
+            mode: "fruits"
+         }
+      ]
+   ];
+   for (const [score, map] of list) {
+      const parser = new ScoreParser(score as LegacyMatchScore, "Score");
+      parser.setMap(map as DbBeatmap);
+      console.log(parser.getScore());
+   }
    // const newestPack = await mappacksDb.findOne({ mode: "taiko", active: "pending" });
    // const result = await mapsDb.deleteMany({ mode: "taiko", id: { $in: newestPack.maps } });
    // console.log(result);
