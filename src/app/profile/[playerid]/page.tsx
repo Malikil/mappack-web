@@ -99,11 +99,7 @@ export default async function Profile({ params }) {
             )}
          </Card>
          {pveStats && (
-            <PvEResultsCard
-               data={pveStats}
-               osuid={user === player ? playerid : null}
-               mode={player.gamemode}
-            />
+            <PvEResultsCard data={pveStats} osuid={user === player ? playerid : null} mode={gamemode} />
          )}
       </div>
    );
