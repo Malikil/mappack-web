@@ -16,8 +16,9 @@ export async function fetchScatterData() {
             rdSum: { $add: ["$ratings.nm.rd", "$ratings.hd.rd", "$ratings.hr.rd", "$ratings.dt.rd"] }
          }
       },
-      { $sort: { rdSum: 1 } },
-      { $limit: 450 }
+      { $match: { rdSum: { $lt: 400 } } },
+      { $sort: { rdSum: 1 } }
+      //{ $limit: 1000 }
    ]);
    const modRatios = {
       hd: 0,

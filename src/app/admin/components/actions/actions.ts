@@ -20,8 +20,11 @@ import {
    UndocumentedBeatmappackResponse
 } from "@/types/undocumented.beatmappacks";
 import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
-import { UpdateFilter, UpdateOneModel } from "mongodb";
+import { Filter, UpdateFilter, UpdateOneModel } from "mongodb";
 import { Client, GameMode, LegacyClient, LegacyMatchScore } from "osu-web.js";
+import { parseMpLobby } from "@/app/profile/[playerid]/pve/functions";
+import { SimpleMod } from "@/types/rating";
+import { Player } from "glicko2";
 
 async function getPreviousMapScalings(mode: GameMode) {
    console.log("Get previous map scalings");
@@ -96,75 +99,34 @@ async function findMappackTag(packList: UndocumentedBeatmappackCompact[], mode: 
 }
 
 export async function debug() {
-   const list = [
-      [
-         {
-            // V1 max: 293236
-            // Target: 737479
-            maxcombo: 126,
-            count300: 217,
-            count100: 11,
-            count50: 0,
-            countmiss: 13,
-            countkatu: 1
-         },
-         {
-            maxCombo: 242,
-            mode: "taiko"
-         }
-      ],
-      [
-         {
-            // V1 max: 183300
-            // Target: 607986
-            maxcombo: 42,
-            count300: 138,
-            count100: 13,
-            count50: 0,
-            countmiss: 12,
-            countkatu: 0
-         },
-         {
-            maxCombo: 163,
-            mode: "taiko"
-         }
-      ],
-      [
-         {
-            // V1 max: 1230432
-            // Target: 254048
-            maxcombo: 91,
-            count300: 569,
-            count100: 244,
-            count50: 0,
-            countmiss: 215,
-            countkatu: 0
-         },
-         {
-            maxCombo: 1027,
-            mode: "taiko"
-         }
-      ],
-      [
-         {
-            maxcombo: 96,
-            count300: 97,
-            count100: 0,
-            count50: 0,
-            countmiss: 3,
-            countkatu: 0
-         },
-         {
-            maxCombo: 100,
-            mode: "fruits"
-         }
-      ]
-   ];
-   for (const [score, map] of list) {
-      const parser = new ScoreParser(score as LegacyMatchScore, "Score");
-      parser.setMap(map as DbBeatmap);
-      console.log(parser.getScore());
-   }
+   // const { matches, maps } = await parseMpLobby(118694524);
+   // const maplist = await mapsDb
+   //    .find({ $or: maps })
+   //    .map<{ map: DbBeatmap; ratings: Partial<Record<SimpleMod, Player>> }>(map => ({ map, ratings: {} }))
+   //    .toArray();
+   // // Get map info for any maps not in the database
+   // const missing = maps.filter(
+   //    m => !maplist.find(exist => exist.map.id === m.id && exist.map.mode === m.mode)
+   // );
+   // console.log("missing", missing);
+   // if (missing.length > 0)
+   //    maplist.push(
+   //       ...(await addMapsToDatabase(await getOsuToken(), missing).then(dblist =>
+   //          dblist.map(dbmap => ({ map: dbmap, ratings: {} }))
+   //       ))
+   //    );
+   // Object.keys(matches).forEach(playerIdStr => {
+   //    const matchInfo = matches[playerIdStr];
+   //    matchInfo.forEach(score => {
+   //       const mapInfo = maplist.find(m => m.map.id === score.map && m.map.mode === score.mode);
+   //       // If the map isn't in the list, ignore it
+   //       if (!mapInfo) return;
+   //       // Set the map info on the parser
+   //       score.score.setMap(mapInfo.map);
+   //       // If parsing the score fails, also skip the map
+   //       console.log(playerIdStr, mapInfo.map.title, score.score.getScore());
+   //    });
+   // });
    // const newestPack = await mappacksDb.findOne({ mode: "taiko", active: "pending" });
    // const result = await mapsDb.deleteMany({ mode: "taiko", id: { $in: newestPack.maps } });
    // console.log(result);
