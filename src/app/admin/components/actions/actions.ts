@@ -100,17 +100,17 @@ export async function debug() {
       [
          {
             // V1 max: 293236
-            // Target: 175108
-            maxcombo: 99,
-            count300: 208,
-            count100: 27,
+            // Target: 737479
+            maxcombo: 126,
+            count300: 217,
+            count100: 11,
             count50: 0,
-            countmiss: 7,
+            countmiss: 13,
             countkatu: 1
          },
          {
             maxCombo: 242,
-            mode: "fruits"
+            mode: "taiko"
          }
       ],
       [
@@ -126,7 +126,7 @@ export async function debug() {
          },
          {
             maxCombo: 163,
-            mode: "fruits"
+            mode: "taiko"
          }
       ],
       [
@@ -142,6 +142,20 @@ export async function debug() {
          },
          {
             maxCombo: 1027,
+            mode: "taiko"
+         }
+      ],
+      [
+         {
+            maxcombo: 96,
+            count300: 97,
+            count100: 0,
+            count50: 0,
+            countmiss: 3,
+            countkatu: 0
+         },
+         {
+            maxCombo: 100,
             mode: "fruits"
          }
       ]

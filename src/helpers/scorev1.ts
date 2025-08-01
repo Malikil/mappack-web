@@ -62,36 +62,56 @@ export class ScoreParser {
                   x > 200 ? delta(200) : (x * (1 + Math.log(200) - Math.log(x))) / Math.log(4);
                // How long are the remaining combos?
                const comboSize = (maxCombo - score.maxcombo) / score.countmiss;
-               if (comboSize < 1) return (800000 * (Fmax - F(score.maxcombo))) / Fmax;
                return 800000 * (1 - ((score.countmiss - 1) * delta(comboSize)) / Fmax);
             },
             missComponent: 0
          },
          taiko: {
             accCalc: (score: LegacyMatchScore) =>
-               (500000 * (score.count300 + score.count100 / 2)) /
-               (score.count300 + score.count100 + score.countmiss),
+               500000 *
+               Math.pow(
+                  (score.count300 + score.count100 / 3) / (score.count300 + score.count100 + score.countmiss),
+                  10
+               ),
             comboCalc: (score: LegacyMatchScore, maxCombo: number) => {
+               const scorePart = 500000;
+               // Seems like the taiko scoring is more like ctb right now, but combo goes up to 400
+               if (score.countmiss < 1) return scorePart;
+               const maxScorePerNote = 12 + Math.log(400) / Math.log(4);
+               const scoreUptoCombo = (x: number) => {
+                  // For values between 0 and 400
+                  const f = (n: number) => n * ((Math.log(n) - 1) / Math.log(4) + 12);
+                  if (x < 400) return f(x);
+                  else return f(400) + maxScorePerNote * (x - 400);
+               };
+               const delta = (x: number) =>
+                  x > 400 ? delta(400) : (x * (1 + Math.log(400) - Math.log(x))) / Math.log(4);
+               const maxComboScore = scoreUptoCombo(maxCombo);
+               const comboSize = (maxCombo - score.maxcombo) / score.countmiss;
+               const comboComponent = 1 - ((score.countmiss - 1) * delta(comboSize)) / maxComboScore;
+               const greatRate = score.count300 / (score.count300 + score.count100);
+               const accMult = (2 * greatRate + 1) / 3;
+               return scorePart * comboComponent * accMult;
                // I choose to ignore the floor component. I'm also ignoring large notes and kiai multiplier.
                // Perhaps all these will even each other out in the long run
-               const scoreCapPerNote = 310;
-               const scoreSumToCombo = (x: number) => {
-                  if (x < 100) return (x * (x + 6000)) / 20;
-                  else return 30500 + scoreCapPerNote * (x - 100);
-               };
-               const Fmax = scoreSumToCombo(maxCombo);
-               const delta = (x: number) => (x > 100 ? delta(100) : (x * (200 - x)) / 20);
-               // Lifted straight from above
-               const comboSize = (maxCombo - score.maxcombo) / score.countmiss;
-               const comboComponent =
-                  comboSize < 1
-                     ? (Fmax - scoreSumToCombo(score.maxcombo)) / Fmax
-                     : 1 - ((score.countmiss - 1) * delta(comboSize)) / Fmax;
-               // We don't know where the GOODs came from, they are each worth exactly half of a GREAT
-               // Just multiply by the ratio
-               const greatRate = score.count300 / (score.count300 + score.count100);
-               const accMult = greatRate / 2 + 0.5;
-               return 500000 * accMult * comboComponent;
+               // const scoreCapPerNote = 310;
+               // const scoreSumToCombo = (x: number) => {
+               //    if (x < 100) return (x * (x + 6000)) / 20;
+               //    else return 30500 + scoreCapPerNote * (x - 100);
+               // };
+               // const Fmax = scoreSumToCombo(maxCombo);
+               // const delta = (x: number) => (x > 100 ? delta(100) : (x * (200 - x)) / 20);
+               // // Lifted straight from above
+               // const comboSize = (maxCombo - score.maxcombo) / score.countmiss;
+               // const comboComponent =
+               //    comboSize < 1
+               //       ? (Fmax - scoreSumToCombo(score.maxcombo)) / Fmax
+               //       : 1 - ((score.countmiss - 1) * delta(comboSize)) / Fmax;
+               // // We don't know where the GOODs came from, they are each worth exactly half of a GREAT
+               // // Just multiply by the ratio
+               // const greatRate = ;
+               // const accMult = greatRate / 2 + 0.5;
+               // return 700000 * accMult * comboComponent;
             },
             missComponent: 0
          },
