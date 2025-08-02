@@ -4,7 +4,7 @@ import { mapsDb, playersDb } from "../connection";
 import { matchResultValue } from "@/app/profile/[playerid]/pve/functions";
 import { getCurrentPack, getPreviousPack } from "@/helpers/currentPack";
 import { convertPP } from "@/helpers/rankPredictor";
-import { MpLobbyResults, SongResultMap } from "@/types/multiplayer";
+import { FreemodSelection, MpLobbyResults, SongResultMap } from "@/types/multiplayer";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { SimpleMod } from "@/types/rating";
 import { UpdateOneModel } from "mongodb";
@@ -37,19 +37,27 @@ export async function parseMpLobby(link: string): Promise<MpLobbyResults> {
    try {
       console.log(`Fetch multiplayer lobby ${matchIdSegment}`);
       const mpLobby = await osuClient.getMultiplayerLobby({ mp: matchIdSegment });
+      const mode = mpLobby.games[0]?.play_mode;
       // Is end time an indicator of aborted matches?
       const result = mpLobby.games
          .filter(l => l.end_time)
          .reduce(
             (agg, game) => {
+               // For now only accept score v2 songs
+               if (game.scoring_type !== "Score V2") return agg;
+               // For now, if the gamemode is changed panic
+               if (game.play_mode !== mode) throw new Error("Invalid gamemode");
                // If length is 0, that means freemod is enabled. Length will be 1 if nomod (nf counts as the 1)
                const mod =
                   game.mods.length === 0
                      ? "fm"
-                     : ((game.mods.filter(v => v !== "NF")[0] || "nm").toLowerCase() as SimpleMod);
+                     : game.mods.length > 2
+                     ? null
+                     : (game.mods.filter(v => v !== "NF").join("") || "nm").toLowerCase();
+               if (!mod || !["nm", "hd", "hr", "dt", "fm"].includes(mod)) return agg;
                agg.maps.push({
                   map: game.beatmap_id,
-                  mod
+                  mod: mod as SimpleMod | "fm"
                });
                game.scores.forEach(score => {
                   // Will HD always be first?
@@ -59,9 +67,8 @@ export async function parseMpLobby(link: string): Promise<MpLobbyResults> {
                      .toLowerCase();
                   if (!(score.user_id in agg.scores)) agg.scores[score.user_id] = [];
                   agg.scores[score.user_id].push({
-                     osuid: score.user_id,
                      score: score.score,
-                     mod: ["hd", "hr", "hdhr"].includes(scoreMod) ? scoreMod : null
+                     mod: ["hd", "hr", "hdhr"].includes(scoreMod) ? (scoreMod as FreemodSelection) : null
                   });
                });
                // Find the song winner
@@ -71,27 +78,35 @@ export async function parseMpLobby(link: string): Promise<MpLobbyResults> {
                agg.resultScore[game.scores[1].user_id] = agg.resultScore[game.scores[1].user_id] || 0;
                return agg;
             },
-            { maps: [] as SongResultMap[], scores: {}, resultScore: {} }
+            {
+               maps: [] as SongResultMap[],
+               scores: {} as { [id: number]: { score: number; mod?: FreemodSelection }[] },
+               resultScore: {} as { [id: number]: number }
+            }
          );
-      const matchPlacement = Object.keys(result.resultScore).sort(
+      const playersWithResults = Object.keys(result.resultScore).map(v => parseInt(v));
+      if (playersWithResults.length !== 2) return;
+      const [winnerId, loserId] = playersWithResults.sort(
          (a, b) => result.resultScore[b] - result.resultScore[a]
       );
       console.log(result);
       return {
          mp: matchIdSegment,
+         mode,
          maps: result.maps,
-         winnerScores: result.scores[matchPlacement[0]].map(item => [item.score, item.mod]),
-         loserScores: result.scores[matchPlacement[1]].map(item => [item.score, item.mod]),
-         winnerId: result.scores[matchPlacement[0]][0].osuid,
-         loserId: result.scores[matchPlacement[1]][0].osuid
+         winnerScores: result.scores[winnerId].map(item => [item.score, item.mod]),
+         loserScores: result.scores[loserId].map(item => [item.score, item.mod]),
+         winnerId,
+         loserId
       };
    } catch (err) {
-      console.error(err);
+      console.warn(err);
    }
 }
 
 export async function addMatchData({
    mp,
+   mode,
    winnerId,
    loserId,
    maps,
@@ -99,27 +114,21 @@ export async function addMatchData({
    loserScores
 }: MpLobbyResults) {
    console.log(winnerScores, loserScores);
-   //const playersDb = db.collection("players");
    const winner = await playersDb.findOne({
       osuid: winnerId
    });
-   const winnerRating = winner.osu.pvp;
+   const winnerRating = winner[mode].pvp;
    const loser = await playersDb.findOne({
       osuid: loserId
    });
-   const loserRating = loser.osu.pvp;
+   const loserRating = loser[mode].pvp;
    console.log(winner, loser);
    // Get the played maps
-   const maplist = await getCurrentPack("osu");
-   const staleMaplist = await getPreviousPack("osu");
-   const playedMaps = maps.map(item => {
-      const { map, mod } = item;
-      const dbmap = maplist.find(m => m.id === map) || staleMaplist.find(m => m.id === map);
-      return {
-         map: dbmap,
-         mod
-      };
-   });
+   const maplist = await mapsDb.find({ $or: maps.map(item => ({ id: item.map, mode })) }).toArray();
+   const playedMaps = maps.map(item => ({
+      map: maplist.find(m => m.id === item.map),
+      mod: item.mod
+   }));
 
    // Create the rating calculator
    const calculator = new Glicko2();
@@ -133,13 +142,13 @@ export async function addMatchData({
             filter: { _id: winner._id },
             update: {
                $set: {
-                  "osu.pvp.rating": winnerPlayer.getRating(),
-                  "osu.pvp.rd": winnerPlayer.getRd(),
-                  "osu.pvp.vol": winnerPlayer.getVol()
+                  [`${mode}.pvp.rating`]: winnerPlayer.getRating(),
+                  [`${mode}.pvp.rd`]: winnerPlayer.getRd(),
+                  [`${mode}.pvp.vol`]: winnerPlayer.getVol()
                },
-               $inc: { "osu.pvp.wins": 1 },
+               $inc: { [`${mode}.pvp.wins`]: 1 },
                $push: {
-                  "osu.pvp.matches": {
+                  [`${mode}.pvp.matches`]: {
                      $each: [
                         {
                            mp,
@@ -174,13 +183,13 @@ export async function addMatchData({
             filter: { _id: loser._id },
             update: {
                $set: {
-                  "osu.pvp.rating": loserPlayer.getRating(),
-                  "osu.pvp.rd": loserPlayer.getRd(),
-                  "osu.pvp.vol": loserPlayer.getVol()
+                  [`${mode}.pvp.rating`]: loserPlayer.getRating(),
+                  [`${mode}.pvp.rd`]: loserPlayer.getRd(),
+                  [`${mode}.pvp.vol`]: loserPlayer.getVol()
                },
-               $inc: { "osu.pvp.losses": 1 },
+               $inc: { [`${mode}.pvp.losses`]: 1 },
                $push: {
-                  "osu.pvp.matches": {
+                  [`${mode}.pvp.matches`]: {
                      $each: [
                         {
                            mp,
