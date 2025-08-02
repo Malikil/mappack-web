@@ -1,7 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { Button, Card, CardBody, CardHeader, CardTitle, Form, FormControl } from "react-bootstrap";
-import { getOpponentMappool } from "./actions";
 import MatchHistoryItem from "./pvp/MatchHistoryItem";
 import PvEResultsCard from "./pve/PvEResultsCard";
 import { playersDb } from "@/app/api/db/connection";
@@ -9,19 +8,7 @@ import Image from "next/image";
 import { buildUrl } from "osu-web.js";
 import CreatePvpStats from "./pvp/CreatePvpStats";
 import ComponentInfoRows from "./ComponentInfoRows";
-
-const TableData = ({ data }) => (
-   <table>
-      <tbody>
-         {data.map((r, i) => (
-            <tr key={i}>
-               <td>{r[0]}</td>
-               <td className="ps-2">{r[1]}</td>
-            </tr>
-         ))}
-      </tbody>
-   </table>
-);
+import PvPResultsCard from "./pvp/PvPResultsCard";
 
 export default async function Profile({ params }) {
    const playerid = parseInt((await params).playerid);
@@ -53,51 +40,17 @@ export default async function Profile({ params }) {
             </h1>
             <Image alt="Mode" src={`/mode-${gamemode}.png`} height={48} width={48} />
          </div>
-         <Card>
-            <CardHeader>Vs. Players</CardHeader>
-            {pvpStats ? (
-               <CardBody>
-                  <div className="d-flex justify-content-between">
-                     <ComponentInfoRows
-                        data={[
-                           [
-                              "Rating",
-                              pvpStats.rating.toFixed(0),
-                              pvpStats.wins < 3 && pvpStats.losses < 3 && "Provisional",
-                              `(rd: ${pvpStats.rd.toFixed(0)})`
-                           ],
-                           ["Wins", pvpStats.wins],
-                           ["Losses", pvpStats.losses]
-                        ]}
-                     />
-                     <Form
-                        action={async formData => {
-                           "use server";
-                           return getOpponentMappool(playerid, formData);
-                        }}
-                        className="d-flex gap-1 mb-auto"
-                     >
-                        <FormControl type="text" name="opponent" placeholder="Opponent" />
-                        <Button className="text-nowrap" type="submit">
-                           Preview Pool
-                        </Button>
-                     </Form>
-                  </div>
-                  <hr />
-                  <CardTitle>Match History</CardTitle>
-                  <div className="d-flex flex-column gap-1">
-                     {pvpStats.matches.map((match, i) => (
-                        <MatchHistoryItem key={i} match={match} mode={gamemode} />
-                     ))}
-                  </div>
-               </CardBody>
-            ) : (
+         {pvpStats ? (
+            <PvPResultsCard pvpStats={pvpStats} playerid={playerid} mode={gamemode} />
+         ) : (
+            <Card>
+               <CardHeader>Vs. Players</CardHeader>
                <CardBody className="d-flex justify-content-between align-items-center">
                   <span>Play a match to create PvP stats{user === player && ", or click the button"}</span>
                   {user === player && <CreatePvpStats playerid={playerid} gamemode={gamemode} />}
                </CardBody>
-            )}
-         </Card>
+            </Card>
+         )}
          {pveStats && (
             <PvEResultsCard data={pveStats} osuid={user === player ? playerid : null} mode={gamemode} />
          )}
