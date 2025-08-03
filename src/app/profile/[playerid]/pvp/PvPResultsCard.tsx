@@ -8,11 +8,13 @@ import { GameMode } from "osu-web.js";
 export default function PvPResultsCard({
    pvpStats,
    playerid,
-   mode
+   mode,
+   allowSubmit
 }: {
    pvpStats: PvPInfo;
    playerid: number;
    mode: GameMode;
+   allowSubmit?: boolean;
 }) {
    return (
       <Card>
@@ -31,7 +33,7 @@ export default function PvPResultsCard({
                      ["Losses", pvpStats.losses]
                   ]}
                />
-               <AddPvPSession playerid={playerid} />
+               <AddPvPSession playerid={playerid} allowSubmit={allowSubmit} />
             </div>
             <hr />
             <CardTitle>Match History</CardTitle>

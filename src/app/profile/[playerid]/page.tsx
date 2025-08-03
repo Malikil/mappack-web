@@ -1,13 +1,11 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { Button, Card, CardBody, CardHeader, CardTitle, Form, FormControl } from "react-bootstrap";
-import MatchHistoryItem from "./pvp/MatchHistoryItem";
+import { Card, CardBody, CardHeader } from "react-bootstrap";
 import PvEResultsCard from "./pve/PvEResultsCard";
 import { playersDb } from "@/app/api/db/connection";
 import Image from "next/image";
 import { buildUrl } from "osu-web.js";
 import CreatePvpStats from "./pvp/CreatePvpStats";
-import ComponentInfoRows from "./ComponentInfoRows";
 import PvPResultsCard from "./pvp/PvPResultsCard";
 
 export default async function Profile({ params }) {
@@ -41,7 +39,12 @@ export default async function Profile({ params }) {
             <Image alt="Mode" src={`/mode-${gamemode}.png`} height={48} width={48} />
          </div>
          {pvpStats ? (
-            <PvPResultsCard pvpStats={pvpStats} playerid={playerid} mode={gamemode} />
+            <PvPResultsCard
+               pvpStats={pvpStats}
+               playerid={playerid}
+               mode={gamemode}
+               allowSubmit={user === player}
+            />
          ) : (
             <Card>
                <CardHeader>Vs. Players</CardHeader>
