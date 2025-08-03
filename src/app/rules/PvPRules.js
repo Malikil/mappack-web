@@ -3,7 +3,8 @@ export default function PvPRules() {
       <div>
          <h3>1v1 Matches</h3>
          <ul>
-            <li>ScoreV2, BO7, 2 bans each (std only)</li>
+            <li>Supports all game modes except mania (for now)</li>
+            <li>ScoreV2, BO7, 2 bans each</li>
             <li>HD or HR is required on freemod maps</li>
             <li>
                If a tiebreaker is needed, the player who picked last will ban two additional maps, then the

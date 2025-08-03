@@ -29,27 +29,32 @@ export default function Mappools() {
                         <th>Mode</th>
                         <th>Minimum</th>
                         <th>Maximum</th>
+                        <th>Target</th>
                      </tr>
                   </thead>
                   <tbody>
                      <tr>
                         <td>osu!</td>
-                        <td>300k</td>
+                        <td>100k</td>
                         <td>900k</td>
+                        <td>500k</td>
                      </tr>
                      <tr>
                         <td>Catch</td>
                         <td>500k</td>
                         <td>900k</td>
+                        <td>700k</td>
                      </tr>
                      <tr>
                         <td>Taiko</td>
                         <td>300k</td>
                         <td>900k</td>
+                        <td>600k</td>
                      </tr>
                      <tr>
                         <td>Mania</td>
                         <td>tbd</td>
+                        <td></td>
                         <td></td>
                      </tr>
                   </tbody>

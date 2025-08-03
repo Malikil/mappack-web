@@ -23,7 +23,7 @@ export async function getCurrentPack(mode: GameMode = "osu") {
                from: "maps",
                localField: "maps",
                foreignField: "id",
-               pipeline: [{ $match: { mode } }],
+               pipeline: [{ $match: { mode } }, { $project: { _id: 0 } }],
                as: "maps"
             }
          }

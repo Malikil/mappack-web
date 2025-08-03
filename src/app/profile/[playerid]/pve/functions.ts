@@ -1,6 +1,6 @@
 import { ScoreParser } from "@/helpers/scorev1";
 import { SimpleMod } from "@/types/rating";
-import { GameMode, LegacyClient, LegacyMatchScore, Mod } from "osu-web.js";
+import { GameMode, LegacyClient, Mod } from "osu-web.js";
 
 /**
  * Returns the match result to use, assuming player first then map second
@@ -8,7 +8,7 @@ import { GameMode, LegacyClient, LegacyMatchScore, Mod } from "osu-web.js";
 export function matchResultValue(score: number, gamemode: GameMode) {
    const min: number =
       {
-         osu: 300000,
+         osu: 100000,
          fruits: 500000,
          taiko: 300000
       }[gamemode] || 300000;

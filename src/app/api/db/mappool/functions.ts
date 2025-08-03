@@ -72,8 +72,13 @@ export async function getMappool(playerIds: number[]) {
    console.log(`${maplist.fm.length} available FM maps`);
    maplist.fm.sort((a, b) => {
       // Special sort for FM
-      const adiff = Math.abs(targetRating.rating - (a.ratings.hd.rating + a.ratings.hr.rating) / 2);
-      const bdiff = Math.abs(targetRating.rating - (b.ratings.hd.rating + b.ratings.hr.rating) / 2);
+      // Minimize the difference between difference to target and difference to each other
+      const adiff =
+         Math.abs(targetRating.rating - (a.ratings.hd.rating + a.ratings.hr.rating) / 2) / 2 +
+         Math.abs(a.ratings.hd.rating - a.ratings.hr.rating);
+      const bdiff =
+         Math.abs(targetRating.rating - (b.ratings.hd.rating + b.ratings.hr.rating) / 2) / 2 +
+         Math.abs(b.ratings.hd.rating - b.ratings.hr.rating);
       return adiff - bdiff;
    });
    // Put extra maps into HD/HR whichever is closer
