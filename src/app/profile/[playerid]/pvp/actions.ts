@@ -6,6 +6,7 @@ import { GameMode, LegacyClient } from "osu-web.js";
 import { historyDb, playersDb } from "@/app/api/db/connection";
 import { redirect } from "next/navigation";
 import { register } from "@/app/api/db/register/functions";
+import { auth } from "@/auth";
 
 export async function getOpponentMappool(userid: number, formData: FormData) {
    const opp = formData.get("opponent") as string;
@@ -23,6 +24,7 @@ export async function createPvp(userid: number, gamemode: GameMode) {
 }
 
 export async function submitPvp(formData: FormData) {
+   const session = await auth();
    const mpLink = formData.get("mp").toString();
    const matchIdSegment = parseInt(mpLink.slice(mpLink.lastIndexOf("/") + 1));
    if (await historyDb.findOne({ _id: "mpLinks", items: matchIdSegment }))
@@ -38,6 +40,14 @@ export async function submitPvp(formData: FormData) {
          http: {
             status: 400,
             message: "Invalid 1v1 match"
+         }
+      };
+   // Only allow matches the submitter was a part of
+   if (session.user.id !== lobbyResults.winnerId && session.user.id !== lobbyResults.loserId)
+      return {
+         http: {
+            status: 400,
+            message: "Please only submit matches where you were a player"
          }
       };
    await historyDb.updateOne({ _id: "mpLinks" }, { $push: { items: matchIdSegment } });

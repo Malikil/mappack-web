@@ -41,6 +41,8 @@ export async function parseMpLobby(link: string): Promise<MpLobbyResults> {
       console.log(`Fetch multiplayer lobby ${matchIdSegment}`);
       const mpLobby = await osuClient.getMultiplayerLobby({ mp: matchIdSegment });
       const mode = mpLobby.games[0]?.play_mode;
+      // Only accept completed lobbies
+      if (!mpLobby.match.end_time) return;
       // Is end time an indicator of aborted matches?
       const result = mpLobby.games
          .filter(l => l.end_time)
@@ -265,21 +267,21 @@ export async function addMatchData({
                score: number;
                player: Player;
             }[] = [];
-            if (wmod !== "hdhr") {
+            if (wmod in map.ratings) {
                const r = map.ratings[wmod];
                resultArr.push({
                   map,
-                  mod: wmod,
+                  mod: wmod as SimpleMod,
                   calc: calculator.makePlayer(r.rating, r.rd, r.vol),
                   score: wscore,
                   player: winnerPlayer
                });
             }
-            if (lmod !== "hdhr") {
+            if (lmod in map.ratings) {
                const r = map.ratings[lmod];
                resultArr.push({
                   map,
-                  mod: lmod,
+                  mod: lmod as SimpleMod,
                   calc: calculator.makePlayer(r.rating, r.rd, r.vol),
                   score: lscore,
                   player: loserPlayer
