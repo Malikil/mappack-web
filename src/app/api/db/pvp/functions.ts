@@ -2,12 +2,12 @@ import { Glicko2, Player } from "glicko2";
 import { GameMode, LegacyClient } from "osu-web.js";
 import { mapsDb, playersDb } from "../connection";
 import { matchResultValue } from "@/app/profile/[playerid]/pve/functions";
-import { getCurrentPack, getPreviousPack } from "@/helpers/currentPack";
 import { convertPP } from "@/helpers/rankPredictor";
 import { FreemodSelection, MpLobbyResults, SongResultMap } from "@/types/multiplayer";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { SimpleMod } from "@/types/rating";
 import { UpdateOneModel } from "mongodb";
+import { getMaplist } from "@/helpers/currentPack";
 
 const MATCH_HISTORY_SIZE = 10;
 
@@ -31,6 +31,9 @@ export async function createPvpRegistration(osuid: number, ppRaw: number, mode: 
    return player;
 }
 
+/**
+ * Returns null if an invalid 1v1 is detected
+ */
 export async function parseMpLobby(link: string): Promise<MpLobbyResults> {
    const osuClient = new LegacyClient(process.env.OSU_LEGACY_KEY);
    const matchIdSegment = parseInt(link.slice(link.lastIndexOf("/") + 1));
@@ -85,6 +88,7 @@ export async function parseMpLobby(link: string): Promise<MpLobbyResults> {
             }
          );
       const playersWithResults = Object.keys(result.resultScore).map(v => parseInt(v));
+      // If there are more or less than 2 players, this must not be a 1v1 match
       if (playersWithResults.length !== 2) return;
       const [winnerId, loserId] = playersWithResults.sort(
          (a, b) => result.resultScore[b] - result.resultScore[a]
@@ -124,11 +128,12 @@ export async function addMatchData({
    const loserRating = loser[mode].pvp;
    console.log(winner, loser);
    // Get the played maps
-   const maplist = await mapsDb.find({ $or: maps.map(item => ({ id: item.map, mode })) }).toArray();
+   const maplist = await getMaplist(maps.map(item => ({ id: item.map, mode })));
    const playedMaps = maps.map(item => ({
       map: maplist.find(m => m.id === item.map),
       mod: item.mod
    }));
+   console.log(playedMaps);
 
    // Create the rating calculator
    const calculator = new Glicko2();
@@ -235,11 +240,16 @@ export async function addMatchData({
          if (wmod === lmod)
             if (wmod === "hdhr") return [];
             else {
-               const r = map.ratings[wmod];
-               const resultObj = {
+               // On freemod maps the w/l mods may actually be null
+               const r = map.ratings[wmod || "nm"];
+               const resultObj: {
+                  map: DbBeatmap;
+                  calc: Player;
+                  mod: SimpleMod;
+               } = {
                   map,
                   calc: calculator.makePlayer(r.rating, r.rd, r.vol),
-                  mod: wmod
+                  mod: wmod || "nm"
                };
                return [
                   { ...resultObj, score: wscore, player: winnerPlayer },

@@ -1,7 +1,18 @@
-import { mappacksDb } from "@/app/api/db/connection";
+import { mappacksDb, mapsDb } from "@/app/api/db/connection";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { DbMappack } from "@/types/database.mappack";
 import { GameMode } from "osu-web.js";
+import { addMapsToDatabase } from "./addPool";
+import { getOsuToken } from "./osuToken";
+
+export async function getMaplist(maps: { id: number; mode: GameMode }[]) {
+   const maplist: DbBeatmap[] = await mapsDb.find({ $or: maps }).toArray();
+   // Get map info for any maps not in the database
+   const missing = maps.filter(m => !maplist.find(exist => exist.id === m.id && exist.mode === m.mode));
+   console.log("missing", missing);
+   if (missing.length > 0) maplist.push(...(await addMapsToDatabase(await getOsuToken(), missing)));
+   return maplist;
+}
 
 export async function getCurrentPack(mode: GameMode = "osu") {
    const pools = await mappacksDb

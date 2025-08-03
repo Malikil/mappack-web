@@ -1,11 +1,19 @@
-import { Button, Card, CardBody, CardHeader, CardTitle, Form, FormControl } from "react-bootstrap";
+import { Card, CardBody, CardHeader, CardTitle } from "react-bootstrap";
 import ComponentInfoRows from "../ComponentInfoRows";
 import MatchHistoryItem from "./MatchHistoryItem";
-import { serverActionToast } from "@/toaster";
-import { submitPvp } from "./actions";
 import AddPvPSession from "./AddPvpSession";
+import { PvPInfo } from "@/types/database.player";
+import { GameMode } from "osu-web.js";
 
-export default function PvPResultsCard({ pvpStats, playerid, mode }) {
+export default function PvPResultsCard({
+   pvpStats,
+   playerid,
+   mode
+}: {
+   pvpStats: PvPInfo;
+   playerid: number;
+   mode: GameMode;
+}) {
    return (
       <Card>
          <CardHeader>Vs. Players</CardHeader>

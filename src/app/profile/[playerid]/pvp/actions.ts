@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { addMatchData, createPvpRegistration, parseMpLobby } from "@/app/api/db/pvp/functions";
 import { GameMode, LegacyClient } from "osu-web.js";
-import { playersDb } from "@/app/api/db/connection";
+import { historyDb, playersDb } from "@/app/api/db/connection";
 import { redirect } from "next/navigation";
+import { register } from "@/app/api/db/register/functions";
 
 export async function getOpponentMappool(userid: number, formData: FormData) {
    const opp = formData.get("opponent") as string;
@@ -22,55 +23,45 @@ export async function createPvp(userid: number, gamemode: GameMode) {
 }
 
 export async function submitPvp(formData: FormData) {
-   // let winnerId = formData.get("winner");
-   // let loserId = formData.get("loser");
-   // let formMaplist = [];
-   // /** @type {[number,string][]} */
-   // let winnerScores = [];
-   // /** @type {[number,string][]} */
-   // let loserScores = [];
-   // const mp = formData.get("mp");
-   // if (mp) {
-   //    const matchData = await parseMpLobby(mp);
-   //    console.log(matchData);
-   //    winnerId = matchData.winnerId;
-   //    loserId = matchData.loserId;
-   //    formMaplist = matchData.maps;
-   //    winnerScores = matchData.winnerScores;
-   //    loserScores = matchData.loserScores;
-   // } else {
-   //    formMaplist = formData
-   //       .get("songs")
-   //       .split("\n")
-   //       .map(item => {
-   //          const [map, mod] = item.split("+");
-   //          const id = parseInt(map);
-   //          return {
-   //             map: id,
-   //             mod: mod.trim().toLowerCase()
-   //          };
-   //       });
-   //    winnerScores = formData
-   //       .get("winnerScores")
-   //       .split("\n")
-   //       .map(s => {
-   //          const sp = s.split("+");
-   //          sp[0] = parseInt(sp[0]);
-   //          if (sp[1]) sp[1] = sp[1].trim().toLowerCase();
-   //          return sp;
-   //       });
-   //    loserScores = formData
-   //       .get("loserScores")
-   //       .split("\n")
-   //       .map(s => {
-   //          const sp = s.split("+");
-   //          sp[0] = parseInt(sp[0]);
-   //          if (sp[1]) sp[1] = sp[1].trim().toLowerCase();
-   //          return sp;
-   //       });
-   // }
+   const mpLink = formData.get("mp").toString();
+   const matchIdSegment = parseInt(mpLink.slice(mpLink.lastIndexOf("/") + 1));
+   if (await historyDb.findOne({ _id: "mpLinks", items: matchIdSegment }))
+      return {
+         http: {
+            status: 400,
+            message: "MP link already submitted"
+         }
+      };
+   const lobbyResults = await parseMpLobby(matchIdSegment.toString());
+   if (!lobbyResults)
+      return {
+         http: {
+            status: 400,
+            message: "Invalid 1v1 match"
+         }
+      };
+   await historyDb.updateOne({ _id: "mpLinks" }, { $push: { items: matchIdSegment } });
+   // Verify registrations for both players
+   const osuClient = new LegacyClient(process.env.OSU_LEGACY_KEY);
+   const players = await playersDb
+      .find({ $or: [{ osuid: lobbyResults.winnerId }, { osuid: lobbyResults.loserId }] })
+      .toArray();
+   for (const id of [lobbyResults.winnerId, lobbyResults.loserId]) {
+      if (!players.find(p => p.osuid === id)) {
+         const banchoPlayer = await osuClient.getUser({ u: id, m: lobbyResults.mode });
+         await register(id, banchoPlayer.username);
+         // Create pvp stats at the same time
+         await createPvpRegistration(id, banchoPlayer.pp_raw, lobbyResults.mode);
+      }
+   }
+   // Make sure both players have pvp stats
+   for (const player of players)
+      if (!("pvp" in player[lobbyResults.mode])) {
+         const banchoPlayer = await osuClient.getUser({ u: player.osuid, m: lobbyResults.mode });
+         await createPvpRegistration(player.osuid, banchoPlayer.pp_raw, lobbyResults.mode);
+      }
+   // Add the match results
+   await addMatchData(lobbyResults);
 
-   // await addMatchData({ winnerId, loserId, maps: formMaplist, winnerScores, loserScores });
-
-   // revalidatePath("/profile");
+   revalidatePath("/profile");
 }

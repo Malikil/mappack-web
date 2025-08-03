@@ -65,6 +65,7 @@ async function getPlayerRatingScalings(mode: GameMode) {
          const dbPlayer = playerGroups.find(p => p.osuid === player.id);
          datasets.x.push([Math.log(player.statistics_rulesets[mode].pp)]);
          datasets.y.push([dbPlayer[mode].pvp.rating]);
+         console.log([player.statistics_rulesets[mode].pp, dbPlayer[mode].pvp.rating].join(", "));
       }
    }
    const logReg = new PolynomialRegressor(1);
@@ -99,6 +100,7 @@ async function findMappackTag(packList: UndocumentedBeatmappackCompact[], mode: 
 }
 
 export async function debug() {
+   await getPlayerRatingScalings("osu");
    // const { matches, maps } = await parseMpLobby(118694524);
    // const maplist = await mapsDb
    //    .find({ $or: maps })

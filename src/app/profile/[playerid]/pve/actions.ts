@@ -5,7 +5,7 @@ import { Glicko2, Player } from "glicko2";
 import { revalidatePath } from "next/cache";
 import { matchResultValue, parseMpLobby } from "./functions";
 import { withinRange } from "@/helpers/rating-range";
-import { getCurrentPack } from "@/helpers/currentPack";
+import { getCurrentPack, getMaplist } from "@/helpers/currentPack";
 import { SimpleMod } from "@/types/rating";
 import { DbPlayer, ModeInfo, PvEMatchHistory } from "@/types/database.player";
 import { Client, GameMode } from "osu-web.js";
@@ -127,21 +127,25 @@ export async function submitPve(formData: FormData) {
          history
       };
    });
-   const maplist = await mapsDb
-      .find({ $or: maps })
-      .map<{ map: DbBeatmap; ratings: Partial<Record<SimpleMod, Player>> }>(map => ({ map, ratings: {} }))
-      .toArray();
-   // Get map info for any maps not in the database
-   const missing = maps.filter(
-      m => !maplist.find(exist => exist.map.id === m.id && exist.map.mode === m.mode)
-   );
-   console.log("missing", missing);
-   if (missing.length > 0)
-      maplist.push(
-         ...(await addMapsToDatabase(await getOsuToken(), missing).then(dblist =>
-            dblist.map(dbmap => ({ map: dbmap, ratings: {} }))
-         ))
-      );
+   const maplist = (await getMaplist(maps)).map(map => ({
+      map,
+      ratings: {} as Partial<Record<SimpleMod, Player>>
+   }));
+   // await mapsDb
+   //    .find({ $or: maps })
+   //    .map<{ map: DbBeatmap; ratings: Partial<Record<SimpleMod, Player>> }>(map => ({ map, ratings: {} }))
+   //    .toArray();
+   // // Get map info for any maps not in the database
+   // const missing = maps.filter(
+   //    m => !maplist.find(exist => exist.map.id === m.id && exist.map.mode === m.mode)
+   // );
+   // console.log("missing", missing);
+   // if (missing.length > 0)
+   //    maplist.push(
+   //       ...(await addMapsToDatabase(await getOsuToken(), missing).then(dblist =>
+   //          dblist.map(dbmap => ({ map: dbmap, ratings: {} }))
+   //       ))
+   //    );
 
    // Create matches for all scores and prep the player's history
    Object.keys(matches).forEach(playerIdStr => {

@@ -4,7 +4,7 @@ import { Button, Form, FormControl } from "react-bootstrap";
 import { getOpponentMappool, submitPvp } from "./actions";
 import { serverActionToast } from "@/toaster";
 
-export default function AddPvPSession({ playerid }) {
+export default function AddPvPSession({ playerid }: { playerid: number }) {
    return (
       <div className="d-flex flex-column align-items-end gap-1 ms-auto">
          <Form action={formData => getOpponentMappool(playerid, formData)} className="d-flex gap-1 mb-auto">
