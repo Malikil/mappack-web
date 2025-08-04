@@ -12,13 +12,14 @@ export default async function Admin() {
    if (!session) redirect("/");
 
    return (
-      <div>
-         <div className="d-flex gap-3 flex-wrap mb-2">
+      <div className="d-flex flex-column gap-2">
+         <div className="d-flex gap-3 flex-wrap">
             <AdminActions />
             <AddAttack />
             <CustomPool />
          </div>
-         <DifficultyChart />
+         <DifficultyChart chartVersion='scaling' />
+         <DifficultyChart chartVersion='recent' />
          {checkExpiry(session.accessToken) && <AdminNotify />}
       </div>
    );

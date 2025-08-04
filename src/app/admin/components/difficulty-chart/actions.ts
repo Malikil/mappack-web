@@ -1,15 +1,14 @@
 "use server";
 
-import { playersDb } from "@/app/api/db/connection";
+import { mappacksDb, playersDb } from "@/app/api/db/connection";
 import { auth } from "@/auth";
 import { mapsDb } from "@/app/api/db/connection";
 import { DbBeatmap } from "@/types/database.beatmap";
+import { GameMode } from "osu-web.js";
 //import { getCurrentPack } from "@/helpers/currentPack";
 
-export async function fetchScatterData() {
-   const session = await auth();
-   const mode = session ? (await playersDb.findOne({ osuid: session.user.id })).gamemode || "osu" : "osu";
-   const maps = mapsDb.aggregate<DbBeatmap & { rdSum: number }>([
+function scalingsData(mode: GameMode) {
+   return mapsDb.aggregate<DbBeatmap & { rdSum: number }>([
       { $match: { mode } },
       {
          $addFields: {
@@ -17,9 +16,37 @@ export async function fetchScatterData() {
          }
       },
       { $match: { rdSum: { $lt: 400 } } },
-      { $sort: { rdSum: 1 } }
-      //{ $limit: 1000 }
+      { $sort: { rdSum: 1 } },
+      { $limit: 1000 }
    ]);
+}
+function recentPackData(mode: GameMode) {
+   return mappacksDb.aggregate<DbBeatmap>([
+      { $match: { mode, active: "fresh" } },
+      {
+         $lookup: {
+            from: "maps",
+            localField: "maps",
+            foreignField: "id",
+            pipeline: [{ $match: { mode } }],
+            as: "maps"
+         }
+      },
+      {
+         $project: {
+            _id: 0,
+            maps: 1
+         }
+      },
+      { $unwind: "$maps" },
+      { $replaceRoot: { newRoot: "$maps" } }
+   ]);
+}
+
+export async function fetchScatterData(type: "scaling" | "recent") {
+   const session = await auth();
+   const mode = session ? (await playersDb.findOne({ osuid: session.user.id })).gamemode || "osu" : "osu";
+   const maps = type === "recent" ? recentPackData(mode) : scalingsData(mode);
    const modRatios = {
       hd: 0,
       hr: 0,
