@@ -7,51 +7,59 @@ import { DbMappack } from "@/types/database.mappack";
 import { batchArray } from "./list-splitter";
 import { Rating } from "@/types/rating";
 
-const INIT_MAP_RD = 100;
+const INIT_MAP_RD = 125;
 const INIT_MAP_VOL = 0.06;
-const clamp = (n: number, max: number, min: number) => Math.max(min, Math.min(n, max));
+const RATING_MIN = 500;
+const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(n, max));
 
 async function getPreviousMapScalings(mode: GameMode) {
    console.log("Get previous map scalings");
-   const maplist = mappacksDb.aggregate<Omit<DbMappack, "maps"> & { maps: DbBeatmap[] }>([
+   const maplist = mapsDb.aggregate<DbBeatmap & { rdSum: number }>([
       { $match: { mode } },
       {
-         $lookup: {
-            from: "maps",
-            localField: "maps",
-            foreignField: "id",
-            pipeline: [{ $match: { mode } }],
-            as: "maps"
+         $addFields: {
+            rdSum: { $add: ["$ratings.nm.rd", "$ratings.hd.rd", "$ratings.hr.rd", "$ratings.dt.rd"] }
          }
-      }
+      },
+      { $match: { rdSum: { $lt: 400 } } },
+      { $sort: { rdSum: 1 } },
+      { $limit: 1000 }
    ]);
+   // const maplist = mappacksDb.aggregate<Omit<DbMappack, "maps"> & { maps: DbBeatmap[] }>([
+   //    { $match: { mode } },
+   //    {
+   //       $lookup: {
+   //          from: "maps",
+   //          localField: "maps",
+   //          foreignField: "id",
+   //          pipeline: [{ $match: { mode } }],
+   //          as: "maps"
+   //       }
+   //    }
+   // ]);
    const datasets = { x: [] as number[][], y: [] as number[][] };
-   const meta = {
-      max: 1500,
-      min: 1500
-   };
-   for await (const pool of maplist) {
-      pool.maps.forEach(map => {
-         const { nm, hd, hr, dt } = map.ratings;
-         // Update the max and min
-         for (const rating of Object.values<Rating>(map.ratings)) {
-            meta.max = Math.max(meta.max, rating.rating + rating.rd * 2);
-            meta.min = Math.min(meta.min, Math.max(rating.rating - rating.rd * 2, rating.rd));
-         }
-         datasets.x.push([
-            map.stars,
-            map.length,
-            map.bpm,
-            map.ar,
-            map.cs,
-            map.noteCount.circles,
-            map.noteCount.sliders,
-            map.maxCombo
-         ]);
-         datasets.y.push([nm.rating, hd.rating, hr.rating, dt.rating]);
-      });
+   const meta = { max: 1500 };
+   for await (const map of maplist) {
+      //pool.maps.forEach(map => {
+      const { nm, hd, hr, dt } = map.ratings;
+      // Update the max and min
+      for (const rating of Object.values<Rating>(map.ratings)) {
+         meta.max = Math.max(meta.max, rating.rating + rating.rd * 2);
+      }
+      datasets.x.push([
+         map.stars,
+         map.length,
+         map.bpm,
+         map.ar,
+         map.cs,
+         map.noteCount.circles,
+         map.noteCount.sliders,
+         map.maxCombo
+      ]);
+      datasets.y.push([nm.rating, hd.rating, hr.rating, dt.rating]);
+      //});
    }
-   const polyReg: PolynomialRegressor & { meta?: { max: number; min: number } } = new PolynomialRegressor(1);
+   const polyReg: PolynomialRegressor & { meta?: { max: number } } = new PolynomialRegressor(1);
    polyReg.fit(datasets.x, datasets.y);
    polyReg.meta = meta;
    return polyReg;
@@ -62,9 +70,9 @@ function prepBeatmapData(
       max_combo: number;
       beatmapset: Beatmapset;
    },
-   predictor: PolynomialRegressor & { meta?: { max: number; min: number } }
+   predictor: PolynomialRegressor & { meta?: { max: number } }
 ): DbBeatmap {
-   const { max, min } = predictor.meta;
+   const { max } = predictor.meta;
    const [[nm, hd, hr, dt]] = predictor.predict([
       [
          osuBeatmap.difficulty_rating,
@@ -98,22 +106,22 @@ function prepBeatmapData(
       },
       ratings: {
          nm: {
-            rating: clamp(nm, max, min),
+            rating: clamp(nm, RATING_MIN, max),
             rd: INIT_MAP_RD,
             vol: INIT_MAP_VOL
          },
          hd: {
-            rating: clamp(hd, max, min),
+            rating: clamp(hd, RATING_MIN, max),
             rd: INIT_MAP_RD,
             vol: INIT_MAP_VOL
          },
          hr: {
-            rating: clamp(hr, max, min),
+            rating: clamp(hr, RATING_MIN, max),
             rd: INIT_MAP_RD,
             vol: INIT_MAP_VOL
          },
          dt: {
-            rating: clamp(dt, max, min),
+            rating: clamp(dt, RATING_MIN, max),
             rd: INIT_MAP_RD,
             vol: INIT_MAP_VOL
          }
