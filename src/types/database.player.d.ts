@@ -63,3 +63,11 @@ export interface DbPlayer extends Record<GameMode, ModeInfo> {
    hideLeaderboard?: boolean;
    gamemode?: GameMode;
 }
+
+type WithRank<T extends Rating> = T & { rank?: number };
+type RankedPlayer<T extends DbPlayer, K extends GameMode> = Omit<T, K> & {
+   [P in K]: T[P] & {
+      pvp?: WithRank<T[P]["pvp"]>;
+      pve: WithRank<T[P]["pve"]>;
+   };
+};

@@ -2,7 +2,7 @@ import { Card, CardBody, CardHeader, CardTitle } from "react-bootstrap";
 import ComponentInfoRows from "../ComponentInfoRows";
 import MatchHistoryItem from "./MatchHistoryItem";
 import AddPvPSession from "./AddPvpSession";
-import { PvPInfo } from "@/types/database.player";
+import { PvPInfo, WithRank } from "@/types/database.player";
 import { GameMode } from "osu-web.js";
 
 export default function PvPResultsCard({
@@ -11,11 +11,12 @@ export default function PvPResultsCard({
    mode,
    allowSubmit
 }: {
-   pvpStats: PvPInfo;
+   pvpStats: WithRank<PvPInfo>;
    playerid: number;
    mode: GameMode;
    allowSubmit?: boolean;
 }) {
+   const provisional = pvpStats.wins < 3 && pvpStats.losses <= 3;
    return (
       <Card>
          <CardHeader>Vs. Players</CardHeader>
@@ -26,12 +27,13 @@ export default function PvPResultsCard({
                      [
                         "Rating",
                         pvpStats.rating.toFixed(0),
-                        pvpStats.wins < 3 && pvpStats.losses < 3 && "Provisional",
+                        provisional && "Provisional",
                         `(rd: ${pvpStats.rd.toFixed(0)})`
                      ],
                      ["Wins", pvpStats.wins],
-                     ["Losses", pvpStats.losses]
-                  ]}
+                     ["Losses", pvpStats.losses],
+                     provisional ? null : ["Rank", `#${pvpStats.rank}`]
+                  ].filter(v => v)}
                />
                <AddPvPSession playerid={playerid} allowSubmit={allowSubmit} />
             </div>

@@ -13,7 +13,7 @@ export default function AddPvPSession({
 }) {
    return (
       <div className="d-flex flex-column align-items-end gap-1 ms-auto">
-         <Form action={formData => getOpponentMappool(playerid, formData)} className="d-flex gap-1 mb-auto">
+         <Form action={formData => getOpponentMappool(playerid, formData)} className="d-flex gap-1">
             <FormControl type="text" name="opponent" placeholder="Opponent" />
             <Button className="text-nowrap" type="submit">
                Preview Pool

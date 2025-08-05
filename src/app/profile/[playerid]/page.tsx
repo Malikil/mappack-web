@@ -7,22 +7,45 @@ import Image from "next/image";
 import { buildUrl } from "osu-web.js";
 import CreatePvpStats from "./pvp/CreatePvpStats";
 import PvPResultsCard from "./pvp/PvPResultsCard";
+import { DbPlayer, RankedPlayer } from "@/types/database.player";
 
 export default async function Profile({ params }) {
    const playerid = parseInt((await params).playerid);
    const session = await auth();
-   const player = await playersDb.findOne({
-      osuid: playerid
-      //hideLeaderboard: { $exists: false }
-   });
-   const user = playerid === session?.user.id ? player : await playersDb.findOne({ osuid: session?.user.id });
-
-   // If there's no player, or if we're trying to view a hidden player when we're not an admin
-   if (!player || (player.hideLeaderboard && !user.admin)) return redirect("/leaderboard");
+   const user = await playersDb.findOne({ osuid: session?.user.id });
    const gamemode = user?.gamemode || "osu";
 
-   const pvpStats = player[gamemode]?.pvp;
-   const pveStats = player[gamemode]?.pve;
+   const player = (
+      await playersDb
+         .aggregate<RankedPlayer<DbPlayer, typeof gamemode>>([
+            {
+               $setWindowFields: {
+                  partitionBy: {
+                     $or: [{ $gt: [`$${gamemode}.pvp.wins`, 2] }, { $gt: [`$${gamemode}.pvp.losses`, 3] }]
+                  },
+                  sortBy: { [`${gamemode}.pvp.rating`]: -1 },
+                  output: {
+                     [`${gamemode}.pvp.rank`]: { $rank: {} }
+                  }
+               }
+            },
+            {
+               $setWindowFields: {
+                  partitionBy: { $lt: [`$${gamemode}.pve.songs`, 10] },
+                  sortBy: { [`${gamemode}.pve.rating`]: -1 },
+                  output: {
+                     [`${gamemode}.pve.rank`]: { $rank: {} }
+                  }
+               }
+            },
+            { $match: { osuid: playerid } }
+         ])
+         .toArray()
+   )[0];
+   if (!player) return redirect("/leaderboard");
+
+   const pvpStats = player[gamemode].pvp;
+   const pveStats = player[gamemode].pve;
    return (
       <div className="d-flex flex-column gap-2">
          <div className="d-flex justify-content-between align-items-center px-2">
@@ -38,24 +61,30 @@ export default async function Profile({ params }) {
             </h1>
             <Image alt="Mode" src={`/mode-${gamemode}.png`} height={48} width={48} />
          </div>
-         {pvpStats ? (
+         {pvpStats?.rating ? (
             <PvPResultsCard
                pvpStats={pvpStats}
                playerid={playerid}
                mode={gamemode}
-               allowSubmit={user === player}
+               allowSubmit={user.osuid === player.osuid}
             />
          ) : (
             <Card>
                <CardHeader>Vs. Players</CardHeader>
                <CardBody className="d-flex justify-content-between align-items-center">
-                  <span>Play a match to create PvP stats{user === player && ", or click the button"}</span>
-                  {user === player && <CreatePvpStats playerid={playerid} gamemode={gamemode} />}
+                  <span>
+                     Play a match to create PvP stats{user.osuid === player.osuid && ", or click the button"}
+                  </span>
+                  {user.osuid === player.osuid && <CreatePvpStats playerid={playerid} gamemode={gamemode} />}
                </CardBody>
             </Card>
          )}
          {pveStats && (
-            <PvEResultsCard data={pveStats} osuid={user === player ? playerid : null} mode={gamemode} />
+            <PvEResultsCard
+               data={pveStats}
+               osuid={user.osuid === player.osuid ? playerid : null}
+               mode={gamemode}
+            />
          )}
       </div>
    );

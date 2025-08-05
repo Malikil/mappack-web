@@ -2,12 +2,19 @@ import { Card, CardBody, CardHeader, CardTitle } from "react-bootstrap";
 import ScoreHistoryItem from "./ScoreHistoryItem";
 import ComponentInfoRows from "../ComponentInfoRows";
 import AddPvESession from "./AddPveSession";
-import { PvEInfo } from "@/types/database.player";
+import { PvEInfo, WithRank } from "@/types/database.player";
 import { GameMode } from "osu-web.js";
 
-export default function PvEResultsCard(
-   { data, osuid, mode }: { data: PvEInfo; osuid: number; mode: GameMode }
-) {
+export default function PvEResultsCard({
+   data,
+   osuid,
+   mode
+}: {
+   data: WithRank<PvEInfo>;
+   osuid: number;
+   mode: GameMode;
+}) {
+   const provisional = data.songs < 10;
    return (
       <Card>
          <CardHeader>Score Attack</CardHeader>
@@ -15,10 +22,11 @@ export default function PvEResultsCard(
             <div className="d-flex">
                <ComponentInfoRows
                   data={[
-                     ["Rating", data.rating.toFixed(0), data.songs <= 10 && 'Provisional'],
+                     ["Rating", data.rating.toFixed(0), provisional && "Provisional"],
                      ["Deviation", data.rd.toFixed(0)],
-                     ["Games", data.games, `${data.songs} maps`]
-                  ]}
+                     ["Games", data.games, `${data.songs} maps`],
+                     provisional ? null : ["Rank", `#${data.rank}`]
+                  ].filter(v => v)}
                />
                {osuid && <AddPvESession userId={osuid} />}
             </div>
