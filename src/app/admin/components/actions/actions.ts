@@ -24,7 +24,7 @@ import { Filter, UpdateFilter, UpdateOneModel } from "mongodb";
 import { Client, GameMode, LegacyClient, LegacyMatchScore } from "osu-web.js";
 import { parseMpLobby } from "@/app/profile/[playerid]/pve/functions";
 import { SimpleMod } from "@/types/rating";
-import { Player } from "glicko2";
+import { Glicko2, Player } from "glicko2";
 
 async function getPreviousMapScalings(mode: GameMode) {
    console.log("Get previous map scalings");
@@ -53,26 +53,6 @@ async function getPreviousMapScalings(mode: GameMode) {
    return polyReg;
 }
 
-async function getPlayerRatingScalings(mode: GameMode) {
-   console.log("Get player rating scalings");
-   const osuClient = new Client(await getOsuToken());
-   const playerList = playersDb.find({ [`${mode}.pvp`]: { $exists: true } });
-   const datasets = { x: [] as number[][], y: [] as number[][] };
-   for await (const playerGroups of batchCursor(playerList)) {
-      // Get player ratings
-      const playersStats = await osuClient.users.getUsers({ query: { ids: playerGroups.map(p => p.osuid) } });
-      for (const player of playersStats) {
-         const dbPlayer = playerGroups.find(p => p.osuid === player.id);
-         datasets.x.push([Math.log(player.statistics_rulesets[mode].pp)]);
-         datasets.y.push([dbPlayer[mode].pvp.rating]);
-         console.log([player.statistics_rulesets[mode].pp, dbPlayer[mode].pvp.rating].join(", "));
-      }
-   }
-   const logReg = new PolynomialRegressor(1);
-   logReg.fit(datasets.x, datasets.y);
-   return logReg;
-}
-
 async function findMappackTag(packList: UndocumentedBeatmappackCompact[], mode: GameMode) {
    const history = (await historyDb.findOne({ _id: `${mode}Packs` })) as DbHistory & { type: "string" };
    const modeMapping = {
@@ -99,68 +79,39 @@ async function findMappackTag(packList: UndocumentedBeatmappackCompact[], mode: 
    } else return pack.tag;
 }
 
+function predictScore(player: Player, map: Player) {
+   const predictedOutcome = player.predict(map);
+   const max = 900000;
+   const min = 500000;
+   return predictedOutcome * (max - min) + min;
+}
+
 export async function debug() {
-   const maplist = mapsDb.aggregate<DbBeatmap & { rdSum: number }>([
-      { $match: { mode: "osu" } },
-      {
-         $addFields: {
-            rdSum: { $add: ["$ratings.nm.rd", "$ratings.hd.rd", "$ratings.hr.rd", "$ratings.dt.rd"] }
-         }
-      },
-      { $match: { rdSum: { $lt: 400 } } },
-      { $sort: { rdSum: 1 } },
-      { $limit: 3 }
-   ]);
-   for await (const map of maplist) console.log(map);
-   //await getPlayerRatingScalings("osu");
-   // const { matches, maps } = await parseMpLobby(118694524);
-   // const maplist = await mapsDb
-   //    .find({ $or: maps })
-   //    .map<{ map: DbBeatmap; ratings: Partial<Record<SimpleMod, Player>> }>(map => ({ map, ratings: {} }))
-   //    .toArray();
-   // // Get map info for any maps not in the database
-   // const missing = maps.filter(
-   //    m => !maplist.find(exist => exist.map.id === m.id && exist.map.mode === m.mode)
-   // );
-   // console.log("missing", missing);
-   // if (missing.length > 0)
-   //    maplist.push(
-   //       ...(await addMapsToDatabase(await getOsuToken(), missing).then(dblist =>
-   //          dblist.map(dbmap => ({ map: dbmap, ratings: {} }))
-   //       ))
-   //    );
-   // Object.keys(matches).forEach(playerIdStr => {
-   //    const matchInfo = matches[playerIdStr];
-   //    matchInfo.forEach(score => {
-   //       const mapInfo = maplist.find(m => m.map.id === score.map && m.map.mode === score.mode);
-   //       // If the map isn't in the list, ignore it
-   //       if (!mapInfo) return;
-   //       // Set the map info on the parser
-   //       score.score.setMap(mapInfo.map);
-   //       // If parsing the score fails, also skip the map
-   //       console.log(playerIdStr, mapInfo.map.title, score.score.getScore());
-   //    });
-   // });
-   // const newestPack = await mappacksDb.findOne({ mode: "taiko", active: "pending" });
-   // const result = await mapsDb.deleteMany({ mode: "taiko", id: { $in: newestPack.maps } });
-   // console.log(result);
-   // Get recent beatmap packs
-   // const packs = await client.getUndocumented<UndocumentedBeatmappackResponse>("beatmaps/packs");
-   // console.log(packs.beatmap_packs.slice(0, 3), `+ ${packs.beatmap_packs.length - 3} more`);
-   // const mappackTag = await findMappackTag(packs.beatmap_packs, "taiko");
-   // console.log(`Found mappack ${mappackTag}`);
-   // const mappack = await client.getUndocumented<UndocumentedBeatmappack>(`beatmaps/packs/${mappackTag}`);
-   // console.log(`Add mappack ${mappack.tag}`);
-   // await createMappool(
-   //    accessToken,
-   //    mappack.name,
-   //    mappack.url,
-   //    mappack.beatmapsets.map(bms => bms.id),
-   //    "taiko"
-   // );
-   // const reg = await getPlayerRatingScalings("osu");
-   // const names = ["AsheBradley", "Syaro", "pedrogc219", "Dishh", "NikoN1nja", "Omutatsu_"];
-   // const ranks = [6570, 8204, 4578, 7609, 7289, 4989];
-   // const predictions = reg.predict(ranks.map(v => [Math.log(v)]));
-   // for (let i = 0; i < names.length; i++) console.log(names[i], ranks[i], predictions[i][0]);
+   const mp = 118941892;
+   const playerid = 3208718;
+   const { matches, maps } = await parseMpLobby(mp);
+   const maplist = await mapsDb.find({ $or: maps }).toArray();
+   const player = await playersDb.findOne({ osuid: playerid });
+   const myResults = matches[playerid];
+   const calculator = new Glicko2();
+   const pcalc = calculator.makePlayer(player.fruits.pve.rating, player.fruits.pve.rd, player.fruits.pve.vol);
+   const performance = myResults
+      .map(result => {
+         const map = maplist.find(m => m.id === result.map);
+         result.score.setMap(map);
+         const modRating = map.ratings[result.mod];
+         const mapcalc = calculator.makePlayer(modRating.rating, modRating.rd, modRating.vol);
+         const predictedScore = predictScore(pcalc, mapcalc);
+         const actualScore = result.score.getScore();
+         const jointRd = Math.sqrt(
+            map.ratings[result.mod].rd * map.ratings[result.mod].rd +
+               player.fruits.pve.rd * player.fruits.pve.rd
+         );
+         // How many deviations above the predicted score?
+         const rdDiff = (actualScore - predictedScore) / jointRd;
+         return { map, result, performance: rdDiff };
+      })
+      .filter(p => p.performance > 0)
+      .sort((a, b) => b.performance - a.performance);
+   console.log(performance);
 }

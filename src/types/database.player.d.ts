@@ -7,15 +7,12 @@ export interface MatchHistoryMap {
    version: string;
 }
 
-export interface MatchHistorySong {
+export interface MatchHistoryResult {
    map: MatchHistoryMap;
-   mod: string;
+   mod: SimpleMod;
    score: number;
 }
-export interface PvEMatchHistorySong extends MatchHistorySong {
-   mod: SimpleMod;
-}
-export interface PvPMatchHistorySong extends MatchHistorySong {
+export interface PvPMatchHistoryResult extends MatchHistoryResult {
    mod: ModPool;
    opponentScore: number;
 }
@@ -24,18 +21,15 @@ export interface MatchHistory {
    mp: number;
    prevRating: number;
    ratingDiff: number;
-   songs: MatchHistorySong[];
+   songs: MatchHistoryResult[];
 }
 export interface MatchHistoryOpponent {
    id: number;
    name: string;
    rating: number;
 }
-export interface PvEMatchHistory extends MatchHistory {
-   songs: PvEMatchHistorySong[];
-}
 export interface PvPMatchHistory extends MatchHistory {
-   songs: PvPMatchHistorySong[];
+   songs: PvPMatchHistoryResult[];
    opponent: MatchHistoryOpponent;
 }
 
@@ -46,9 +40,12 @@ export interface PvPInfo extends Rating {
 }
 
 export interface PvEInfo extends Rating {
-   matches: PvEMatchHistory[];
+   matches: MatchHistory[];
    games: number;
    songs: number;
+   bestPlays: (MatchHistoryResult & {
+      player: Rating;
+   })[];
 }
 
 export interface ModeInfo {
