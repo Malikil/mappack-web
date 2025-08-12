@@ -14,6 +14,7 @@ import { addMapsToDatabase } from "@/helpers/addPool";
 import { getOsuToken } from "@/helpers/osuToken";
 import { UpdateFilter } from "mongodb";
 import { batchArray } from "@/helpers/list-splitter";
+import { delay, seconds } from "@/time";
 
 export async function generateAttack(osuid: number, mapcount = 7) {
    const player = await playersDb.findOne({ osuid });
@@ -82,13 +83,24 @@ export async function submitPve(formData: FormData) {
          osuid: { $in: playerIds }
       })
       .toArray();
+   console.log(`Found ${playerList.length} of ${playerIds.length} players`);
    // Look up anyone we don't already have
    const missingPlayers = playerIds.filter(id => !playerList.find(p => p.osuid === id));
    if (missingPlayers.length > 0) {
       const client = new Client(await getOsuToken());
       const addingUsers: DbPlayer[] = [];
+      let panic = false;
       for (const batch of batchArray(missingPlayers)) {
-         const banchoUsers = await client.users.getUsers({ query: { ids: batch } });
+         console.log(`Get ${batch.length} players from bancho`);
+         const banchoUsers = await client.users.getUsers({ query: { ids: batch } }).catch(err => {
+            console.error(err);
+            return { panic: true };
+         });
+         if ("panic" in banchoUsers) {
+            panic = true;
+            break;
+         }
+
          const ratingSet: ModeInfo = {
             pve: {
                rating: 1500,
@@ -109,12 +121,28 @@ export async function submitPve(formData: FormData) {
                mania: ratingSet
             }))
          );
+         console.log(`Done! Now ${addingUsers.length} total`);
+         if (!(addingUsers.length % 200)) {
+            const n = addingUsers.length / 200;
+            await delay(seconds(((n * (n + 1)) / 4) | 0));
+         }
       }
       // Done looking everyone up, add to db
-      const addPlayerResult = await playersDb.insertMany(addingUsers);
-      console.log(addPlayerResult);
+      if (addingUsers.length > 0) {
+         const addPlayerResult = await playersDb.insertMany(addingUsers);
+         console.log(addPlayerResult);
+      }
       // Add to the player list
       playerList.push(...addingUsers);
+
+      // Stop the function if we hit an error
+      if (panic)
+         return {
+            http: {
+               status: 500,
+               message: "Failed to fetch player information"
+            }
+         };
    }
 
    const playerCalculatorPairs = playerList.map(dbp => {
@@ -131,27 +159,16 @@ export async function submitPve(formData: FormData) {
       map,
       ratings: {} as Partial<Record<SimpleMod, Player>>
    }));
-   // await mapsDb
-   //    .find({ $or: maps })
-   //    .map<{ map: DbBeatmap; ratings: Partial<Record<SimpleMod, Player>> }>(map => ({ map, ratings: {} }))
-   //    .toArray();
-   // // Get map info for any maps not in the database
-   // const missing = maps.filter(
-   //    m => !maplist.find(exist => exist.map.id === m.id && exist.map.mode === m.mode)
-   // );
-   // console.log("missing", missing);
-   // if (missing.length > 0)
-   //    maplist.push(
-   //       ...(await addMapsToDatabase(await getOsuToken(), missing).then(dblist =>
-   //          dblist.map(dbmap => ({ map: dbmap, ratings: {} }))
-   //       ))
-   //    );
+   console.log(`Got ${maplist.length} maps`);
 
    // Create matches for all scores and prep the player's history
    Object.keys(matches).forEach(playerIdStr => {
       const playerId = parseInt(playerIdStr);
       const matchInfo = matches[playerIdStr];
       const playerInfo = playerCalculatorPairs.find(pcp => pcp.playerId === playerId);
+      // If there's no player info, we kind of need to just skip them. Situations can be investigated
+      // on a case-by-case basis if people are noticing they're missing results.
+      if (!playerInfo) return;
       matchInfo.forEach(score => {
          const mapInfo = maplist.find(m => m.map.id === score.map && m.map.mode === score.mode);
          // If the map isn't in the list, ignore it
@@ -205,6 +222,7 @@ export async function submitPve(formData: FormData) {
    });
 
    // Update matches
+   console.log(`Update results for ${calculatorResults.length} scores`);
    calculator.updateRatings(calculatorResults);
 
    // Save results to database
