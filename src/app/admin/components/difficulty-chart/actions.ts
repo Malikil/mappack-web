@@ -16,8 +16,8 @@ function scalingsData(mode: GameMode) {
          }
       },
       { $match: { rdSum: { $lt: 400 } } },
-      { $sort: { rdSum: 1 } }
-      //{ $limit: 1000 }
+      { $sort: { rdSum: 1 } },
+      { $limit: 1000 }
    ]);
 }
 function recentPackData(mode: GameMode) {

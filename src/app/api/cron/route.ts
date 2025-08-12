@@ -65,15 +65,8 @@ export async function GET(req: NextRequest) {
    const client = new Client(accessToken);
    const packs = await client.getUndocumented<UndocumentedBeatmappackResponse>("beatmaps/packs");
    console.log(packs.beatmap_packs.slice(0, 3), `+ ${packs.beatmap_packs.length - 3} more`);
-   const modesToFetch: GameMode[] = ["osu", 'taiko'];
-   // On even weeks, fetch a ctb pool. On odd weeks, duplicate the std pool into ctb
-   // Take the integer component after dividing the day-of-year by 7. That way even if the cron job
-   // was delayed enough to technically roll over to Tuesday, the even/odd is still preserved
-   const now = new Date();
-   const yearBegin = new Date(now.getFullYear(), 0, 1);
-   // On the first week of each calendar year this may result in a duplication. But that's fine
-   const alsoFruits = !!((((now.getTime() - yearBegin.getTime()) / days(7)) | 0) % 2);
-   if (!alsoFruits) modesToFetch.push("fruits");
+   // Give up with std converts. Just always fetch a ctb pool.
+   const modesToFetch: GameMode[] = ["osu", "taiko", "fruits"];
 
    await modesToFetch.reduce(
       (wait, mode) =>
@@ -89,8 +82,7 @@ export async function GET(req: NextRequest) {
                mappack.name,
                mappack.url,
                mappack.beatmapsets.map(bms => bms.id),
-               mode,
-               alsoFruits
+               mode
             );
          }),
       Promise.resolve()

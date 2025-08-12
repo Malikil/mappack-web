@@ -100,18 +100,18 @@ async function findMappackTag(packList: UndocumentedBeatmappackCompact[], mode: 
 }
 
 export async function debug() {
-   const maplist = mapsDb.aggregate<DbBeatmap & { rdSum: number }>([
-      { $match: { mode: "osu" } },
-      {
-         $addFields: {
-            rdSum: { $add: ["$ratings.nm.rd", "$ratings.hd.rd", "$ratings.hr.rd", "$ratings.dt.rd"] }
-         }
-      },
-      { $match: { rdSum: { $lt: 400 } } },
-      { $sort: { rdSum: 1 } },
-      { $limit: 3 }
-   ]);
-   for await (const map of maplist) console.log(map);
+   const accessToken = await getOsuToken();
+   const client = new Client(accessToken);
+   const mappackTag = "SC129";
+   const mappack = await client.getUndocumented<UndocumentedBeatmappack>(`beatmaps/packs/${mappackTag}`);
+   console.log(`Add mappack ${mappack.tag}`);
+   await createMappool(
+      accessToken,
+      mappack.name,
+      mappack.url,
+      mappack.beatmapsets.map(bms => bms.id),
+      "fruits"
+   );
    //await getPlayerRatingScalings("osu");
    // const { matches, maps } = await parseMpLobby(118694524);
    // const maplist = await mapsDb

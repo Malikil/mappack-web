@@ -7,7 +7,7 @@ import { DbMappack } from "@/types/database.mappack";
 import { batchArray } from "./list-splitter";
 import { Rating } from "@/types/rating";
 
-const INIT_MAP_RD = 125;
+const INIT_MAP_RD = 150;
 const INIT_MAP_VOL = 0.06;
 const RATING_MIN = 500;
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(n, max));
@@ -25,18 +25,6 @@ async function getPreviousMapScalings(mode: GameMode) {
       { $sort: { rdSum: 1 } },
       { $limit: 1000 }
    ]);
-   // const maplist = mappacksDb.aggregate<Omit<DbMappack, "maps"> & { maps: DbBeatmap[] }>([
-   //    { $match: { mode } },
-   //    {
-   //       $lookup: {
-   //          from: "maps",
-   //          localField: "maps",
-   //          foreignField: "id",
-   //          pipeline: [{ $match: { mode } }],
-   //          as: "maps"
-   //       }
-   //    }
-   // ]);
    const datasets = { x: [] as number[][], y: [] as number[][] };
    const meta = { max: 1500 };
    for await (const map of maplist) {
@@ -199,8 +187,7 @@ export async function createMappool(
    packName: string,
    download: string,
    mapsets: number[],
-   gamemode: GameMode = "osu",
-   alsoFruits: boolean = false
+   gamemode: GameMode = "osu"
 ) {
    console.log(`Create pool ${packName}`);
    // Make sure this pack hasn't been used yet
@@ -208,9 +195,6 @@ export async function createMappool(
 
    const osuClient = new Client(accessToken);
    const predictor = await getPreviousMapScalings(gamemode);
-   // Rather than fetch the latest std pack all over again when prepping ctb pools, just calc both
-   // ratings duing the std fetch
-   const ctbPredictor = gamemode === "osu" && alsoFruits && (await getPreviousMapScalings("fruits"));
 
    const maplist: DbBeatmap[] = await mapsets
       .reduce(
@@ -224,130 +208,36 @@ export async function createMappool(
                return arr.concat(
                   (
                      await Promise.all(
-                        mapset.beatmaps.map(async (bm): Promise<DbBeatmap[]> => {
+                        mapset.beatmaps.map(async (bm): Promise<DbBeatmap> => {
                            // Ignore maps from other modes
-                           // For taiko/mania, always reject other modes
-                           if (gamemode === "mania" || gamemode === "taiko") {
-                              if (bm.mode !== gamemode) return null;
+                           // For ctb, only skip mania or taiko
+                           if (gamemode === "fruits") {
+                              if (bm.mode === "mania" || bm.mode === "taiko") return null;
                            }
-                           // For ctb/std only reject taiko/mania maps
-                           else if (bm.mode === "mania" || bm.mode === "taiko") return null;
+                           // Otherwise reject if the map's mode doesn't match
+                           else if (bm.mode !== gamemode) return null;
+
+                           // If this is a converted map, get the ctb stats
+                           if (gamemode === "fruits" && bm.mode === "osu") {
+                              const ctbData = await osuClient.beatmaps
+                                 .getBeatmapAttributes(bm.id, "fruits")
+                                 .catch(err => {
+                                    console.error(bm.id, err);
+                                    return null as FruitsBeatmapDifficultyAttributes;
+                                 });
+                              bm.difficulty_rating = ctbData?.star_rating || bm.difficulty_rating;
+                              bm.mode = "fruits";
+                           }
 
                            const mapData: DbBeatmap = prepBeatmapData(
                               { ...bm, beatmapset: { ...mapset, user_id: mapset.user_id.toString() } },
                               predictor
                            );
-                           // {
-                           //    id: bm.id,
-                           //    setid: mapset.id,
-                           //    artist: mapset.artist,
-                           //    title: mapset.title,
-                           //    version: bm.version,
-                           //    mapper: mapset.creator,
-                           //    length: bm.total_length,
-                           //    bpm: bm.bpm,
-                           //    cs: bm.cs,
-                           //    ar: bm.ar,
-                           //    od: bm.accuracy,
-                           //    stars: bm.difficulty_rating,
-                           //    maxCombo: bm.max_combo,
-                           //    noteCount: {
-                           //       circles: bm.count_circles,
-                           //       sliders: bm.count_sliders
-                           //    },
-                           //    mode: bm.mode,
-                           //    ratings: null
-                           // };
                            console.log(bm.id, mapData);
-
-                           // Get the ctb difficulty if it's a converted map
-                           const altData: DbBeatmap =
-                              bm.mode === "osu" &&
-                              (alsoFruits || gamemode === "fruits") &&
-                              prepBeatmapData(
-                                 {
-                                    ...bm,
-                                    difficulty_rating:
-                                       (
-                                          await osuClient.beatmaps
-                                             .getBeatmapAttributes(bm.id, "fruits")
-                                             .catch(err => {
-                                                console.error(bm.id, err);
-                                                return null as FruitsBeatmapDifficultyAttributes;
-                                             })
-                                       )?.star_rating || bm.difficulty_rating,
-                                    beatmapset: { ...mapset, user_id: mapset.user_id.toString() }
-                                 },
-                                 ctbPredictor || predictor
-                              );
-                           // {
-                           //    ...mapData,
-                           //    stars:
-                           //       // The old star rating is acceptable if there's a network error here (for now)
-                           //       (
-                           //          await osuClient.beatmaps
-                           //             .getBeatmapAttributes(bm.id, "fruits")
-                           //             .catch(err => {
-                           //                console.error(bm.id, err);
-                           //                return null;
-                           //             })
-                           //       )?.star_rating || mapData.stars,
-                           //    mode: "fruits"
-                           // };
-                           console.log(bm.id, "altData", altData);
-
-                           // Reduce initial rd for maps, the initial rating is already based on their
-                           // stars and past experience
-                           // const ratings = predictor.predict([
-                           //       [
-                           //          mapData.stars,
-                           //          mapData.length,
-                           //          mapData.bpm,
-                           //          mapData.ar,
-                           //          mapData.cs,
-                           //          mapData.noteCount.circles,
-                           //          mapData.noteCount.sliders,
-                           //          mapData.maxCombo
-                           //       ]
-                           //    ])[0],
-                           //    vol = 0.06;
-                           // mapData.ratings = {
-                           //    nm: { rating: ratings[0], rd: INIT_MAP_RD, vol },
-                           //    hd: { rating: ratings[1], rd: INIT_MAP_RD, vol },
-                           //    hr: { rating: ratings[2], rd: INIT_MAP_RD, vol },
-                           //    dt: { rating: ratings[3], rd: INIT_MAP_RD, vol }
-                           // };
-
-                           // if (altData) {
-                           //    // If this is a converted map in a ctb pack, the original predictor needs
-                           //    // to be used instead
-                           //    const altRatings = (ctbPredictor || predictor).predict([
-                           //          [
-                           //             altData.stars,
-                           //             altData.length,
-                           //             altData.bpm,
-                           //             altData.ar,
-                           //             altData.cs,
-                           //             altData.noteCount.circles,
-                           //             altData.noteCount.sliders,
-                           //             mapData.maxCombo
-                           //          ]
-                           //       ])[0],
-                           //       vol = 0.06;
-                           //    altData.ratings = {
-                           //       nm: { rating: altRatings[0], rd: INIT_MAP_RD, vol },
-                           //       hd: { rating: altRatings[1], rd: INIT_MAP_RD, vol },
-                           //       hr: { rating: altRatings[2], rd: INIT_MAP_RD, vol },
-                           //       dt: { rating: altRatings[3], rd: INIT_MAP_RD, vol }
-                           //    };
-                           // }
-                           console.log(bm.id, mapData.ratings, altData?.ratings);
-                           return [mapData, altData];
+                           return mapData;
                         })
                      )
-                  )
-                     .flat()
-                     .filter(m => m)
+                  ).filter(m => m)
                );
             }),
          Promise.resolve<DbBeatmap[]>([])
@@ -358,63 +248,33 @@ export async function createMappool(
       });
 
    // Prepare the insert object
-   const insert: DbMappack[] = [
-      {
-         name: packName,
-         download,
-         maps: maplist.filter(m => m.mode === gamemode).map(m => m.id),
-         active: "pending",
-         mode: gamemode
-      }
-   ];
-   const history = [
-      {
-         updateOne: {
-            filter: { _id: `${gamemode}Packs` },
-            update: {
-               $push: {
-                  items: {
-                     $each: [packName],
-                     $position: 0,
-                     $slice: 50
-                  }
-               }
-            },
-            upsert: true
-         }
-      }
-   ];
-   // If this is a std pack, also insert it for ctb
-   if (gamemode === "osu" && alsoFruits) {
-      insert.push({
-         name: packName,
-         download,
-         maps: maplist.filter(m => m.mode === "fruits").map(m => m.id),
-         active: "pending",
-         mode: "fruits"
-      });
-      history.push({
-         updateOne: {
-            filter: { _id: "fruitsPacks" },
-            update: {
-               $push: {
-                  items: {
-                     $each: [packName],
-                     $position: 0,
-                     $slice: 50
-                  }
-               }
-            },
-            upsert: true
-         }
-      });
-   }
+   const insertPack: DbMappack = {
+      name: packName,
+      download,
+      maps: maplist.filter(m => m.mode === gamemode).map(m => m.id),
+      active: "pending",
+      mode: gamemode
+   };
 
    // Add to database
-   const mapsResult = await mapsDb.insertMany(maplist, { ordered: false }).catch(err => console.warn(err));
+   const mapsResult = await mapsDb.insertMany(maplist, { ordered: false }).catch(err => {
+      console.warn("Insert maps write error");
+      return { ...(err.result || {}), errs: err.writeErrors?.length };
+   });
    console.log(mapsResult);
-   const result = await mappacksDb.insertMany(insert);
-   const histResult = await historyDb.bulkWrite(history);
+   const result = await mappacksDb.insertOne(insertPack);
+   const histResult = await historyDb.updateOne(
+      { _id: `${gamemode}Packs` },
+      {
+         $push: {
+            items: {
+               $each: [packName],
+               $position: 0,
+               $slice: 50
+            }
+         }
+      }
+   );
    console.log(result, histResult);
 }
 
