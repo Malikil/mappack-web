@@ -27,7 +27,8 @@ export default async function Mappool() {
                }
             }
          },
-         { $sort: { _id: -1 } }
+         { $sort: { _id: -1 } },
+         { $limit: 250 }
       ])
       .toArray()) as {
       _id: number;
