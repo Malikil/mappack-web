@@ -59,7 +59,7 @@ export async function parseMpLobby(mp: number) {
       const results = await mpLobby.games.reduce(
          (prom, game) =>
             prom.then(async scoreAgg => {
-               if (game.end_time && game.team_type === "Head To Head") {
+               if (game.end_time && (game.team_type === "Head To Head" || game.team_type === "Team VS")) {
                   const scoreType = game.scoring_type;
                   // Add to master maplist
                   if (!(game.play_mode in maps)) maps[game.play_mode] = new Set();

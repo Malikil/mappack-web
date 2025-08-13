@@ -18,7 +18,8 @@ export default async function Leaderboard() {
       .find(
          {
             hideLeaderboard: { $ne: true },
-            [`${gamemode}.pve.songs`]: { $gt: 10 }
+            [`${gamemode}.pve.songs`]: { $gt: 10 },
+            [`${gamemode}.pve.games`]: { $gt: 1 }
          },
          { sort: [`${gamemode}.pve.rating`, -1], limit: 100 }
       )
