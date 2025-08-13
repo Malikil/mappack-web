@@ -10,7 +10,7 @@ import { Rating } from "@/types/rating";
 const INIT_MAP_RD = 150;
 const INIT_MAP_VOL = 0.06;
 const RATING_MIN = 500;
-const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(n, max));
+//const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(n, max));
 
 async function getPreviousMapScalings(mode: GameMode) {
    console.log("Get previous map scalings");
@@ -28,7 +28,6 @@ async function getPreviousMapScalings(mode: GameMode) {
    const datasets = { x: [] as number[][], y: [] as number[][] };
    const meta = { max: 1500 };
    for await (const map of maplist) {
-      //pool.maps.forEach(map => {
       const { nm, hd, hr, dt } = map.ratings;
       // Update the max and min
       for (const rating of Object.values<Rating>(map.ratings)) {
@@ -45,7 +44,6 @@ async function getPreviousMapScalings(mode: GameMode) {
          map.maxCombo
       ]);
       datasets.y.push([nm.rating, hd.rating, hr.rating, dt.rating]);
-      //});
    }
    const polyReg: PolynomialRegressor & { meta?: { max: number } } = new PolynomialRegressor(1);
    polyReg.fit(datasets.x, datasets.y);
@@ -73,6 +71,13 @@ function prepBeatmapData(
          osuBeatmap.max_combo
       ]
    ]);
+   const ratingObj = (rating: number) => {
+      if (rating > max)
+         return { rating: max, rd: rating - max + INIT_MAP_RD, vol: INIT_MAP_VOL };
+      else if (rating < RATING_MIN)
+         return { rating: RATING_MIN, rd: RATING_MIN - rating + INIT_MAP_RD, vol: INIT_MAP_VOL };
+      else return { rating, rd: INIT_MAP_RD, vol: INIT_MAP_VOL };
+   }
    const mapData: DbBeatmap = {
       id: osuBeatmap.id,
       setid: osuBeatmap.beatmapset_id,
@@ -93,26 +98,10 @@ function prepBeatmapData(
          sliders: osuBeatmap.count_sliders
       },
       ratings: {
-         nm: {
-            rating: clamp(nm, RATING_MIN, max),
-            rd: INIT_MAP_RD,
-            vol: INIT_MAP_VOL
-         },
-         hd: {
-            rating: clamp(hd, RATING_MIN, max),
-            rd: INIT_MAP_RD,
-            vol: INIT_MAP_VOL
-         },
-         hr: {
-            rating: clamp(hr, RATING_MIN, max),
-            rd: INIT_MAP_RD,
-            vol: INIT_MAP_VOL
-         },
-         dt: {
-            rating: clamp(dt, RATING_MIN, max),
-            rd: INIT_MAP_RD,
-            vol: INIT_MAP_VOL
-         }
+         nm: ratingObj(nm),
+         hd: ratingObj(hd),
+         hr: ratingObj(hr),
+         dt: ratingObj(dt)
       }
    };
    // If the map is unranked, include dates to re-query later
