@@ -7,7 +7,6 @@ import { addMapsToDatabase, createMappool, cyclePools } from "@/helpers/addPool"
 import { getCurrentPack } from "@/helpers/currentPack";
 import { batchArray, batchCursor } from "@/helpers/list-splitter";
 import { getOsuToken } from "@/helpers/osuToken";
-import { convertPP } from "@/helpers/rankPredictor";
 import { ScoreParser } from "@/helpers/scorev1";
 import { delay } from "@/time";
 import { DbBeatmap } from "@/types/database.beatmap";
