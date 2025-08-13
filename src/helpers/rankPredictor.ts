@@ -8,7 +8,10 @@ const PP_EQUIVALENT = {
    mania: 7456 // 4 key
 };
 
-export function convertPP(pp: number, mode: GameMode = "osu") {
+/**
+ * @deprecated Just start everyone at 1500
+ */
+function convertPP(pp: number, mode: GameMode = "osu") {
    const ppmod = PP_EQUIVALENT[mode];
    // Below 1000 PP, rating == pp
    if (pp < 1000) return pp;

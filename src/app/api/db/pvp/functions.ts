@@ -2,7 +2,6 @@ import { Glicko2, Player } from "glicko2";
 import { GameMode, LegacyClient } from "osu-web.js";
 import { mapsDb, playersDb } from "../connection";
 import { matchResultValue } from "@/app/profile/[playerid]/pve/functions";
-import { convertPP } from "@/helpers/rankPredictor";
 import { FreemodSelection, MpLobbyResults, SongResultMap } from "@/types/multiplayer";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { SimpleMod } from "@/types/rating";
@@ -17,8 +16,8 @@ export async function createPvpRegistration(osuid: number, ppRaw: number, mode: 
       {
          $set: {
             [`${mode}.pvp`]: {
-               rating: convertPP(ppRaw, mode),
-               rd: 175,
+               rating: 1500,
+               rd: 350,
                vol: 0.06,
                matches: [],
                wins: 0,

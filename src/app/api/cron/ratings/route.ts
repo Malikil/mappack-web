@@ -3,7 +3,6 @@ import { Client, GameMode } from "osu-web.js";
 import { playersDb } from "../../db/connection";
 import { AnyBulkWriteOperation, FindCursor, UpdateFilter } from "mongodb";
 import { DbPlayer } from "@/types/database.player";
-import { convertPP } from "@/helpers/rankPredictor";
 
 async function getOsuToken() {
    console.log("Get osu token");
@@ -71,8 +70,7 @@ export async function GET(req: NextRequest) {
                   update.$set = {
                      ...update.$set,
                      [`${mode}.pvp.rd`]: Math.min(player[mode].pvp.rd * 1.05, 200),
-                     [`${mode}.pvp.rating`]:
-                        (player[mode].pvp.rating * 9 + convertPP(osu.statistics_rulesets[mode].pp, mode)) / 10
+                     [`${mode}.pvp.rating`]: (player[mode].pvp.rating * 9 + 1500) / 10
                   };
             }
          });

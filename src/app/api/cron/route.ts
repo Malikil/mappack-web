@@ -2,7 +2,6 @@ import { createMappool, cyclePools } from "@/helpers/addPool";
 import { NextRequest, NextResponse } from "next/server";
 import { Client, GameMode } from "osu-web.js";
 import { historyDb } from "../db/connection";
-import { days } from "@/time";
 import {
    UndocumentedBeatmappack,
    UndocumentedBeatmappackCompact,
