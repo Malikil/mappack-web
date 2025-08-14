@@ -1,6 +1,6 @@
 import { GameMode } from "osu-web.js";
 import { BeatmapVersion } from "./mappool";
-import { Rating } from "./rating";
+import { ManiaMod, ModRatings, Rating, SimpleMod } from "./rating";
 
 export interface DbBeatmap extends BeatmapVersion {
    artist: string;
@@ -16,21 +16,23 @@ export interface DbBeatmap extends BeatmapVersion {
    matchmakingUntil?: Date;
 }
 
+export interface OsuBeatmap extends DbBeatmap {
+   ratings: ModRatings<SimpleMod>;
+}
+
 export interface CatchBeatmap extends DbBeatmap {
+   ratings: ModRatings<SimpleMod>;
    convert: boolean;
 }
 
-export interface ManiaBeatmap extends Omit<DbBeatmap, "ratings"> {
-   ratings: {
-      nm: Rating;
-      dt: Rating;
-   };
+export interface ManiaBeatmap extends DbBeatmap {
+   ratings: ModRatings<ManiaMod>;
 }
 
 export type ModeCollectionMap = {
-   osu: DbBeatmap;
-   taiko: DbBeatmap;
+   osu: OsuBeatmap;
+   taiko: OsuBeatmap;
    fruits: CatchBeatmap;
    mania: ManiaBeatmap;
 };
-export type AnyBeatmap = DbBeatmap | CatchBeatmap | ManiaBeatmap;
+export type AnyBeatmap = OsuBeatmap | CatchBeatmap | ManiaBeatmap;

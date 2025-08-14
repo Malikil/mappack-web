@@ -4,7 +4,7 @@ import averageRating from "@/helpers/average-rating";
 import { Card, CardBody, CardImg, CardSubtitle, CardTitle, Table } from "react-bootstrap";
 import interpolate from "color-interpolate";
 import { buildUrl } from "osu-web.js";
-import { DbBeatmap } from "@/types/database.beatmap";
+import { AnyBeatmap } from "@/types/database.beatmap";
 import { StarFill } from "react-bootstrap-icons";
 import Image from "next/image";
 import { auth } from "@/auth";
@@ -14,9 +14,8 @@ const palette = interpolate(["#4fc0ff", "#7cff4f", "#f6f05c", "#ff4e6f", "#c645b
 export default async function Mappool() {
    const session = await auth();
    const mode = (session && (await playersDb.findOne({ osuid: session.user.id })))?.gamemode || "osu";
-   const maps = (await mapsDb
+   const maps = (await mapsDb[mode]
       .aggregate([
-         { $match: { mode } },
          {
             $group: {
                _id: "$setid",
@@ -34,7 +33,7 @@ export default async function Mappool() {
       _id: number;
       artist: string;
       title: string;
-      maps: DbBeatmap[];
+      maps: AnyBeatmap[];
    }[];
    console.log(maps.length);
 
@@ -71,7 +70,7 @@ export default async function Mappool() {
                            .sort((a, b) => averageRating(a) - averageRating(b))
                            .map(bm => (
                               <span
-                                 key={bm.id}
+                                 key={bm._id}
                                  className="rounded"
                                  style={{
                                     backgroundColor: palette(Math.max(0, Math.min((bm.stars - 1) / 7.75, 1)))
@@ -104,7 +103,7 @@ export default async function Mappool() {
                            {mapset.maps
                               .sort((a, b) => averageRating(a) - averageRating(b))
                               .map(bmap => (
-                                 <tr key={bmap.id}>
+                                 <tr key={bmap._id}>
                                     <td>{bmap.version}</td>
                                     <td className="text-nowrap">
                                        <span>{bmap.stars.toFixed(2)}</span>

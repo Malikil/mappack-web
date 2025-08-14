@@ -6,12 +6,12 @@ import { GameMode, LegacyClient, Mod } from "osu-web.js";
  * Returns the match result to use, assuming player first then map second
  */
 export function matchResultValue(score: number, gamemode: GameMode) {
-   const min: number =
-      {
-         osu: 100000,
-         fruits: 500000,
-         taiko: 300000
-      }[gamemode] || 300000;
+   const min: number = {
+      osu: 100000,
+      fruits: 500000,
+      taiko: 300000,
+      mania: 300000
+   }[gamemode];
    const max: number = 900000;
    if (score < min) return 0;
    if (score > max) return 1;
@@ -69,7 +69,7 @@ export async function parseMpLobby(mp: number) {
                      const scoreResult = {
                         map: game.beatmap_id,
                         mod: parseSongMods(game.mods, score.enabled_mods),
-                        score: new ScoreParser(score, scoreType),
+                        score: new ScoreParser(score, scoreType, game.play_mode),
                         mode: game.play_mode
                      };
                      if (scoreResult.mod && scoreResult.score) {
@@ -82,10 +82,10 @@ export async function parseMpLobby(mp: number) {
             }),
          Promise.resolve(
             {} as {
-               [user_id: string]: {
+               [user_id: number]: {
                   map: number;
                   mod: SimpleMod;
-                  score: ScoreParser;
+                  score: ScoreParser<GameMode>;
                   mode: GameMode;
                }[];
             }
@@ -93,9 +93,7 @@ export async function parseMpLobby(mp: number) {
       );
       return {
          matches: results,
-         maps: Object.keys(maps).flatMap<{ id: number; mode: GameMode }>((mode: GameMode) =>
-            [...maps[mode].values()].map(id => ({ id, mode }))
-         )
+         maps
       };
    } catch (err) {
       console.error(err);

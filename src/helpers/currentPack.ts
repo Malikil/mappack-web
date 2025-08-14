@@ -1,49 +1,46 @@
 import { mappacksDb, mapsDb } from "@/app/api/db/connection";
-import { DbBeatmap } from "@/types/database.beatmap";
+import { AnyBeatmap, ModeCollectionMap } from "@/types/database.beatmap";
 import { DbMappack } from "@/types/database.mappack";
 import { GameMode } from "osu-web.js";
 import { addMapsToDatabase } from "./addPool";
 import { getOsuToken } from "./osuToken";
 
-export async function getMaplist(maps: { id: number; mode: GameMode }[]) {
-   const maplist: DbBeatmap[] = await mapsDb.find({ $or: maps }).toArray();
+export async function getMaplist(mode: GameMode, maps: number[]) {
+   const maplist: AnyBeatmap[] = await mapsDb[mode].find({ _id: { $in: maps } }).toArray();
    // Get map info for any maps not in the database
-   const missing = maps.filter(m => !maplist.find(exist => exist.id === m.id && exist.mode === m.mode));
+   const missing = maps.filter(m => !maplist.find(exist => exist._id === m));
    console.log("missing", missing);
-   if (missing.length > 0) maplist.push(...(await addMapsToDatabase(await getOsuToken(), missing)));
+   if (missing.length > 0) maplist.push(...(await addMapsToDatabase(await getOsuToken(), mode, missing)));
    return maplist;
 }
 
-export async function getCurrentPack(mode: GameMode = "osu") {
+export async function getCurrentPack<M extends GameMode>(mode: M) {
    const pools = await mappacksDb
-      .aggregate<Omit<DbMappack, "maps"> & { maps: DbBeatmap[] }>([
+      .aggregate<Omit<DbMappack, "maps"> & { maps: ModeCollectionMap[M][] }>([
          { $match: { mode, $or: [{ active: "fresh" }, { active: "stale" }] } },
          {
             $lookup: {
-               from: "maps",
+               from: mode,
                localField: "maps",
-               foreignField: "id",
-               pipeline: [{ $match: { mode } }, { $project: { _id: 0 } }],
+               foreignField: "_id",
                as: "maps"
             }
          }
       ])
       .toArray();
-   //const pools = await mappacksDb.find({ mode,  }).toArray();
-   const maps = ([] as DbBeatmap[]).concat(...pools.map(p => p.maps));
+   const maps = pools.flatMap(p => p.maps);
    return maps;
 }
 
-export async function getPreviousPack(mode: GameMode) {
+export async function getPreviousPack<M extends GameMode>(mode: M) {
    const pools = await mappacksDb
-      .aggregate<Omit<DbMappack, "maps"> & { maps: DbBeatmap[] }>([
+      .aggregate<Omit<DbMappack, "maps"> & { maps: ModeCollectionMap[M][] }>([
          { $match: { mode, active: "completed" } },
          {
             $lookup: {
-               from: "maps",
+               from: mode,
                localField: "maps",
-               foreignField: "id",
-               pipeline: [{ $match: { mode } }],
+               foreignField: "_id",
                as: "maps"
             }
          }

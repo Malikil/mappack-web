@@ -1,6 +1,6 @@
 import { mapsDb } from "@/app/api/db/connection";
 import ModPool from "@/components/mappool/Modpool";
-import { DbBeatmap } from "@/types/database.beatmap";
+import { AnyBeatmap, DbBeatmap } from "@/types/database.beatmap";
 import { ModPool as ModPoolType } from "@/types/rating";
 
 const MODLIST: ModPoolType[] = ["nm", "hd", "hr", "dt", "fm"];
@@ -15,10 +15,8 @@ export default async function LobbyPool({ searchParams }) {
    // Get all maps. If pools are rotated while the match is ongoing, the previous maps will still need
    // to be visible on the lobby's pool page
    const mapIds = MODLIST.flatMap(mod => parsedParams[mod] || []);
-   const maps = await mapsDb
-      .find({ $or: mapIds.map(id => ({ id, mode: stringParams.m || "osu" })) }, { projection: { _id: 0 } })
-      .toArray();
-   const maplist: Record<ModPoolType, DbBeatmap[]> = {
+   const maps: AnyBeatmap[] = await mapsDb[stringParams.m || "osu"].find({ _id: { $in: mapIds } }).toArray();
+   const maplist: Record<ModPoolType, AnyBeatmap[]> = {
       nm: [],
       hd: [],
       hr: [],
@@ -26,7 +24,7 @@ export default async function LobbyPool({ searchParams }) {
       fm: []
    };
    MODLIST.forEach(
-      mod => (maplist[mod] = parsedParams[mod]?.map(m => maps.find(p => p.id === m)).filter(m => m) || [])
+      mod => (maplist[mod] = parsedParams[mod]?.map(m => maps.find(p => p._id === m)).filter(m => m) || [])
    );
    console.log(maplist);
 

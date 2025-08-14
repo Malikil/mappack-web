@@ -1,11 +1,11 @@
 import { historyDb, mappacksDb, mapsDb } from "@/app/api/db/connection";
 import { Beatmap, Beatmapset, Client, FruitsBeatmapDifficultyAttributes, GameMode } from "osu-web.js";
 import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
-import { AnyBeatmap, CatchBeatmap, DbBeatmap, ManiaBeatmap } from "@/types/database.beatmap";
+import { AnyBeatmap, CatchBeatmap, DbBeatmap, ManiaBeatmap, OsuBeatmap } from "@/types/database.beatmap";
 import { UndocumentedBeatmapsetResponse } from "@/types/undocumented.beatmapset";
 import { DbMappack } from "@/types/database.mappack";
 import { batchArray } from "./list-splitter";
-import { ModRatings, Rating } from "@/types/rating";
+import { ModRatings, Rating, SimpleMod } from "@/types/rating";
 
 const INIT_MAP_RD = 150;
 const INIT_MAP_VOL = 0.06;
@@ -29,7 +29,7 @@ async function getPreviousMapScalings(mode: GameMode) {
    const datasets = { x: [] as number[][], y: [] as number[][] };
    const meta = { max: 1500 };
    for await (const map of maplist) {
-      const { nm, hd, hr, dt } = map.ratings as ModRatings;
+      const { nm, hd, hr, dt } = map.ratings as ModRatings<SimpleMod>;
       // Update the max and min
       for (const rating of Object.values<Rating>(map.ratings)) {
          meta.max = Math.max(meta.max, rating.rating + rating.rd * 2);
@@ -80,8 +80,8 @@ function prepBeatmapData(
          return { rating: RATING_MIN, rd: RATING_MIN - rating + INIT_MAP_RD, vol: INIT_MAP_VOL };
       else return { rating, rd: INIT_MAP_RD, vol: INIT_MAP_VOL };
    };
-   const mapData: Omit<DbBeatmap, "ratings"> = {
-      id: osuBeatmap.id,
+   const mapData: DbBeatmap = {
+      _id: osuBeatmap.id,
       setid: osuBeatmap.beatmapset_id,
       artist: osuBeatmap.beatmapset.artist,
       title: osuBeatmap.beatmapset.title,
@@ -126,7 +126,7 @@ function prepBeatmapData(
       };
       return fruitsData;
    } else {
-      const normalData: DbBeatmap = {
+      const normalData: OsuBeatmap = {
          ...mapData,
          ratings: {
             nm: ratingObj(nm),
@@ -241,7 +241,7 @@ export async function createMappool(
    const insertPack: DbMappack = {
       name: packName,
       download,
-      maps: maplist.map(m => m.id),
+      maps: maplist.map(m => m._id),
       active: "pending",
       mode: gamemode
    };

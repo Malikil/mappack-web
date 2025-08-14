@@ -7,18 +7,17 @@ import {
    DashCircle,
    PlusCircle
 } from "react-bootstrap-icons";
-import { MatchHistoryMap, PvEMatchHistory } from "@/types/database.player";
+import { PvEMatchHistory } from "@/types/database.player";
 import { mapsDb } from "@/app/api/db/connection";
-import { DbBeatmap } from "@/types/database.beatmap";
 
-export default async function ScoreHistoryItem({ match, mode }: { match: PvEMatchHistory, mode: GameMode }) {
-   const maplist = await mapsDb.find({ $or: match.songs.map(map => ({ id: map.map.id, mode })) }).toArray();
+export default async function ScoreHistoryItem({ match, mode }: { match: PvEMatchHistory; mode: GameMode }) {
+   const maplist = await mapsDb[mode].find({ _id: { $in: match.songs.map(map => map.map.id) } }).toArray();
    // Get map details
    const details = match.songs.map(songResult => {
-      const dbmap = maplist.find(map => map.id === songResult.map.id);
+      const dbmap = maplist.find(map => map._id === songResult.map.id);
       return {
          ...songResult,
-         map: (dbmap || songResult.map) as DbBeatmap | MatchHistoryMap
+         map: dbmap || { ...songResult.map, _id: songResult.map.id }
       };
    });
 
@@ -54,16 +53,8 @@ export default async function ScoreHistoryItem({ match, mode }: { match: PvEMatc
             )}
             <div className="d-flex gap-1 flex-wrap">
                {details.map((m, i) => (
-                  <Card
-                     key={i}
-                     className="flex-shrink-0 flex-grow-1"
-                     style={{ flexBasis: "140px" }}
-                  >
-                     <Link
-                        href={buildUrl.beatmap(m.map.id)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                     >
+                  <Card key={i} className="flex-shrink-0 flex-grow-1" style={{ flexBasis: "140px" }}>
+                     <Link href={buildUrl.beatmap(m.map._id)} target="_blank" rel="noopener noreferrer">
                         <CardImg
                            src={`https://assets.ppy.sh/beatmaps/${m.map.setid}/covers/cover.jpg`}
                            alt="Cover"
@@ -75,10 +66,8 @@ export default async function ScoreHistoryItem({ match, mode }: { match: PvEMatc
                         <div>{m.map.version}</div>
                         <div className="d-flex mt-auto">
                            <span>{m.mod.toUpperCase()}</span>
-                           {'ratings' in m.map && (
-                              <span className="ms-auto">
-                                 {m.map.ratings[m.mod].rating.toFixed()}
-                              </span>
+                           {"ratings" in m.map && (
+                              <span className="ms-auto">{m.map.ratings[m.mod].rating.toFixed()}</span>
                            )}
                         </div>
                      </CardBody>

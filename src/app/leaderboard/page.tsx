@@ -1,7 +1,6 @@
-import { Card, CardBody, CardHeader, CardImg, CardText, CardTitle, Table } from "react-bootstrap";
+import { Table } from "react-bootstrap";
 import { playersDb } from "../api/db/connection";
 import { buildUrl } from "osu-web.js";
-import Link from "next/link";
 import { auth } from "@/auth";
 import { Filter } from "mongodb";
 import { DbPlayer } from "@/types/database.player";

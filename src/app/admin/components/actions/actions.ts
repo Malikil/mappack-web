@@ -1,56 +1,13 @@
 "use server";
 
 import util from "util";
-import { historyDb, mappacksDb, mapsDb, playersDb } from "@/app/api/db/connection";
-import { addMatchData } from "@/app/api/db/pvp/functions";
-import { addMapsToDatabase, createMappool, cyclePools } from "@/helpers/addPool";
-import { getCurrentPack } from "@/helpers/currentPack";
-import { batchArray, batchCursor } from "@/helpers/list-splitter";
+import db, { historyDb, playersDb, taikoDb } from "@/app/api/db/connection";
+import { batchCursor } from "@/helpers/list-splitter";
 import { getOsuToken } from "@/helpers/osuToken";
-import { ScoreParser } from "@/helpers/scorev1";
-import { delay } from "@/time";
-import { DbBeatmap } from "@/types/database.beatmap";
 import { DbHistory } from "@/types/database.history";
-import { DbMappack, MappackActiveState } from "@/types/database.mappack";
-import { DbPlayer } from "@/types/database.player";
-import {
-   UndocumentedBeatmappack,
-   UndocumentedBeatmappackCompact,
-   UndocumentedBeatmappackResponse
-} from "@/types/undocumented.beatmappacks";
+import { UndocumentedBeatmappackCompact } from "@/types/undocumented.beatmappacks";
 import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
-import { Filter, UpdateFilter, UpdateOneModel } from "mongodb";
-import { Client, GameMode, LegacyClient, LegacyMatchScore } from "osu-web.js";
-import { parseMpLobby } from "@/app/profile/[playerid]/pve/functions";
-import { SimpleMod } from "@/types/rating";
-import { Player } from "glicko2";
-
-async function getPreviousMapScalings(mode: GameMode) {
-   console.log("Get previous map scalings");
-   const maplist = mappacksDb.aggregate<Omit<DbMappack, "maps"> & { maps: DbBeatmap[] }>([
-      { $match: { mode } },
-      {
-         $lookup: {
-            from: "maps",
-            localField: "maps",
-            foreignField: "id",
-            pipeline: [{ $match: { mode } }],
-            as: "maps"
-         }
-      }
-   ]);
-   const datasets = { x: [] as number[][], y: [] as number[][] };
-   for await (const pool of maplist) {
-      pool.maps.forEach(map => {
-         const { nm, hd, hr, dt } = map.ratings;
-         datasets.x.push([map.stars, map.length, map.bpm, map.ar, map.cs]);
-         datasets.y.push([nm.rating, hd.rating, hr.rating, dt.rating]);
-      });
-   }
-   const polyReg = new PolynomialRegressor(2);
-   polyReg.fit(datasets.x, datasets.y);
-   return polyReg;
-}
+import { Client, GameMode } from "osu-web.js";
 
 async function getPlayerRatingScalings(mode: GameMode) {
    console.log("Get player rating scalings");
@@ -99,16 +56,16 @@ async function findMappackTag(packList: UndocumentedBeatmappackCompact[], mode: 
 }
 
 export async function debug() {
-   const accessToken = await getOsuToken();
-   const client = new Client(accessToken);
-   const mappackTag = "SC129";
-   const mappack = await client.getUndocumented<UndocumentedBeatmappack>(`beatmaps/packs/${mappackTag}`);
-   console.log(`Add mappack ${mappack.tag}`);
-   await createMappool(
-      accessToken,
-      mappack.name,
-      mappack.url,
-      mappack.beatmapsets.map(bms => bms.id),
-      "fruits"
+   const mapsDbOld = db.collection("maps");
+   const maps = await mapsDbOld.find({ mode: "taiko" }).toArray();
+   const result = await taikoDb.insertMany(
+      maps.map(m => {
+         const doc: any = { ...m };
+         doc._id = m.id;
+         delete doc.id;
+         delete doc.mode;
+         return doc;
+      })
    );
+   console.log(result);
 }

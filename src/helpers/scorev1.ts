@@ -1,19 +1,21 @@
-import { DbBeatmap } from "@/types/database.beatmap";
-import { LegacyMatchScore, ScoringType } from "osu-web.js";
+import { ModeCollectionMap } from "@/types/database.beatmap";
+import { GameMode, LegacyMatchScore, ScoringType } from "osu-web.js";
 
-export class ScoreParser {
+export class ScoreParser<M extends GameMode> {
    #score: LegacyMatchScore;
    #scoreCache: number;
    #scoreMode: ScoringType;
-   #map: DbBeatmap;
+   #map: ModeCollectionMap[M];
+   #mode: M;
 
-   constructor(score: LegacyMatchScore, scoreType: ScoringType) {
+   constructor(score: LegacyMatchScore, scoreType: ScoringType, mode: M) {
       this.#score = score;
       this.#scoreMode = scoreType;
+      this.#mode = mode;
    }
 
    //setScore(score: LegacyMatchScore, scoreType: ScoringType) { this.#score = score; this.#scoreMode = scoreType }
-   setMap(map: DbBeatmap) {
+   setMap(map: ModeCollectionMap[M]) {
       this.#map = map;
       this.#scoreCache = 0;
    }
@@ -126,7 +128,7 @@ export class ScoreParser {
             comboCalc: (score: LegacyMatchScore, maxCombo: number) => 500000 * (score.maxcombo / maxCombo),
             missComponent: 200000
          }
-      }[this.#map.mode];
+      }[this.#mode];
 
       const accScore = accCalc(this.#score);
       const comboScore = comboCalc(this.#score, this.#map.maxCombo);

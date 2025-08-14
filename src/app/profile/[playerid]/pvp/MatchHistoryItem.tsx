@@ -11,22 +11,25 @@ import {
 } from "react-bootstrap-icons";
 import { mapsDb } from "@/app/api/db/connection";
 import { PvPMatchHistory } from "@/types/database.player";
+import { AnyBeatmap, OsuBeatmap } from "@/types/database.beatmap";
 
 export default async function MatchHistoryItem({ match, mode }: { match: PvPMatchHistory; mode: GameMode }) {
-   const maplist = await mapsDb.find({ $or: match.songs.map(map => ({ id: map.map.id, mode })) }).toArray();
+   const maplist: AnyBeatmap[] = await mapsDb[mode]
+      .find({ _id: { $in: match.songs.map(map => map.map.id) } })
+      .toArray();
    // Get map details
    const details = match.songs.map(songResult => {
-      const dbmap = maplist.find(map => map.id === songResult.map.id);
+      const dbmap = maplist.find(map => map._id === songResult.map.id) as OsuBeatmap;
       const fmIncluded = dbmap && {
          ...dbmap,
          ratings: {
             ...dbmap.ratings,
-            fm: { rating: (dbmap.ratings.hd.rating + dbmap.ratings.hr.rating) / 2 }
+            fm: { rating: (dbmap.ratings.hd?.rating + dbmap.ratings.hr?.rating) / 2 }
          }
       };
       return {
          ...songResult,
-         map: fmIncluded || songResult.map
+         map: fmIncluded || { ...songResult.map, _id: songResult.map.id }
       };
    });
 
@@ -74,7 +77,7 @@ export default async function MatchHistoryItem({ match, mode }: { match: PvPMatc
                      key={i}
                      style={{ flexBasis: "140px" }}
                   >
-                     <Link href={buildUrl.beatmap(m.map.id)} target="_blank" rel="noopener noreferrer">
+                     <Link href={buildUrl.beatmap(m.map._id)} target="_blank" rel="noopener noreferrer">
                         <CardImg
                            src={`https://assets.ppy.sh/beatmaps/${m.map.setid}/covers/cover.jpg`}
                            alt="Cover"

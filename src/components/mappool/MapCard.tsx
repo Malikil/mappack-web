@@ -13,17 +13,17 @@ import {
 } from "react-bootstrap";
 import styles from "./mappool.module.css";
 import MapCardBody from "./MapCardBody";
-import { DbBeatmap } from "@/types/database.beatmap";
+import { AnyBeatmap } from "@/types/database.beatmap";
 import { MapAction } from "@/types/mappool";
 import { Rating } from "@/types/rating";
 
 export type MapCardProps = {
-   beatmap: DbBeatmap;
+   beatmap: AnyBeatmap;
    starsPlus?: boolean;
    mapActions?: MapAction[];
    rating?: Rating;
    hideRatings?: boolean;
-}
+};
 
 export default function MapCard(props: MapCardProps) {
    return (
@@ -39,7 +39,7 @@ export default function MapCard(props: MapCardProps) {
             </CardTitle>
             <CardSubtitle className="d-flex mb-2">
                <div className="text-break">{props.beatmap.version}</div>
-               <div className="ms-auto">{props.beatmap.id}</div>
+               <div className="ms-auto">{props.beatmap._id}</div>
             </CardSubtitle>
             <Container className="mt-auto">
                <Row className="mb-2">
@@ -55,7 +55,7 @@ export default function MapCard(props: MapCardProps) {
                      action: (
                         <CardLink
                            key="Beatmap"
-                           href={`https://osu.ppy.sh/beatmapsets/${props.beatmap.setid}#osu/${props.beatmap.id}`}
+                           href={`https://osu.ppy.sh/beatmapsets/${props.beatmap.setid}#osu/${props.beatmap._id}`}
                            target="_blank"
                            rel="noopener noreferrer"
                         >

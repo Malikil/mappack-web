@@ -3,32 +3,31 @@
 import { mappacksDb, playersDb } from "@/app/api/db/connection";
 import { auth } from "@/auth";
 import { mapsDb } from "@/app/api/db/connection";
-import { DbBeatmap } from "@/types/database.beatmap";
+import { OsuBeatmap } from "@/types/database.beatmap";
 import { GameMode } from "osu-web.js";
-//import { getCurrentPack } from "@/helpers/currentPack";
 
 function scalingsData(mode: GameMode) {
-   return mapsDb.aggregate<DbBeatmap & { rdSum: number }>([
-      { $match: { mode } },
+   const adding = ["$ratings.nm.rd", "$ratings.dt.rd"];
+   if (mode !== "mania") adding.push("$ratings.hd.rd", "$ratings.hr.rd");
+   return mapsDb[mode].aggregate<OsuBeatmap & { rdSum: number }>([
       {
          $addFields: {
-            rdSum: { $add: ["$ratings.nm.rd", "$ratings.hd.rd", "$ratings.hr.rd", "$ratings.dt.rd"] }
+            rdSum: { $add: adding }
          }
       },
-      { $match: { rdSum: { $lt: 400 } } },
+      { $match: { rdSum: { $lt: mode === "mania" ? 200 : 400 } } },
       { $sort: { rdSum: 1 } },
       { $limit: 1000 }
    ]);
 }
 function recentPackData(mode: GameMode) {
-   return mappacksDb.aggregate<DbBeatmap>([
+   return mappacksDb.aggregate<OsuBeatmap>([
       { $match: { mode, active: "fresh" } },
       {
          $lookup: {
-            from: "maps",
+            from: mode,
             localField: "maps",
-            foreignField: "id",
-            pipeline: [{ $match: { mode } }],
+            foreignField: "_id",
             as: "maps"
          }
       },

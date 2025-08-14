@@ -2,7 +2,7 @@ import React from "react";
 import { ModRatings } from "./rating";
 
 export interface BeatmapVersion {
-   id: number;
+   _id: number;
    setid: number;
    version: string;
    length: number;
@@ -11,7 +11,6 @@ export interface BeatmapVersion {
    ar: number;
    od: number;
    stars: number;
-   ratings: ModRatings;
 }
 
 export interface MapAction {

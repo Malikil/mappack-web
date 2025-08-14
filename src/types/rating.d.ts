@@ -4,7 +4,8 @@ export interface Rating {
    vol: number;
 };
 
-export type SimpleMod = "nm" | "hd" | "hr" | "dt";
+export type ManiaMod = "nm" | "dt";
+export type SimpleMod = ManiaMod | "hd" | "hr";
 export type ModPool = SimpleMod | "fm";
 
-export interface ModRatings extends Record<SimpleMod, Rating> {}
+export type ModRatings<T extends ManiaMod | SimpleMod | ModPool = ManiaMod> = Record<T, Rating>;

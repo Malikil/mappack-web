@@ -10,7 +10,6 @@ import { SimpleMod } from "@/types/rating";
 import { DbPlayer, ModeInfo, PvEMatchHistory } from "@/types/database.player";
 import { Client, GameMode } from "osu-web.js";
 import { DbBeatmap } from "@/types/database.beatmap";
-import { addMapsToDatabase } from "@/helpers/addPool";
 import { getOsuToken } from "@/helpers/osuToken";
 import { UpdateFilter } from "mongodb";
 import { batchArray } from "@/helpers/list-splitter";
@@ -24,7 +23,7 @@ export async function generateAttack(osuid: number, mapcount = 7) {
    let availableMaps = packMaps
       .flatMap(map =>
          Object.keys(map.ratings).map((mod: SimpleMod) => ({
-            id: map.id,
+            id: map._id,
             setid: map.setid,
             mod,
             rating: map.ratings[mod]
@@ -155,22 +154,29 @@ export async function submitPve(formData: FormData) {
          history
       };
    });
-   const maplist = (await getMaplist(maps)).map(map => ({
-      map,
-      ratings: {} as Partial<Record<SimpleMod, Player>>
-   }));
+   const maplist = await Promise.all(
+      Object.keys(maps).map(async (mode: GameMode) =>
+         (
+            await getMaplist(mode, maps[mode].values().toArray())
+         ).map(map => ({
+            map,
+            mode,
+            ratings: {} as Partial<Record<SimpleMod, Player>>
+         }))
+      )
+   ).then(modeArr => modeArr.flat());
    console.log(`Got ${maplist.length} maps`);
 
    // Create matches for all scores and prep the player's history
    Object.keys(matches).forEach(playerIdStr => {
       const playerId = parseInt(playerIdStr);
-      const matchInfo = matches[playerIdStr];
+      const matchInfo = matches[playerId];
       const playerInfo = playerCalculatorPairs.find(pcp => pcp.playerId === playerId);
       // If there's no player info, we kind of need to just skip them. Situations can be investigated
       // on a case-by-case basis if people are noticing they're missing results.
       if (!playerInfo) return;
       matchInfo.forEach(score => {
-         const mapInfo = maplist.find(m => m.map.id === score.map && m.map.mode === score.mode);
+         const mapInfo = maplist.find(m => m.map._id === score.map && m.mode === score.mode);
          // If the map isn't in the list, ignore it
          if (!mapInfo) return;
          // Set the map info on the parser
@@ -189,7 +195,7 @@ export async function submitPve(formData: FormData) {
          // Update the history
          playerInfo.history[score.mode].songs.push({
             map: {
-               id: mapInfo.map.id,
+               id: mapInfo.map._id,
                setid: mapInfo.map.setid,
                version: mapInfo.map.version
             },
@@ -265,32 +271,35 @@ export async function submitPve(formData: FormData) {
    console.log("Players", playersDbWriteResult);
 
    // Figure out which maps to update
-   const mapsDbWriteResult = await mapsDb.bulkWrite(
-      maplist
-         .map(({ map, ratings }) => {
-            const updateFilter: UpdateFilter<DbBeatmap> = {
-               $set: {}
-            };
-            const playedMods = Object.keys(ratings) as SimpleMod[];
-            if (playedMods.length < 1) return;
-            for (const mod of playedMods) {
-               const modRating = ratings[mod];
-               updateFilter.$set[`ratings.${mod}`] = {
-                  rating: modRating.getRating(),
-                  rd: modRating.getRd(),
-                  vol: modRating.getVol()
+   for (const mode of Object.keys(maps) as GameMode[]) {
+      const filteredMaplist = maplist.filter(m => m.mode === mode);
+      const modeDbWriteResult = await mapsDb[mode].bulkWrite(
+         filteredMaplist
+            .map(({ map, ratings }) => {
+               const updateFilter: UpdateFilter<DbBeatmap> = {
+                  $set: {}
                };
-            }
-            return {
-               updateOne: {
-                  filter: { id: map.id, mode: map.mode },
-                  update: updateFilter
+               const playedMods = Object.keys(ratings) as SimpleMod[];
+               if (playedMods.length < 1) return;
+               for (const mod of playedMods) {
+                  const modRating = ratings[mod];
+                  updateFilter.$set[`ratings.${mod}`] = {
+                     rating: modRating.getRating(),
+                     rd: modRating.getRd(),
+                     vol: modRating.getVol()
+                  };
                }
-            };
-         })
-         .filter(v => v)
-   );
-   console.log("Maps", mapsDbWriteResult);
+               return {
+                  updateOne: {
+                     filter: { _id: map._id },
+                     update: updateFilter
+                  }
+               };
+            })
+            .filter(v => v)
+      );
+      console.log(`${mode} maps`, modeDbWriteResult);
+   }
 
    revalidatePath("/profile");
 }

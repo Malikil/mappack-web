@@ -205,7 +205,7 @@ export default async function Mappool() {
                                                          <div className="ms-auto">{bm.id}</div>
                                                       </CardTitle>
                                                       <MapCardBody
-                                                         beatmap={{ setid: mapset.setid, ...bm }}
+                                                         beatmap={{ setid: mapset.setid, _id: bm.id, ...bm }}
                                                          rating={playerRating}
                                                          className="mt-auto"
                                                       />

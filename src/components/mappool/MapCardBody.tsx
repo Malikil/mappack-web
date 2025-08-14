@@ -4,12 +4,12 @@ import { convertTime } from "@/time";
 import { CardLink, CardSubtitle, Col, Container, Row } from "react-bootstrap";
 import { withinRange } from "@/helpers/rating-range";
 import { BeatmapVersion } from "@/types/mappool";
-import { Rating } from "@/types/rating";
+import { ModRatings, Rating, SimpleMod } from "@/types/rating";
 import { MapAction } from "@/types/mappool";
 
 export type MapCardBodyProps = {
    className?: string;
-   beatmap: BeatmapVersion;
+   beatmap: BeatmapVersion & { ratings: Partial<ModRatings<SimpleMod>> };
    starsPlus?: boolean;
    mapActions?: MapAction[];
    rating?: Rating;
@@ -59,18 +59,20 @@ export default function MapCardBody(props: MapCardBodyProps) {
                      <Col className={withinRangeClass(props.beatmap.ratings.nm)}>
                         NM {props.beatmap.ratings.nm.rating.toFixed(0)}
                      </Col>
-                     <Col className={withinRangeClass(props.beatmap.ratings.hd)}>
-                        HD {props.beatmap.ratings.hd.rating.toFixed(0)}
-                     </Col>
-                  </Row>
-                  <Row>
-                     <Col className={withinRangeClass(props.beatmap.ratings.hr)}>
-                        HR {props.beatmap.ratings.hr.rating.toFixed(0)}
-                     </Col>
                      <Col className={withinRangeClass(props.beatmap.ratings.dt)}>
                         DT {props.beatmap.ratings.dt.rating.toFixed(0)}
                      </Col>
                   </Row>
+                  {props.beatmap.ratings.hd && (
+                     <Row>
+                        <Col className={withinRangeClass(props.beatmap.ratings.hd)}>
+                           HD {props.beatmap.ratings.hd.rating.toFixed(0)}
+                        </Col>
+                        <Col className={withinRangeClass(props.beatmap.ratings.hr)}>
+                           HR {props.beatmap.ratings.hr.rating.toFixed(0)}
+                        </Col>
+                     </Row>
+                  )}
                </Container>
             </>
          )}
