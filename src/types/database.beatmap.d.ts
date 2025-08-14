@@ -6,7 +6,6 @@ export interface DbBeatmap extends BeatmapVersion {
    artist: string;
    title: string;
    mapper: string;
-   mode?: GameMode;
    maxCombo: number;
    noteCount: {
       circles: number;
@@ -27,3 +26,11 @@ export interface ManiaBeatmap extends Omit<DbBeatmap, "ratings"> {
       dt: Rating;
    };
 }
+
+export type ModeCollectionMap = {
+   osu: DbBeatmap;
+   taiko: DbBeatmap;
+   fruits: CatchBeatmap;
+   mania: ManiaBeatmap;
+};
+export type AnyBeatmap = DbBeatmap | CatchBeatmap | ManiaBeatmap;
