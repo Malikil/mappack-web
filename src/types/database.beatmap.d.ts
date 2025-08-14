@@ -1,11 +1,12 @@
 import { GameMode } from "osu-web.js";
 import { BeatmapVersion } from "./mappool";
+import { Rating } from "./rating";
 
 export interface DbBeatmap extends BeatmapVersion {
    artist: string;
    title: string;
    mapper: string;
-   mode: GameMode;
+   mode?: GameMode;
    maxCombo: number;
    noteCount: {
       circles: number;
@@ -14,4 +15,15 @@ export interface DbBeatmap extends BeatmapVersion {
    lastUpdate?: Date;
    lastQuery?: Date;
    matchmakingUntil?: Date;
+}
+
+export interface CatchBeatmap extends DbBeatmap {
+   convert: boolean;
+}
+
+export interface ManiaBeatmap extends Omit<DbBeatmap, "ratings"> {
+   ratings: {
+      nm: Rating;
+      dt: Rating;
+   };
 }
