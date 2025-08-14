@@ -58,6 +58,18 @@ export default async function AvatarMenu() {
                         />
                      )}
                   </li>
+                  <li className="d-flex align-items-center">
+                     <GamemodeButton className="dropdown-item" mode="mania" text="Mania" />
+                     {player.gamemode === "mania" && (
+                        <Image
+                           src="/mode-mania.png"
+                           alt="mania active"
+                           height={24}
+                           width={24}
+                           className="me-2"
+                        />
+                     )}
+                  </li>
                </ul>
             </li>
          )}

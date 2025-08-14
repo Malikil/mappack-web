@@ -56,16 +56,21 @@ async function findMappackTag(packList: UndocumentedBeatmappackCompact[], mode: 
 }
 
 export async function debug() {
-   const mapsDbOld = db.collection("maps");
-   const maps = await mapsDbOld.find({ mode: "taiko" }).toArray();
-   const result = await taikoDb.insertMany(
-      maps.map(m => {
-         const doc: any = { ...m };
-         doc._id = m.id;
-         delete doc.id;
-         delete doc.mode;
-         return doc;
-      })
+   playersDb.updateMany(
+      { mania: { $exists: false } },
+      {
+         $set: {
+            mania: {
+               pve: {
+                  rating: 1500,
+                  rd: 350,
+                  vol: 0.06,
+                  games: 0,
+                  matches: [],
+                  songs: 0
+               }
+            }
+         }
+      }
    );
-   console.log(result);
 }
