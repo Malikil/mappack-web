@@ -22,7 +22,7 @@ async function getPreviousMapScalings(mode: GameMode) {
             rdSum: { $add: adding }
          }
       },
-      { $match: { rdSum: { $lt: mode === "mania" ? 200 : 400 } } },
+      { $match: { rdSum: { $lt: mode === "mania" ? 300 : 400 } } },
       { $sort: { rdSum: 1 } },
       { $limit: 1000 }
    ]);
@@ -38,13 +38,14 @@ async function getPreviousMapScalings(mode: GameMode) {
          map.stars,
          map.length,
          map.bpm,
-         map.ar,
          map.cs,
+         map.od,
          map.noteCount.circles,
          map.noteCount.sliders,
          map.maxCombo
       ];
-      if (mode === "fruits") xData.push(+(map as any).convert);
+      if (mode !== "mania") xData.push((map as OsuBeatmap | CatchBeatmap).ar);
+      if (mode === "fruits") xData.push(+(map as CatchBeatmap).convert);
       datasets.x.push(xData);
       datasets.y.push([nm.rating, hd?.rating || 0, hr?.rating || 0, dt.rating]);
    }
@@ -66,12 +67,13 @@ function prepBeatmapData(
       osuBeatmap.difficulty_rating,
       osuBeatmap.total_length,
       osuBeatmap.bpm,
-      osuBeatmap.ar,
       osuBeatmap.cs,
+      osuBeatmap.accuracy,
       osuBeatmap.count_circles,
       osuBeatmap.count_sliders,
       osuBeatmap.max_combo
    ];
+   if (osuBeatmap.mode !== "mania") predictData.push(osuBeatmap.ar);
    if (osuBeatmap.mode === "fruits") predictData.push(+osuBeatmap.convert);
    const [[nm, hd, hr, dt]] = predictor.predict([predictData]);
    const ratingObj = (rating: number) => {

@@ -30,7 +30,6 @@ function parseSongMods(lobbyMods: Mod[], scoreMods: Mod[]): SimpleMod {
             .filter(m => m !== "NF")
       )
    ];
-
    // In order for the score to be valid, only one mod should be used
    if (mods.length > 1) return null;
    if (mods.length === 0) return "nm";

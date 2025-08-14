@@ -118,15 +118,10 @@ export class ScoreParser<M extends GameMode> {
             missComponent: 0
          },
          mania: {
-            accCalc: (score: LegacyMatchScore) =>
-               300000 *
-               Math.pow(
-                  (score.count300 + score.count100 / 3 + score.count50 / 6) /
-                     (score.count300 + score.count100 + score.count50 + score.countmiss),
-                  5
-               ),
-            comboCalc: (score: LegacyMatchScore, maxCombo: number) => 500000 * (score.maxcombo / maxCombo),
-            missComponent: 200000
+            // For mania just return score v1
+            accCalc: (score: LegacyMatchScore) => score.score,
+            comboCalc: (score: LegacyMatchScore, maxCombo: number) => 0,
+            missComponent: 0
          }
       }[this.#mode];
 

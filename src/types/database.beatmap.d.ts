@@ -25,7 +25,7 @@ export interface CatchBeatmap extends DbBeatmap {
    convert: boolean;
 }
 
-export interface ManiaBeatmap extends DbBeatmap {
+export interface ManiaBeatmap extends Omit<DbBeatmap, "ar"> {
    ratings: ModRatings<ManiaMod>;
 }
 
