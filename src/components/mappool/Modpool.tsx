@@ -1,15 +1,15 @@
 import { calcModStat } from "osu-web.js";
 import MapCard from "./MapCard";
-import { AnyBeatmap } from "@/types/database.beatmap";
+import { DbBeatmap } from "@/types/database.beatmap";
 
 export default function ModPool(props: {
    mod: string;
-   maps: AnyBeatmap[];
-   modshort: 'nm' | 'hd' | 'hr' | 'dt' | 'fm';
+   maps: DbBeatmap[];
+   modshort: "nm" | "hd" | "hr" | "dt" | "fm";
    mapActions?: {
       title: string;
-      action: (map: AnyBeatmap) => any;
-      condition?: (map: AnyBeatmap) => boolean;
+      action: (map: DbBeatmap) => any;
+      condition?: (map: DbBeatmap) => boolean;
    }[];
 }) {
    const maps = props.maps.map(m => {

@@ -3,14 +3,13 @@
 import { mappacksDb, playersDb } from "@/app/api/db/connection";
 import { auth } from "@/auth";
 import { mapsDb } from "@/app/api/db/connection";
-import { AnyBeatmap, OsuBeatmap } from "@/types/database.beatmap";
+import { DbBeatmap } from "@/types/database.beatmap";
 import { GameMode } from "osu-web.js";
-import { ModRatings, SimpleMod } from "@/types/rating";
 
 function scalingsData(mode: GameMode) {
    const adding = ["$ratings.nm.rd", "$ratings.dt.rd"];
    if (mode !== "mania") adding.push("$ratings.hd.rd", "$ratings.hr.rd");
-   return mapsDb[mode].aggregate<AnyBeatmap & { rdSum: number }>([
+   return mapsDb[mode].aggregate<DbBeatmap & { rdSum: number }>([
       {
          $addFields: {
             rdSum: { $add: adding }
@@ -22,7 +21,7 @@ function scalingsData(mode: GameMode) {
    ]);
 }
 function recentPackData(mode: GameMode) {
-   return mappacksDb.aggregate<AnyBeatmap>([
+   return mappacksDb.aggregate<DbBeatmap>([
       { $match: { mode, active: "fresh" } },
       {
          $lookup: {
@@ -54,7 +53,7 @@ export async function fetchScatterData(type: "scaling" | "recent") {
    };
    const chartData = { nm: [], hd: [], hr: [], dt: [] };
    for await (const map of maps) {
-      const { nm, hd, hr, dt } = map.ratings as ModRatings<SimpleMod>;
+      const { nm, hd, hr, dt } = map.ratings;
       modRatios.hd += hd?.rating / nm.rating;
       modRatios.hr += hr?.rating / nm.rating;
       modRatios.dt += dt.rating / nm.rating;

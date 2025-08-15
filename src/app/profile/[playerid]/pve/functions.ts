@@ -90,7 +90,7 @@ export async function parseMpLobby(mp: number) {
                [user_id: number]: {
                   map: number;
                   mod: SimpleMod;
-                  score: ScoreParser<GameMode>;
+                  score: ScoreParser;
                   mode: GameMode;
                }[];
             }

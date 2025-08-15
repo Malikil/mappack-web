@@ -129,9 +129,12 @@ export async function addMatchData({
    const loserRating = loser[mode].pvp;
    console.log(winner, loser);
    // Get the played maps
-   const maplist = await getMaplist(maps.map(item => ({ id: item.map, mode })));
+   const maplist = await getMaplist(
+      mode,
+      maps.map(item => item.map)
+   );
    const playedMaps = maps.map(item => ({
-      map: maplist.find(m => m.id === item.map),
+      map: maplist.find(m => m._id === item.map),
       mod: item.mod
    }));
    console.log(playedMaps);
@@ -167,7 +170,7 @@ export async function addMatchData({
                            },
                            songs: playedMaps.map((m, i) => ({
                               map: {
-                                 id: m.map.id,
+                                 id: m.map._id,
                                  setid: m.map.setid,
                                  version: m.map.version
                               },
@@ -208,7 +211,7 @@ export async function addMatchData({
                            },
                            songs: playedMaps.map((m, i) => ({
                               map: {
-                                 id: m.map.id,
+                                 id: m.map._id,
                                  setid: m.map.setid,
                                  version: m.map.version
                               },
@@ -310,7 +313,7 @@ export async function addMatchData({
    // Update song ratings in database
    const uniqueMaps = songlistCombined.reduce(
       (unique, candidate) => {
-         let exist = unique.find(m => m.map.id === candidate.map.id);
+         let exist = unique.find(m => m.map._id === candidate.map._id);
          if (!exist) {
             exist = { map: candidate.map, mod: [] };
             unique.push(exist);
@@ -330,10 +333,10 @@ export async function addMatchData({
          }[];
       }[]
    );
-   const mapsResult = await mapsDb.bulkWrite(
+   const mapsResult = await mapsDb[mode].bulkWrite(
       uniqueMaps.map(outcome => ({
          updateOne: {
-            filter: { id: outcome.map.id, mode: outcome.map.mode },
+            filter: { _id: outcome.map._id },
             update: {
                $set: Object.fromEntries(
                   outcome.mod.map(mod => [

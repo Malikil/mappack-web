@@ -11,15 +11,15 @@ import {
 } from "react-bootstrap-icons";
 import { mapsDb } from "@/app/api/db/connection";
 import { PvPMatchHistory } from "@/types/database.player";
-import { AnyBeatmap, OsuBeatmap } from "@/types/database.beatmap";
+import { DbBeatmap } from "@/types/database.beatmap";
 
 export default async function MatchHistoryItem({ match, mode }: { match: PvPMatchHistory; mode: GameMode }) {
-   const maplist: AnyBeatmap[] = await mapsDb[mode]
+   const maplist: DbBeatmap[] = await mapsDb[mode]
       .find({ _id: { $in: match.songs.map(map => map.map.id) } })
       .toArray();
    // Get map details
    const details = match.songs.map(songResult => {
-      const dbmap = maplist.find(map => map._id === songResult.map.id) as OsuBeatmap;
+      const dbmap = maplist.find(map => map._id === songResult.map.id);
       const fmIncluded = dbmap && {
          ...dbmap,
          ratings: {

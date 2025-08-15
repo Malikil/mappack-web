@@ -8,4 +8,9 @@ export type ManiaMod = "nm" | "dt";
 export type SimpleMod = ManiaMod | "hd" | "hr";
 export type ModPool = SimpleMod | "fm";
 
-export type ModRatings<T extends ManiaMod | SimpleMod | ModPool = ManiaMod> = Record<T, Rating>;
+export type ModRatings = {
+   nm: Rating;
+   hd?: Rating;
+   hr?: Rating;
+   dt: Rating;
+};

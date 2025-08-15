@@ -3,12 +3,17 @@ import { redirect } from "next/navigation";
 import { combineRatings } from "@/helpers/rating-range";
 import { getMappool } from "@/app/api/db/mappool/functions";
 import { ModPool as ModPoolType } from "@/types/rating";
+import { GameMode } from "osu-web.js";
 
-export default async function PlayerPool({ params }) {
+export default async function PlayerPool({ params, searchParams }) {
+   const stringParams = await searchParams;
+   const mode: GameMode = ["osu", "fruits", "mania", "taiko"].includes(stringParams.m)
+      ? stringParams.m
+      : "osu";
    const playerids: number[] = (await params).playerids.map((id: string) => parseInt(id));
    if (playerids.includes(NaN)) redirect("/mappool");
 
-   const { maps: maplist, players, error } = await getMappool(playerids);
+   const { maps: maplist, players, error } = await getMappool(playerids, mode);
    if (error) redirect("/mappool");
 
    const targetRating = combineRatings(...players.map(p => p.osu.pvp));

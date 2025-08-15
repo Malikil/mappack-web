@@ -4,12 +4,12 @@ import { convertTime } from "@/time";
 import { CardLink, CardSubtitle, Col, Container, Row } from "react-bootstrap";
 import { withinRange } from "@/helpers/rating-range";
 import { BeatmapVersion } from "@/types/mappool";
-import { ModRatings, Rating, SimpleMod } from "@/types/rating";
+import { ModRatings, Rating } from "@/types/rating";
 import { MapAction } from "@/types/mappool";
 
 export type MapCardBodyProps = {
    className?: string;
-   beatmap: BeatmapVersion & { ratings: Partial<ModRatings<SimpleMod>> };
+   beatmap: BeatmapVersion & { ratings: ModRatings };
    starsPlus?: boolean;
    mapActions?: MapAction[];
    rating?: Rating;

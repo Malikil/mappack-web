@@ -4,7 +4,7 @@ import averageRating from "@/helpers/average-rating";
 import { Card, CardBody, CardImg, CardSubtitle, CardTitle, Table } from "react-bootstrap";
 import interpolate from "color-interpolate";
 import { buildUrl } from "osu-web.js";
-import { AnyBeatmap } from "@/types/database.beatmap";
+import { DbBeatmap } from "@/types/database.beatmap";
 import { StarFill } from "react-bootstrap-icons";
 import Image from "next/image";
 import { auth } from "@/auth";
@@ -33,7 +33,7 @@ export default async function Mappool() {
       _id: number;
       artist: string;
       title: string;
-      maps: AnyBeatmap[];
+      maps: DbBeatmap[];
    }[];
    console.log(maps.length);
 

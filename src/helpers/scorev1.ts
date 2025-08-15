@@ -1,21 +1,21 @@
-import { ModeCollectionMap } from "@/types/database.beatmap";
+import { DbBeatmap } from "@/types/database.beatmap";
 import { GameMode, LegacyMatchScore, ScoringType } from "osu-web.js";
 
-export class ScoreParser<M extends GameMode> {
+export class ScoreParser {
    #score: LegacyMatchScore;
    #scoreCache: number;
    #scoreMode: ScoringType;
-   #map: ModeCollectionMap[M];
-   #mode: M;
+   #map: DbBeatmap;
+   #mode: GameMode;
 
-   constructor(score: LegacyMatchScore, scoreType: ScoringType, mode: M) {
+   constructor(score: LegacyMatchScore, scoreType: ScoringType, mode: GameMode) {
       this.#score = score;
       this.#scoreMode = scoreType;
       this.#mode = mode;
    }
 
    //setScore(score: LegacyMatchScore, scoreType: ScoringType) { this.#score = score; this.#scoreMode = scoreType }
-   setMap(map: ModeCollectionMap[M]) {
+   setMap(map: DbBeatmap) {
       this.#map = map;
       this.#scoreCache = 0;
    }

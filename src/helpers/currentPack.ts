@@ -1,12 +1,12 @@
 import { mappacksDb, mapsDb } from "@/app/api/db/connection";
-import { AnyBeatmap, ModeCollectionMap } from "@/types/database.beatmap";
+import { DbBeatmap } from "@/types/database.beatmap";
 import { DbMappack } from "@/types/database.mappack";
 import { GameMode } from "osu-web.js";
 import { addMapsToDatabase } from "./addPool";
 import { getOsuToken } from "./osuToken";
 
 export async function getMaplist(mode: GameMode, maps: number[]) {
-   const maplist: AnyBeatmap[] = await mapsDb[mode].find({ _id: { $in: maps } }).toArray();
+   const maplist: DbBeatmap[] = await mapsDb[mode].find({ _id: { $in: maps } }).toArray();
    // Get map info for any maps not in the database
    const missing = maps.filter(m => !maplist.find(exist => exist._id === m));
    console.log("missing", missing);
@@ -16,7 +16,7 @@ export async function getMaplist(mode: GameMode, maps: number[]) {
 
 export async function getCurrentPack<M extends GameMode>(mode: M) {
    const pools = await mappacksDb
-      .aggregate<Omit<DbMappack, "maps"> & { maps: ModeCollectionMap[M][] }>([
+      .aggregate<Omit<DbMappack, "maps"> & { maps: DbBeatmap[] }>([
          { $match: { mode, $or: [{ active: "fresh" }, { active: "stale" }] } },
          {
             $lookup: {
@@ -32,9 +32,9 @@ export async function getCurrentPack<M extends GameMode>(mode: M) {
    return maps;
 }
 
-export async function getPreviousPack<M extends GameMode>(mode: M) {
+export async function getPreviousPack(mode: GameMode) {
    const pools = await mappacksDb
-      .aggregate<Omit<DbMappack, "maps"> & { maps: ModeCollectionMap[M][] }>([
+      .aggregate<Omit<DbMappack, "maps"> & { maps: DbBeatmap[] }>([
          { $match: { mode, active: "completed" } },
          {
             $lookup: {

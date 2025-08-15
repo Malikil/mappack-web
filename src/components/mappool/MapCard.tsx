@@ -13,12 +13,12 @@ import {
 } from "react-bootstrap";
 import styles from "./mappool.module.css";
 import MapCardBody from "./MapCardBody";
-import { AnyBeatmap } from "@/types/database.beatmap";
+import { DbBeatmap } from "@/types/database.beatmap";
 import { MapAction } from "@/types/mappool";
 import { Rating } from "@/types/rating";
 
 export type MapCardProps = {
-   beatmap: AnyBeatmap;
+   beatmap: DbBeatmap;
    starsPlus?: boolean;
    mapActions?: MapAction[];
    rating?: Rating;

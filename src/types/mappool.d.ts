@@ -8,9 +8,11 @@ export interface BeatmapVersion {
    length: number;
    bpm: number;
    cs: number;
-   ar: number;
+   ar?: number;
    od: number;
    stars: number;
+   ratings: ModRatings;
+   convert?: boolean;
 }
 
 export interface MapAction {

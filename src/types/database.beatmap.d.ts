@@ -15,24 +15,3 @@ export interface DbBeatmap extends BeatmapVersion {
    lastQuery?: Date;
    matchmakingUntil?: Date;
 }
-
-export interface OsuBeatmap extends DbBeatmap {
-   ratings: ModRatings<SimpleMod>;
-}
-
-export interface CatchBeatmap extends DbBeatmap {
-   ratings: ModRatings<SimpleMod>;
-   convert: boolean;
-}
-
-export interface ManiaBeatmap extends Omit<DbBeatmap, "ar"> {
-   ratings: ModRatings<ManiaMod>;
-}
-
-export type ModeCollectionMap = {
-   osu: OsuBeatmap;
-   taiko: OsuBeatmap;
-   fruits: CatchBeatmap;
-   mania: ManiaBeatmap;
-};
-export type AnyBeatmap = OsuBeatmap | CatchBeatmap | ManiaBeatmap;

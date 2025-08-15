@@ -1,11 +1,11 @@
 import { historyDb, mappacksDb, mapsDb } from "@/app/api/db/connection";
 import { Beatmap, Beatmapset, Client, FruitsBeatmapDifficultyAttributes, GameMode } from "osu-web.js";
 import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
-import { AnyBeatmap, CatchBeatmap, DbBeatmap, ManiaBeatmap, OsuBeatmap } from "@/types/database.beatmap";
+import { DbBeatmap } from "@/types/database.beatmap";
 import { UndocumentedBeatmapsetResponse } from "@/types/undocumented.beatmapset";
 import { DbMappack } from "@/types/database.mappack";
 import { batchArray } from "./list-splitter";
-import { ModRatings, Rating, SimpleMod } from "@/types/rating";
+import { Rating } from "@/types/rating";
 
 const INIT_MAP_RD = 150;
 const INIT_MAP_VOL = 0.06;
@@ -15,7 +15,7 @@ async function getPreviousMapScalings(mode: GameMode) {
    console.log("Get previous map scalings");
    const adding = ["$ratings.nm.rd", "$ratings.dt.rd"];
    if (mode !== "mania") adding.push("$ratings.hd.rd", "$ratings.hr.rd");
-   const maplist = mapsDb[mode].aggregate<AnyBeatmap & { rdSum: number }>([
+   const maplist = mapsDb[mode].aggregate<DbBeatmap & { rdSum: number }>([
       {
          $addFields: {
             rdSum: { $add: adding }
@@ -28,7 +28,7 @@ async function getPreviousMapScalings(mode: GameMode) {
    const datasets = { x: [] as number[][], y: [] as number[][] };
    const meta = { max: 1500 };
    for await (const map of maplist) {
-      const { nm, hd, hr, dt } = map.ratings as ModRatings<SimpleMod>;
+      const { nm, hd, hr, dt } = map.ratings;
       // Update the max and min
       for (const rating of Object.values<Rating>(map.ratings)) {
          meta.max = Math.max(meta.max, rating.rating + rating.rd * 2);
@@ -43,8 +43,8 @@ async function getPreviousMapScalings(mode: GameMode) {
          map.noteCount.sliders,
          map.maxCombo
       ];
-      if (mode !== "mania") xData.push((map as OsuBeatmap | CatchBeatmap).ar);
-      if (mode === "fruits") xData.push(+(map as CatchBeatmap).convert);
+      if (mode !== "mania") xData.push(map.ar);
+      if (mode === "fruits") xData.push(+map.convert);
       datasets.x.push(xData);
       datasets.y.push([nm.rating, hd?.rating || 0, hr?.rating || 0, dt.rating]);
    }
@@ -60,7 +60,7 @@ function prepBeatmapData(
       beatmapset: Beatmapset;
    },
    predictor: PolynomialRegressor & { meta?: { max: number } }
-): AnyBeatmap {
+): DbBeatmap {
    const { max } = predictor.meta;
    const predictData = [
       osuBeatmap.difficulty_rating,
@@ -91,13 +91,16 @@ function prepBeatmapData(
       stars: osuBeatmap.difficulty_rating,
       length: osuBeatmap.total_length,
       bpm: osuBeatmap.bpm,
-      ar: osuBeatmap.ar,
       cs: osuBeatmap.cs,
       od: osuBeatmap.accuracy,
       maxCombo: osuBeatmap.max_combo,
       noteCount: {
          circles: osuBeatmap.count_circles,
          sliders: osuBeatmap.count_sliders
+      },
+      ratings: {
+         nm: ratingObj(nm),
+         dt: ratingObj(dt)
       }
    };
    // If the map is unranked, include dates to re-query later
@@ -105,51 +108,26 @@ function prepBeatmapData(
       mapData.lastQuery = new Date();
       mapData.lastUpdate = new Date(osuBeatmap.last_updated);
    }
-   if (osuBeatmap.mode === "mania") {
-      const maniaData: ManiaBeatmap = {
-         ...mapData,
-         ratings: {
-            nm: ratingObj(nm),
-            dt: ratingObj(dt)
-         }
-      };
-      return maniaData;
-   } else if (osuBeatmap.mode === "fruits") {
-      const fruitsData: CatchBeatmap = {
-         ...mapData,
-         ratings: {
-            nm: ratingObj(nm),
-            hd: ratingObj(hd),
-            hr: ratingObj(hr),
-            dt: ratingObj(dt)
-         },
-         convert: osuBeatmap.convert
-      };
-      return fruitsData;
-   } else {
-      const normalData: OsuBeatmap = {
-         ...mapData,
-         ratings: {
-            nm: ratingObj(nm),
-            hd: ratingObj(hd),
-            hr: ratingObj(hr),
-            dt: ratingObj(dt)
-         }
-      };
-      return normalData;
+   if (osuBeatmap.mode !== "mania") {
+      mapData.ratings.hd = ratingObj(hd);
+      mapData.ratings.hr = ratingObj(hr);
+      mapData.ar = osuBeatmap.ar;
    }
+   if (osuBeatmap.mode === "fruits") mapData.convert = osuBeatmap.convert;
+
+   return mapData;
 }
 
 export async function addMapsToDatabase(
    accessToken: string,
    mode: GameMode,
    maps: number[]
-): Promise<AnyBeatmap[]> {
+): Promise<DbBeatmap[]> {
    console.log("Fetch data for beatmaps list");
    // Get the map info from osu
    const client = new Client(accessToken);
    const predictor = await getPreviousMapScalings(mode);
-   const resultList: AnyBeatmap[] = [];
+   const resultList: DbBeatmap[] = [];
    for (const sublist of batchArray(maps)) {
       const osuBeatmaps = await client.beatmaps.getBeatmaps({ query: { ids: sublist } });
       for (const osuBeatmap of osuBeatmaps) {
@@ -188,7 +166,7 @@ export async function createMappool(
    const osuClient = new Client(accessToken);
    const predictor = await getPreviousMapScalings(gamemode);
 
-   const maplist: AnyBeatmap[] = await mapsets
+   const maplist: DbBeatmap[] = await mapsets
       .reduce(
          (prom, setId) =>
             prom.then(async arr => {
@@ -200,7 +178,7 @@ export async function createMappool(
                return arr.concat(
                   (
                      await Promise.all(
-                        mapset.beatmaps.map(async (bm): Promise<AnyBeatmap> => {
+                        mapset.beatmaps.map(async (bm): Promise<DbBeatmap> => {
                            // Ignore maps from other modes
                            // For ctb, only skip mania or taiko
                            if (gamemode === "fruits") {
@@ -222,7 +200,7 @@ export async function createMappool(
                               bm.convert = true;
                            }
 
-                           const mapData: AnyBeatmap = prepBeatmapData(
+                           const mapData: DbBeatmap = prepBeatmapData(
                               { ...bm, beatmapset: { ...mapset, user_id: mapset.user_id.toString() } },
                               predictor
                            );
@@ -233,7 +211,7 @@ export async function createMappool(
                   ).filter(m => m)
                );
             }),
-         Promise.resolve<AnyBeatmap[]>([])
+         Promise.resolve<DbBeatmap[]>([])
       )
       .catch(err => {
          console.error(err);

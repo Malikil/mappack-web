@@ -3,6 +3,7 @@ import { playersDb } from "../connection";
 import { getCurrentPack } from "@/helpers/currentPack";
 import { ModPool, Rating, SimpleMod } from "@/types/rating";
 import { DbBeatmap } from "@/types/database.beatmap";
+import { GameMode } from "osu-web.js";
 
 const NM_MAPCOUNT = 4,
    HD_MAPCOUNT = 3,
@@ -10,8 +11,7 @@ const NM_MAPCOUNT = 4,
    DT_MAPCOUNT = 3,
    FM_MAPCOUNT = 3;
 
-export async function getMappool(playerIds: number[]) {
-   const mode = "osu";
+export async function getMappool(playerIds: number[], mode: GameMode) {
    const players = await playersDb
       .find({ osuid: { $in: playerIds }, [`${mode}.pvp`]: { $exists: true } })
       .toArray();

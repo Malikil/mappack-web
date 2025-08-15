@@ -1,9 +1,8 @@
-import { CatchBeatmap, ManiaBeatmap, ModeCollectionMap, OsuBeatmap } from "@/types/database.beatmap";
+import { DbBeatmap } from "@/types/database.beatmap";
 import { DbHistory } from "@/types/database.history";
 import { DbMappack } from "@/types/database.mappack";
 import { DbPlayer } from "@/types/database.player";
-import { Collection, MongoClient, ServerApiVersion } from "mongodb";
-import { GameMode } from "osu-web.js";
+import { MongoClient, ServerApiVersion } from "mongodb";
 
 console.log("Create mongo connection");
 const client = new MongoClient(process.env.MONGO_CONNECTION, {
@@ -15,11 +14,11 @@ const client = new MongoClient(process.env.MONGO_CONNECTION, {
 });
 export const db = client.db("packchallenge");
 export const mappacksDb = db.collection<DbMappack>("mappacks");
-export const osuDb = db.collection<OsuBeatmap>("osu");
-export const taikoDb = db.collection<OsuBeatmap>("taiko");
-export const fruitsDb = db.collection<CatchBeatmap>("fruits");
-export const maniaDb = db.collection<ManiaBeatmap>("mania");
-export const mapsDb: { [M in GameMode]: Collection<ModeCollectionMap[M]> } = {
+export const osuDb = db.collection<DbBeatmap>("osu");
+export const taikoDb = db.collection<DbBeatmap>("taiko");
+export const fruitsDb = db.collection<DbBeatmap>("fruits");
+export const maniaDb = db.collection<DbBeatmap>("mania");
+export const mapsDb = {
    osu: osuDb,
    taiko: taikoDb,
    fruits: fruitsDb,
