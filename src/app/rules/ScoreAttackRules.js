@@ -30,7 +30,7 @@ export default function ScoreAttackRules() {
             </li>
             <li>If you are failed at the end of a map, lose an extra 10 lives</li>
             <li>Skipping a song costs one life</li>
-            <li>The same mod won't be picked twice in a row, except NM which is unrestricted</li>
+            <li>The same mod won&apos;t be picked twice in a row, except NM which is unrestricted</li>
             <li>
                When you run out of lives, the lobby will end and your results will be submitted to the server
             </li>

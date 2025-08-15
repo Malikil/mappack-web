@@ -28,7 +28,7 @@ import { fetchScatterData } from "./actions";
                }
             });
          });
-      }, []);
+      }, [chartVersion]);
 
       return (
          <Card className="flex-grow-1">
