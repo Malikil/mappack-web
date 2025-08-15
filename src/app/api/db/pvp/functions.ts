@@ -33,7 +33,7 @@ export async function createPvpRegistration(osuid: number, ppRaw: number, mode: 
 /**
  * Returns null if an invalid 1v1 is detected
  */
-export async function parseMpLobby(link: string): Promise<MpLobbyResults> {
+export async function parseMpLobby(link: string, acceptIncomplete = false): Promise<MpLobbyResults> {
    const osuClient = new LegacyClient(process.env.OSU_LEGACY_KEY);
    const matchIdSegment = parseInt(link.slice(link.lastIndexOf("/") + 1));
    try {
@@ -41,7 +41,7 @@ export async function parseMpLobby(link: string): Promise<MpLobbyResults> {
       const mpLobby = await osuClient.getMultiplayerLobby({ mp: matchIdSegment });
       const mode = mpLobby.games[0]?.play_mode;
       // Only accept completed lobbies
-      if (!mpLobby.match.end_time) return;
+      if (!acceptIncomplete && !mpLobby.match.end_time) return;
       // Is end time an indicator of aborted matches?
       const result = mpLobby.games
          .filter(l => l.end_time)
