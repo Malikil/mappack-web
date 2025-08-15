@@ -386,18 +386,12 @@ async function submitPve(mp: number) {
 }
 
 export async function debug() {
-   const mp = 118309125;
-   const predictor = await getPreviousMapScalings("mania");
-   const client = new Client(await getOsuToken());
-   const { matches, maps } = await parseMpLobby(mp);
-   for (const mapBatch of batchArray([...maps.mania])) {
-      const maplist = await client.beatmaps.getBeatmaps({ query: { ids: mapBatch } });
-      maplist.forEach(m => {
-         if (m.mode !== "mania") return;
-         const data = prepBeatmapData(m, predictor);
-         console.log(
-            `${data.stars}, ${data.ratings.nm.rating.toFixed()}, ${data.ratings.dt.rating.toFixed()}`
-         );
-      });
-   }
+   const result = await maniaDb.updateMany({}, [
+      {
+         $set: {
+            "ratings.dt.rating": "$ratings.nm.rating"
+         }
+      }
+   ]);
+   console.log(result);
 }

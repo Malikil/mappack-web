@@ -3,6 +3,39 @@ export default function PvPRules() {
       <div>
          <h3>1v1 Matches</h3>
          <ul>
+            <li>
+               DM Commands:
+               <ul>
+                  <li>
+                     <pre className="border rounded p-1 d-inline lh-lg">!q [mode]</pre> - Join the queue. If
+                     no mode is specified &apos;osu&apos; is assumed
+                  </li>
+                  <li>
+                     <pre className="border rounded p-1 d-inline lh-lg">!unq</pre> - Leave the queue
+                  </li>
+                  <li>
+                     <pre className="border rounded p-1 d-inline lh-lg">!r</pre> - When a match is found,
+                     indicate you are ready to join the match
+                  </li>
+                  <li>
+                     <pre className="border rounded p-1 d-inline lh-lg">!invite</pre> or{" "}
+                     <pre className="border rounded p-1 d-inline lh-lg">!lobby</pre> - If you left a match in
+                     progress, send a new invite for the lobby
+                  </li>
+               </ul>
+            </li>
+            <li>
+               Lobby Commands:
+               <ul>
+                  <li>
+                     <pre className="border rounded p-1 d-inline lh-lg">!info</pre> - Send a link to the
+                     mappool, the current score/pick/ban, and a list of available maps
+                  </li>
+                  <li>
+                     <pre className="border rounded p-1 d-inline lh-lg">nm#</pre> - Pick or ban the chosen map
+                  </li>
+               </ul>
+            </li>
             <li>Supports all game modes except mania (for now)</li>
             <li>ScoreV2, BO7, 2 bans each</li>
             <li>HD or HR is required on freemod maps</li>
@@ -26,11 +59,6 @@ export default function PvPRules() {
                guaranteed to remain accurate for the duration of the match (other matches which finish may
                affect ratings and may affect what maps are picked)
             </li>
-            <li>
-               Ban maps with !ban and the mod-number eg:{" "}
-               <pre className="border rounded p-1 d-inline">!ban NM3</pre>
-            </li>
-            <li>Pick maps with !pick</li>
          </ul>
       </div>
    );

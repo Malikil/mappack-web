@@ -54,7 +54,7 @@ async function findMappackTag(packList: UndocumentedBeatmappackCompact[], mode: 
 
 // Increase this function's max duration to 30s
 // Max duration configurable is 60s without enabling fluid compute
-export const maxDuration = 30;
+export const maxDuration = 45;
 export async function GET(req: NextRequest) {
    if (req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`)
       return new NextResponse("Unauthorized", { status: 401 });
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
    const packs = await client.getUndocumented<UndocumentedBeatmappackResponse>("beatmaps/packs");
    console.log(packs.beatmap_packs.slice(0, 3), `+ ${packs.beatmap_packs.length - 3} more`);
    // Give up with std converts. Just always fetch a ctb pool.
-   const modesToFetch: GameMode[] = ["osu", "taiko", "fruits"];
+   const modesToFetch: GameMode[] = ["osu", "taiko", "fruits", "mania"];
 
    await modesToFetch.reduce(
       (wait, mode) =>

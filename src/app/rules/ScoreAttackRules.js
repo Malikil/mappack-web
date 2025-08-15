@@ -1,17 +1,39 @@
 export default function ScoreAttackRules() {
    return (
       <div>
-         <h3>Score Attack</h3>
+         <h3>Score Rush</h3>
          <ul>
-            <li>Play maps in a multiplayer lobby</li>
-            <li>Submit the mp link through your profile</li>
-            <li>Your PvE rating will be updated based on ranked/loved maps that you played in the lobby</li>
             <li>
-               If you want the system to recommend maps from the current rotation, you can click{" "}
-               <pre className="border rounded p-1 d-inline">Generate Score Attack</pre> on your profile
+               DM Commands:
+               <ul>
+                  <li>
+                     <pre className="border rounded p-1 d-inline lh-lg">!pve [mode]</pre> - Create a lobby and
+                     invite you to it. If no mode is specified &apos;osu&apos; is assumed
+                  </li>
+               </ul>
             </li>
-            <li>The mp parser will ignore maps that were not played with Head to Head</li>
-            <li>Maps played using Score v1 will use approximated scores in the history view</li>
+            <li>
+               Lobby Commands:
+               <ul>
+                  <li>
+                     <pre className="border rounded p-1 d-inline lh-lg">skip</pre> - Skip the current song and
+                     pick another one
+                  </li>
+               </ul>
+            </li>
+            <li>The system will choose maps of appropriate skill for you</li>
+            <li>
+               Start with 50 life, gain or lose lives based on your score achieved.
+               <ul>
+                  <li>Target score is higher than listed above</li>
+               </ul>
+            </li>
+            <li>If you are failed at the end of a map, lose an extra 10 lives</li>
+            <li>Skipping a song costs one life</li>
+            <li>The same mod won't be picked twice in a row, except NM which is unrestricted</li>
+            <li>
+               When you run out of lives, the lobby will end and your results will be submitted to the server
+            </li>
          </ul>
       </div>
    );
