@@ -210,7 +210,7 @@ export async function submitPveData(data: {
    const maplist = await Promise.all(
       Object.keys(maps).map(async (mode: GameMode) =>
          (
-            await getMaplist(mode, maps[mode].values().toArray())
+            await getMaplist(mode, [...maps[mode].values()])
          ).map(map => ({
             map,
             mode,
