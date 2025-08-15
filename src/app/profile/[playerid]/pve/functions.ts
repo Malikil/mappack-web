@@ -19,7 +19,7 @@ export function matchResultValue(score: number, gamemode: GameMode) {
    return (score - min) / (max - min);
 }
 
-function parseSongMods(lobbyMods: Mod[], scoreMods: Mod[]): SimpleMod {
+function parseSongMods(lobbyMods: Mod[], scoreMods: Mod[], mode: GameMode): SimpleMod {
    // When freemod is set on DT, DT will be in both arrays
    // Just take unique mods in general
    const mods = [
@@ -33,7 +33,10 @@ function parseSongMods(lobbyMods: Mod[], scoreMods: Mod[]): SimpleMod {
    // In order for the score to be valid, only one mod should be used
    if (mods.length > 1) return null;
    if (mods.length === 0) return "nm";
-   else
+   else if (mode === "mania") {
+      if (mods[0] === "DT" || mods[0] === "NC") return "dt";
+      else return "nm";
+   } else
       switch (mods[0]) {
          case "HD":
             return "hd";
@@ -67,7 +70,7 @@ export async function parseMpLobby(mp: number) {
                   for (const score of game.scores) {
                      const scoreResult = {
                         map: game.beatmap_id,
-                        mod: parseSongMods(game.mods, score.enabled_mods),
+                        mod: parseSongMods(game.mods, score.enabled_mods, game.play_mode),
                         score: new ScoreParser(score, scoreType, game.play_mode),
                         mode: game.play_mode
                      };

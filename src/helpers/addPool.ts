@@ -16,7 +16,6 @@ async function getPreviousMapScalings(mode: GameMode) {
    const adding = ["$ratings.nm.rd", "$ratings.dt.rd"];
    if (mode !== "mania") adding.push("$ratings.hd.rd", "$ratings.hr.rd");
    const maplist = mapsDb[mode].aggregate<AnyBeatmap & { rdSum: number }>([
-      { $match: { mode } },
       {
          $addFields: {
             rdSum: { $add: adding }
