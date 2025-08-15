@@ -22,12 +22,13 @@ export function matchResultValue(score: number, gamemode: GameMode) {
 function parseSongMods(lobbyMods: Mod[], scoreMods: Mod[], mode: GameMode): SimpleMod {
    // When freemod is set on DT, DT will be in both arrays
    // Just take unique mods in general
+   const ignore: Mod[] = ["NF", "MR", "FI", "SD", "PF"];
    const mods = [
       ...new Set(
          lobbyMods
             .concat(scoreMods)
             // Ignore NF
-            .filter(m => m !== "NF")
+            .filter(m => !ignore.includes(m))
       )
    ];
    // In order for the score to be valid, only one mod should be used
@@ -35,6 +36,8 @@ function parseSongMods(lobbyMods: Mod[], scoreMods: Mod[], mode: GameMode): Simp
    if (mods.length === 0) return "nm";
    else if (mode === "mania") {
       if (mods[0] === "DT" || mods[0] === "NC") return "dt";
+      // Only reject EZ and HT
+      if (mods[0] === "EZ" || mods[0] === "HT") return null;
       else return "nm";
    } else
       switch (mods[0]) {

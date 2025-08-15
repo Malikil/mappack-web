@@ -61,32 +61,6 @@ async function getPreviousMapScalings(mode: GameMode) {
    return polyReg;
 }
 
-async function findMappackTag(packList: UndocumentedBeatmappackCompact[], mode: GameMode) {
-   const history = (await historyDb.findOne({ _id: `${mode}Packs` })) as DbHistory & { type: "string" };
-   const modeMapping = {
-      osu: null,
-      taiko: 1,
-      fruits: 2,
-      mania: 3
-   };
-   // Find the latest pack first
-   const pack = packList.find(p => p.ruleset_id == modeMapping[mode]);
-   if (history.items.includes(pack.name)) {
-      // Find the highest number that's not on history
-      const numberIndex = pack.name.lastIndexOf("#");
-      let i = parseInt(pack.name.slice(numberIndex + 1)) - 1;
-      while (history.items.includes(`${pack.name.slice(0, numberIndex)}#${i}`)) i--;
-      // Construct the appropriate tag
-      const modeTag = {
-         osu: "",
-         taiko: "T",
-         fruits: "C",
-         mania: "M"
-      };
-      return `S${modeTag[mode]}${i}`;
-   } else return pack.tag;
-}
-
 const INIT_MAP_RD = 150;
 const INIT_MAP_VOL = 0.06;
 const RATING_MIN = 500;
@@ -413,54 +387,17 @@ async function submitPve(mp: number) {
 
 export async function debug() {
    const mp = 118309125;
-   const scalings = await getPreviousMapScalings("mania");
+   const predictor = await getPreviousMapScalings("mania");
    const client = new Client(await getOsuToken());
    const { matches, maps } = await parseMpLobby(mp);
-
-   for (const maplist of batchArray(Array.from(maps.mania.values()))) {
-      const maps = await client.beatmaps.getBeatmaps({ query: { ids: maplist } });
-      const predicted = maps.map(m => prepBeatmapData(m, scalings));
-      predicted.forEach(m => console.log(`${m.stars}, ${m.ratings.nm.rating.toFixed()}`));
+   for (const mapBatch of batchArray([...maps.mania])) {
+      const maplist = await client.beatmaps.getBeatmaps({ query: { ids: mapBatch } });
+      maplist.forEach(m => {
+         if (m.mode !== "mania") return;
+         const data = prepBeatmapData(m, predictor);
+         console.log(
+            `${data.stars}, ${data.ratings.nm.rating.toFixed()}, ${data.ratings.dt.rating.toFixed()}`
+         );
+      });
    }
-   // const dbMaplist: ManiaBeatmap[] = [];
-   // for (let i = 0; i < mapIds.length; i++) {
-   //    const banchoMap = maps.find(m => m.id === mapIds[i]);
-   //    if (!banchoMap) console.log(mapIds[i]);
-   //    const mapData: ManiaBeatmap = {
-   //       _id: mapIds[i],
-   //       artist: banchoMap.beatmapset.artist,
-   //       title: banchoMap.beatmapset.title,
-   //       version: banchoMap.version,
-   //       setid: banchoMap.beatmapset_id,
-   //       stars: banchoMap.difficulty_rating,
-   //       length: banchoMap.total_length,
-   //       mapper: banchoMap.beatmapset.creator,
-   //       bpm: banchoMap.bpm,
-   //       cs: banchoMap.cs,
-   //       maxCombo: banchoMap.max_combo,
-   //       od: banchoMap.accuracy,
-   //       noteCount: {
-   //          circles: banchoMap.count_circles,
-   //          sliders: banchoMap.count_sliders
-   //       },
-   //       ratings: {
-   //          nm: {
-   //             rating: scores[i].rating,
-   //             rd: scores[i].rd * 2,
-   //             vol: 0.06
-   //          },
-   //          dt: {
-   //             rating: scores[i].rating * 1.01,
-   //             rd: scores[i].rd * 3,
-   //             vol: 0.06
-   //          }
-   //       },
-   //       lastQuery: new Date(),
-   //       lastUpdate: new Date(banchoMap.last_updated)
-   //    };
-   //    dbMaplist.push(mapData);
-   // }
-   // console.log(dbMaplist);
-   // const result = await maniaDb.insertMany(dbMaplist);
-   // console.log(result);
 }

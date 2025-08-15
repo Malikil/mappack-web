@@ -156,12 +156,14 @@ export async function addMapsToDatabase(
          console.log(osuBeatmap.id, osuBeatmap.beatmapset.title);
          // If the mode is different we need to get additional attributes
          if (mode !== osuBeatmap.mode) {
+            // Don't add converts for modes other than ctb
+            if (mode !== "fruits") continue;
             const attributes = await client.beatmaps.getBeatmapAttributes(osuBeatmap.id, mode);
             osuBeatmap.difficulty_rating = attributes.star_rating;
             osuBeatmap.mode = mode;
             osuBeatmap.convert = true;
-            resultList.push(prepBeatmapData(osuBeatmap, predictor));
          }
+         resultList.push(prepBeatmapData(osuBeatmap, predictor));
       }
    }
    // Add the maplist to database. Ignore duplicates
