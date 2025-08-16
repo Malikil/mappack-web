@@ -66,23 +66,23 @@ export default async function Profile({ params }) {
                pvpStats={pvpStats}
                playerid={playerid}
                mode={gamemode}
-               allowSubmit={user.osuid === player.osuid}
+               allowSubmit={user?.osuid === player.osuid}
             />
          ) : (
             <Card>
                <CardHeader>Vs. Players</CardHeader>
                <CardBody className="d-flex justify-content-between align-items-center">
                   <span>
-                     Play a match to create PvP stats{user.osuid === player.osuid && ", or click the button"}
+                     Play a match to create PvP stats{user?.osuid === player.osuid && ", or click the button"}
                   </span>
-                  {user.osuid === player.osuid && <CreatePvpStats playerid={playerid} gamemode={gamemode} />}
+                  {user?.osuid === player.osuid && <CreatePvpStats playerid={playerid} gamemode={gamemode} />}
                </CardBody>
             </Card>
          )}
          {pveStats && (
             <PvEResultsCard
                data={pveStats}
-               osuid={user.osuid === player.osuid ? playerid : null}
+               osuid={user?.osuid === player.osuid ? playerid : null}
                mode={gamemode}
             />
          )}
