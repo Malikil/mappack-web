@@ -31,7 +31,9 @@ export default async function Profile({ params }) {
             },
             {
                $setWindowFields: {
-                  partitionBy: { $lt: [`$${gamemode}.pve.songs`, 10] },
+                  partitionBy: {
+                     $and: [{ $gt: [`$${gamemode}.pve.songs`, 10] }, { $gt: [`$${gamemode}.pve.games`, 1] }]
+                  },
                   sortBy: { [`${gamemode}.pve.rating`]: -1 },
                   output: {
                      [`${gamemode}.pve.rank`]: { $rank: {} }

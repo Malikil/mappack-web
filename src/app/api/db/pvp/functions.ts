@@ -33,20 +33,23 @@ export async function createPvpRegistration(osuid: number, ppRaw: number, mode: 
 /**
  * Returns null if an invalid 1v1 is detected
  */
-export async function parseMpLobby(link: string, acceptIncomplete = false): Promise<MpLobbyResults> {
+export async function parseMpLobby(
+   mp: number,
+   warmups = 0,
+   acceptIncomplete = false
+): Promise<MpLobbyResults> {
    const osuClient = new LegacyClient(process.env.OSU_LEGACY_KEY);
-   const matchIdSegment = parseInt(link.slice(link.lastIndexOf("/") + 1));
    try {
-      console.log(`Fetch multiplayer lobby ${matchIdSegment}`);
-      const mpLobby = await osuClient.getMultiplayerLobby({ mp: matchIdSegment });
-      const mode = mpLobby.games[0]?.play_mode;
+      console.log(`Fetch multiplayer lobby ${mp}`);
+      const mpLobby = await osuClient.getMultiplayerLobby({ mp });
+      const mode = mpLobby.games[warmups]?.play_mode;
       // Only accept completed lobbies
       if (!acceptIncomplete && !mpLobby.match.end_time) return;
       // Is end time an indicator of aborted matches?
       const result = mpLobby.games
          .filter(l => l.end_time)
          .reduce(
-            (agg, game) => {
+            (agg, game, i) => {
                // For now only accept score v2 songs
                if (game.scoring_type !== "Score V2") return agg;
                // For now, if the gamemode is changed panic
@@ -63,6 +66,7 @@ export async function parseMpLobby(link: string, acceptIncomplete = false): Prom
                   map: game.beatmap_id,
                   mod: mod as SimpleMod | "fm"
                });
+               console.log(`${mp} - ${game.beatmap_id} +${mod}`);
                game.scores.forEach(score => {
                   // Will HD always be first?
                   const scoreMod = score.enabled_mods
@@ -75,11 +79,13 @@ export async function parseMpLobby(link: string, acceptIncomplete = false): Prom
                      mod: ["hd", "hr", "hdhr"].includes(scoreMod) ? (scoreMod as FreemodSelection) : null
                   });
                });
-               // Find the song winner
-               const winner = game.scores.sort((a, b) => b.score - a.score)[0].user_id;
-               agg.resultScore[winner] = (agg.resultScore[winner] || 0) + 1;
-               // Make sure the loser is still counted
-               agg.resultScore[game.scores[1].user_id] = agg.resultScore[game.scores[1].user_id] || 0;
+               if (i >= warmups) {
+                  // Find the song winner
+                  const winner = game.scores.sort((a, b) => b.score - a.score)[0].user_id;
+                  agg.resultScore[winner] = (agg.resultScore[winner] || 0) + 1;
+                  // Make sure the loser is still counted
+                  agg.resultScore[game.scores[1].user_id] = agg.resultScore[game.scores[1].user_id] || 0;
+               }
                return agg;
             },
             {
@@ -89,15 +95,17 @@ export async function parseMpLobby(link: string, acceptIncomplete = false): Prom
             }
          );
       const playersWithResults = Object.keys(result.resultScore).map(v => parseInt(v));
+      console.log(`${mp} - ${playersWithResults.length} players with results`);
       // If there are more or less than 2 players, this must not be a 1v1 match
       if (playersWithResults.length !== 2) return;
       const [winnerId, loserId] = playersWithResults.sort(
          (a, b) => result.resultScore[b] - result.resultScore[a]
       );
-      console.log(result);
+      console.log(mp, result);
       return {
-         mp: matchIdSegment,
+         mp,
          mode,
+         warmups,
          maps: result.maps,
          winnerScores: result.scores[winnerId].map(item => [item.score, item.mod]),
          loserScores: result.scores[loserId].map(item => [item.score, item.mod]),
@@ -112,6 +120,7 @@ export async function parseMpLobby(link: string, acceptIncomplete = false): Prom
 export async function addMatchData({
    mp,
    mode,
+   warmups,
    winnerId,
    loserId,
    maps,
@@ -177,7 +186,8 @@ export async function addMatchData({
                               mod: m.mod,
                               score: winnerScores[i][0],
                               opponentScore: loserScores[i][0]
-                           }))
+                           })),
+                           warmups
                         }
                      ],
                      $position: 0,
@@ -218,7 +228,8 @@ export async function addMatchData({
                               mod: m.mod,
                               score: loserScores[i][0],
                               opponentScore: winnerScores[i][0]
-                           }))
+                           })),
+                           warmups
                         }
                      ],
                      $position: 0,

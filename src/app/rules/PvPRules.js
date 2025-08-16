@@ -8,7 +8,9 @@ export default function PvPRules() {
                <ul>
                   <li>
                      <pre className="border rounded p-1 d-inline lh-lg">!q [mode]</pre> - Join the queue. If
-                     no mode is specified &apos;osu&apos; is assumed
+                     no mode is specified &apos;osu&apos; is assumed.
+                     <br />
+                     Mode can be any of the following: osu, ctb, fruits, taiko
                   </li>
                   <li>
                      <pre className="border rounded p-1 d-inline lh-lg">!unq</pre> - Leave the queue

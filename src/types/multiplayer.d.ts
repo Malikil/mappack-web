@@ -11,6 +11,7 @@ export interface SongResultMap {
 export interface MpLobbyResults {
    mp: number;
    mode: GameMode;
+   warmups: number;
    maps: SongResultMap[];
    winnerScores: [number, FreemodSelection][];
    loserScores: [number, FreemodSelection][];

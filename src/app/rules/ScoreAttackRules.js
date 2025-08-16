@@ -8,7 +8,10 @@ export default function ScoreAttackRules() {
                <ul>
                   <li>
                      <pre className="border rounded p-1 d-inline lh-lg">!pve [mode]</pre> - Create a lobby and
-                     invite you to it. If no mode is specified &apos;osu&apos; is assumed
+                     invite you to it. If no mode is specified &apos;osu&apos; is assumed. Specifying
+                     &apos;mania&apos; will not restrict key count
+                     <br />
+                     Mode can be any of the following: osu, ctb, fruits, taiko, mania, 4k, 7k
                   </li>
                </ul>
             </li>

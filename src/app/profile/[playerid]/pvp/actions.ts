@@ -26,6 +26,7 @@ export async function createPvp(userid: number, gamemode: GameMode) {
 export async function submitPvp(formData: FormData) {
    const session = await auth();
    const mpLink = formData.get("mp").toString();
+   const warmups = parseInt(formData.get("warmup").toString()) || 0;
    const matchIdSegment = parseInt(mpLink.slice(mpLink.lastIndexOf("/") + 1));
    if (await historyDb.findOne({ _id: "mpLinks", items: matchIdSegment }))
       return {
@@ -34,7 +35,7 @@ export async function submitPvp(formData: FormData) {
             message: "MP link already submitted"
          }
       };
-   const lobbyResults = await parseMpLobby(matchIdSegment.toString());
+   const lobbyResults = await parseMpLobby(matchIdSegment, warmups);
    if (!lobbyResults)
       return {
          http: {

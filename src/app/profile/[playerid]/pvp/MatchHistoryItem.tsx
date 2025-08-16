@@ -71,8 +71,9 @@ export default async function MatchHistoryItem({ match, mode }: { match: PvPMatc
             <div className="d-flex gap-1 flex-wrap">
                {details.map((m, i) => (
                   <Card
-                     className={`flex-shrink-0 flex-grow-1 border-3 border-${
-                        m.score > m.opponentScore ? "success" : "danger"
+                     className={`flex-shrink-0 flex-grow-1 border-3 ${
+                        i >= (match.warmups || 0) &&
+                        `border-${m.score > m.opponentScore ? "success" : "danger"}`
                      }`}
                      key={i}
                      style={{ flexBasis: "140px" }}
@@ -87,8 +88,19 @@ export default async function MatchHistoryItem({ match, mode }: { match: PvPMatc
                      <CardBody className="d-flex flex-column">
                         <CardSubtitle className="d-flex justify-content-between flex-wrap">
                            <span>{m.score.toLocaleString()}</span>
-                           <span className={`mx-1 text-${m.score > m.opponentScore ? "success" : "danger"}`}>
-                              {m.score > m.opponentScore ? <CheckCircle /> : <XCircle />}
+                           <span
+                              className={`mx-1 ${
+                                 i >= (match.warmups || 0) &&
+                                 `text-${m.score > m.opponentScore ? "success" : "danger"}`
+                              }`}
+                           >
+                              {i < (match.warmups || 0) ? (
+                                 <DashCircle />
+                              ) : m.score > m.opponentScore ? (
+                                 <CheckCircle />
+                              ) : (
+                                 <XCircle />
+                              )}
                            </span>
                            <span>{m.opponentScore.toLocaleString()}</span>
                         </CardSubtitle>

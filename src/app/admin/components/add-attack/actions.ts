@@ -9,7 +9,7 @@ import { LegacyClient } from "osu-web.js";
 export async function adminPvp(formData: FormData) {
    const mpLink = formData.get("mp").toString();
    const matchIdSegment = parseInt(mpLink.slice(mpLink.lastIndexOf("/") + 1));
-   const lobbyResults = await parsePvp(matchIdSegment.toString(), true);
+   const lobbyResults = await parsePvp(matchIdSegment, 0, true);
    if (!lobbyResults)
       return {
          http: {

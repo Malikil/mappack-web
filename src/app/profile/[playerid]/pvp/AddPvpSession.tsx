@@ -29,7 +29,8 @@ export default function AddPvPSession({
                   });
                }}
             >
-               <FormControl type="text" name="mp" placeholder={"MP Link"} />
+               <FormControl type="text" name="mp" placeholder="MP Link" />
+               <FormControl type="text" name="warmup" placeholder="Warmups" />
                <Button className="text-nowrap" type="submit">
                   Submit external match
                </Button>

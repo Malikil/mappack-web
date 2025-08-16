@@ -37,6 +37,7 @@ export interface PvEMatchHistory extends MatchHistory {
 export interface PvPMatchHistory extends MatchHistory {
    songs: PvPMatchHistorySong[];
    opponent: MatchHistoryOpponent;
+   warmups?: number;
 }
 
 export interface PvPInfo extends Rating {
