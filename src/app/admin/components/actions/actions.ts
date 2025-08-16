@@ -367,7 +367,12 @@ export async function debug() {
    const result = await maniaDb.updateMany({}, [
       {
          $set: {
-            "ratings.dt.rating": "$ratings.nm.rating"
+            "ratings.dt.rating": {
+               $min: [
+                  { $max: ["$ratings.nm.rating", "$ratings.dt.rating"] },
+                  { $add: ["$ratings.nm.rd", "$ratings.nm.rating"] }
+               ]
+            }
          }
       }
    ]);

@@ -16,15 +16,12 @@ export default async function LobbyPool({ searchParams }) {
    // to be visible on the lobby's pool page
    const mapIds = MODLIST.flatMap(mod => parsedParams[mod] || []);
    const maps: DbBeatmap[] = await mapsDb[stringParams.m || "osu"].find({ _id: { $in: mapIds } }).toArray();
-   const maplist: Record<ModPoolType, DbBeatmap[]> = {
-      nm: [],
-      hd: [],
-      hr: [],
-      dt: [],
-      fm: []
-   };
-   MODLIST.forEach(
-      mod => (maplist[mod] = parsedParams[mod]?.map(m => maps.find(p => p._id === m)).filter(m => m) || [])
+   const maplist: Partial<Record<ModPoolType, DbBeatmap[]>> = Object.fromEntries(
+      MODLIST.map(mod =>
+         parsedParams[mod]
+            ? [mod, parsedParams[mod].map(m => maps.find(p => p._id === m)).filter(m => m)]
+            : null
+      ).filter(v => v)
    );
    console.log(maplist);
 
