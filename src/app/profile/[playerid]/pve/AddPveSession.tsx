@@ -8,7 +8,7 @@ import { toast } from "react-toastify";
 export default function AddPvESession({ userId }: { userId: number }) {
    return (
       <div className="d-flex flex-column align-items-end gap-1 ms-auto">
-         <Button
+         {/* <Button
             onClick={() =>
                toast.promise(() => generateAttack(userId), {
                   pending: "Getting random maps",
@@ -30,7 +30,7 @@ export default function AddPvESession({ userId }: { userId: number }) {
             }
          >
             Generate Score Attack
-         </Button>
+         </Button> */}
          <Form
             className="d-flex gap-1"
             action={async formData => {

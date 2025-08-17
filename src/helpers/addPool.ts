@@ -127,6 +127,8 @@ export async function addMapsToDatabase(
    // Get the map info from osu
    const client = new Client(accessToken);
    const predictor = await getPreviousMapScalings(mode);
+   const matchmakingUntil = new Date();
+   matchmakingUntil.setMonth(matchmakingUntil.getMonth() + 1);
    const resultList: DbBeatmap[] = [];
    for (const sublist of batchArray(maps)) {
       const osuBeatmaps = await client.beatmaps.getBeatmaps({ query: { ids: sublist } });
@@ -141,12 +143,14 @@ export async function addMapsToDatabase(
             osuBeatmap.mode = mode;
             osuBeatmap.convert = true;
          }
-         resultList.push(prepBeatmapData(osuBeatmap, predictor));
+         const dbmap = prepBeatmapData(osuBeatmap, predictor);
+         dbmap.matchmakingUntil = matchmakingUntil;
+         resultList.push(dbmap);
       }
    }
    // Add the maplist to database. Ignore duplicates
    const dbWriteResult = await mapsDb[mode]
-      .insertMany(resultList as any, { ordered: false })
+      .insertMany(resultList, { ordered: false })
       .catch(err => console.warn(err));
    console.log(dbWriteResult);
    return resultList;
