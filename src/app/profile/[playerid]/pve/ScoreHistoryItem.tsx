@@ -44,7 +44,7 @@ export default async function ScoreHistoryItem({ match, mode }: { match: PvEMatc
                   aria-expanded="false"
                   aria-controls={`collapse${match.mp}`}
                >
-                  <small className="text-decoration-underline">Details</small> <ArrowDown />
+                  <small className="text-decoration-underline">Details</small>
                </div>
                {!isNaN(match.mp) ? (
                   <Link

@@ -22,6 +22,10 @@ export default function ScoreAttackRules() {
                      <pre className="border rounded p-1 d-inline lh-lg">skip</pre> - Skip the current song and
                      pick another one
                   </li>
+                  <li>
+                     <pre className="border rounded p-1 d-inline lh-lg">!public</pre> - Remove the password
+                     from the lobby, allowing anyone to join
+                  </li>
                </ul>
             </li>
             <li>The system will choose maps of appropriate skill for you</li>

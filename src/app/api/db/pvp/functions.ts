@@ -1,12 +1,12 @@
 import { Glicko2, Player } from "glicko2";
 import { GameMode, LegacyClient } from "osu-web.js";
 import { mapsDb, playersDb } from "../connection";
-import { matchResultValue } from "@/app/profile/[playerid]/pve/functions";
 import { FreemodSelection, MpLobbyResults, SongResultMap } from "@/types/multiplayer";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { SimpleMod } from "@/types/rating";
 import { UpdateOneModel } from "mongodb";
 import { getMaplist } from "@/helpers/currentPack";
+import { matchResultValue } from "@/helpers/rating-range";
 
 const MATCH_HISTORY_SIZE = 10;
 

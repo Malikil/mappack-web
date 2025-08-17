@@ -58,7 +58,7 @@ export default async function MatchHistoryItem({ match, mode }: { match: PvPMatc
                   aria-expanded="false"
                   aria-controls={`collapse${match.mp}`}
                >
-                  <small className="text-decoration-underline">Details</small> <ArrowDown />
+                  <small className="text-decoration-underline">Details</small>
                </div>
                <div className="ms-auto">
                   vs.{" "}

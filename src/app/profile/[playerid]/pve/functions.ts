@@ -1,7 +1,8 @@
-import { historyDb, mapsDb, playersDb } from "@/app/api/db/connection";
+import { mapsDb, playersDb } from "@/app/api/db/connection";
 import { getMaplist } from "@/helpers/currentPack";
 import { batchArray } from "@/helpers/list-splitter";
 import { getOsuToken } from "@/helpers/osuToken";
+import { matchResultValue } from "@/helpers/rating-range";
 import { ScoreParser } from "@/helpers/scorev1";
 import { delay, seconds } from "@/time";
 import { DbBeatmap } from "@/types/database.beatmap";
@@ -10,23 +11,6 @@ import { SimpleMod } from "@/types/rating";
 import { Glicko2, Player } from "glicko2";
 import { UpdateFilter } from "mongodb";
 import { Client, GameMode, LegacyClient, Mod } from "osu-web.js";
-
-/**
- * Returns the match result to use, assuming player first then map second
- */
-export function matchResultValue(score: number, gamemode: GameMode) {
-   const min: number = {
-      osu: 100000,
-      fruits: 500000,
-      taiko: 300000,
-      mania: 300000
-   }[gamemode];
-   const max: number = 900000;
-   if (score < min) return 0;
-   if (score > max) return 1;
-   // Scale linearly between min and max scores
-   return (score - min) / (max - min);
-}
 
 function parseSongMods(lobbyMods: Mod[], scoreMods: Mod[], mode: GameMode): SimpleMod {
    // When freemod is set on DT, DT will be in both arrays

@@ -53,9 +53,9 @@ export default function Mappools() {
                      </tr>
                      <tr>
                         <td>Mania</td>
-                        <td>300k</td>
+                        <td>400k</td>
                         <td>900k</td>
-                        <td>600k</td>
+                        <td>650k</td>
                      </tr>
                   </tbody>
                </Table>
