@@ -21,7 +21,7 @@ async function getPreviousMapScalings(mode: GameMode) {
             rdSum: { $add: adding }
          }
       },
-      { $match: { rdSum: { $lt: mode === "mania" ? 300 : 400 } } },
+      { $match: { rdSum: { $lt: mode === "mania" ? 280 : 400 } } },
       { $sort: { rdSum: 1 } },
       { $limit: 1000 }
    ]);
