@@ -10,7 +10,6 @@ import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
 import { Beatmap, Beatmapset, Client, GameMode } from "osu-web.js";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { ModRatings, Rating, SimpleMod } from "@/types/rating";
-import { matchResultValue, parseMpLobby } from "@/app/profile/[playerid]/pve/functions";
 import { getMaplist } from "@/helpers/currentPack";
 import { delay, seconds } from "@/time";
 import { DbPlayer, ModeInfo, PvEMatchHistory } from "@/types/database.player";
