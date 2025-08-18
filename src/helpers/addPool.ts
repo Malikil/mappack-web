@@ -43,8 +43,11 @@ async function getPreviousMapScalings(mode: GameMode) {
          map.noteCount.sliders,
          map.maxCombo
       ];
-      if (mode !== "mania") xData.push(map.ar);
-      if (mode === "fruits") xData.push(+map.convert);
+      if (mode === "osu") xData.push(map.ar);
+      if (mode === "fruits") {
+         xData.push(map.ar);
+         xData.push(+map.convert);
+      }
       datasets.x.push(xData);
       datasets.y.push([nm.rating, hd?.rating || 0, hr?.rating || 0, dt.rating]);
    }
@@ -72,8 +75,11 @@ function prepBeatmapData(
       osuBeatmap.count_sliders,
       osuBeatmap.max_combo
    ];
-   if (osuBeatmap.mode !== "mania") predictData.push(osuBeatmap.ar);
-   if (osuBeatmap.mode === "fruits") predictData.push(+osuBeatmap.convert);
+   if (osuBeatmap.mode === "osu") predictData.push(osuBeatmap.ar);
+   if (osuBeatmap.mode === "fruits") {
+      predictData.push(osuBeatmap.ar);
+      predictData.push(+osuBeatmap.convert);
+   }
    const [[nm, hd, hr, dt]] = predictor.predict([predictData]);
    const ratingObj = (rating: number) => {
       if (rating > max) return { rating: max, rd: rating - max + INIT_MAP_RD, vol: INIT_MAP_VOL };
@@ -111,9 +117,12 @@ function prepBeatmapData(
    if (osuBeatmap.mode !== "mania") {
       mapData.ratings.hd = ratingObj(hd);
       mapData.ratings.hr = ratingObj(hr);
-      mapData.ar = osuBeatmap.ar;
    }
-   if (osuBeatmap.mode === "fruits") mapData.convert = osuBeatmap.convert;
+   if (osuBeatmap.mode === "osu") mapData.ar = osuBeatmap.ar;
+   else if (osuBeatmap.mode === "fruits") {
+      mapData.ar = osuBeatmap.ar;
+      mapData.convert = osuBeatmap.convert;
+   }
 
    return mapData;
 }
