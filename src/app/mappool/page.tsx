@@ -15,21 +15,21 @@ export default async function Mappool() {
    const session = await auth();
    const player = session && (await playersDb.findOne({ osuid: session.user.id }));
    const playerRating: Rating = player && (player[player.gamemode]?.pvp || player[player.gamemode]?.pve);
+   const mode = player?.gamemode || "osu";
 
    const pools = (await mappacksDb
       .aggregate([
          {
             $match: {
-               mode: player?.gamemode || "osu",
+               mode,
                $or: [{ active: "fresh" }, { active: "stale" }]
             }
          },
          {
             $lookup: {
-               from: "maps",
+               from: mode,
                localField: "maps",
-               foreignField: "id",
-               pipeline: [{ $match: { mode: player?.gamemode || "osu" } }],
+               foreignField: "_id",
                as: "maps"
             }
          },
@@ -41,7 +41,7 @@ export default async function Mappool() {
                title: { $first: "$maps.title" },
                maps: {
                   $push: {
-                     id: "$maps.id",
+                     id: "$maps._id",
                      version: "$maps.version",
                      length: "$maps.length",
                      bpm: "$maps.bpm",

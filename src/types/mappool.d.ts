@@ -7,7 +7,7 @@ export interface BeatmapVersion {
    version: string;
    length: number;
    bpm: number;
-   cs: number;
+   cs?: number;
    ar?: number;
    od: number;
    stars: number;

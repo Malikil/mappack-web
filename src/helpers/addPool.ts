@@ -37,14 +37,14 @@ async function getPreviousMapScalings(mode: GameMode) {
          map.stars,
          map.length,
          map.bpm,
-         map.cs,
          map.od,
          map.noteCount.circles,
          map.noteCount.sliders,
          map.maxCombo
       ];
+      if (mode !== "taiko") xData.push(map.cs);
       if (mode === "osu") xData.push(map.ar);
-      if (mode === "fruits") {
+      else if (mode === "fruits") {
          xData.push(map.ar);
          xData.push(+map.convert);
       }
@@ -69,14 +69,14 @@ function prepBeatmapData(
       osuBeatmap.difficulty_rating,
       osuBeatmap.total_length,
       osuBeatmap.bpm,
-      osuBeatmap.cs,
       osuBeatmap.accuracy,
       osuBeatmap.count_circles,
       osuBeatmap.count_sliders,
       osuBeatmap.max_combo
    ];
+   if (osuBeatmap.mode !== "taiko") predictData.push(osuBeatmap.cs);
    if (osuBeatmap.mode === "osu") predictData.push(osuBeatmap.ar);
-   if (osuBeatmap.mode === "fruits") {
+   else if (osuBeatmap.mode === "fruits") {
       predictData.push(osuBeatmap.ar);
       predictData.push(+osuBeatmap.convert);
    }
@@ -97,7 +97,6 @@ function prepBeatmapData(
       stars: osuBeatmap.difficulty_rating,
       length: osuBeatmap.total_length,
       bpm: osuBeatmap.bpm,
-      cs: osuBeatmap.cs,
       od: osuBeatmap.accuracy,
       maxCombo: osuBeatmap.max_combo,
       noteCount: {
@@ -114,6 +113,7 @@ function prepBeatmapData(
       mapData.lastQuery = new Date();
       mapData.lastUpdate = new Date(osuBeatmap.last_updated);
    }
+   if (osuBeatmap.mode !== "taiko") mapData.cs = osuBeatmap.cs;
    if (osuBeatmap.mode !== "mania") {
       mapData.ratings.hd = ratingObj(hd);
       mapData.ratings.hr = ratingObj(hr);

@@ -41,14 +41,18 @@ export default function MapCardBody(props: MapCardBodyProps) {
                   </div>
                </Col>
             </Row>
-            <Row>
-               <Col>CS</Col>
-               <Col>{parseFloat(props.beatmap.cs.toFixed(2))}</Col>
-            </Row>
-            <Row>
-               <Col>AR</Col>
-               <Col>{parseFloat(props.beatmap.ar.toFixed(2))}</Col>
-            </Row>
+            {props.beatmap.cs && (
+               <Row>
+                  <Col>CS</Col>
+                  <Col>{parseFloat(props.beatmap.cs.toFixed(2))}</Col>
+               </Row>
+            )}
+            {props.beatmap.ar && (
+               <Row>
+                  <Col>AR</Col>
+                  <Col>{parseFloat(props.beatmap.ar.toFixed(2))}</Col>
+               </Row>
+            )}
          </Container>
          {!props.hideRatings && (
             <>
