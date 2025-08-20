@@ -9,9 +9,9 @@ export function matchResultValue(score: number, gamemode: GameMode) {
       osu: 100000,
       fruits: 500000,
       taiko: 300000,
-      mania: 400000
+      mania: 475000
    }[gamemode];
-   const max: number = 900000;
+   const max: number = gamemode === "mania" ? 925000 : 900000;
    if (score < min) return 0;
    if (score > max) return 1;
    // Scale linearly between min and max scores
