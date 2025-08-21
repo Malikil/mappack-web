@@ -10,10 +10,11 @@ import { auth } from "@/auth";
 
 export async function getOpponentMappool(userid: number, formData: FormData) {
    const opp = formData.get("opponent") as string;
+   const player = await playersDb.findOne({ osuid: userid });
    const opponent = await playersDb.findOne({
       $or: [{ osuid: parseInt(opp) }, { osuname: opp }]
    });
-   return redirect(`/mappool/${userid}/${opponent?.osuid || ""}`);
+   return redirect(`/mappool/${userid}/${opponent?.osuid || ""}?m=${player.gamemode || "osu"}`);
 }
 
 export async function createPvp(userid: number, gamemode: GameMode) {

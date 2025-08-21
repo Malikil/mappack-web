@@ -18,8 +18,9 @@ export function matchResultValue(score: number, gamemode: GameMode) {
    return (score - min) / (max - min);
 }
 
-export function withinRange(...ratings: { rating: number, rd: number }[]) {
+export function withinRange(...ratings: { rating: number; rd: number }[]) {
    ratings = ratings.filter(r => r);
+   if (ratings.length < 2) return false;
    const range = Math.sqrt(ratings.reduce((sum, r) => sum + r.rd * r.rd, 0));
    const { min, max } = ratings.reduce(
       (agg, r) => {

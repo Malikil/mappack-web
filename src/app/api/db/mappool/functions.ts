@@ -1,27 +1,27 @@
-import { combineRatings, withinRange } from "@/helpers/rating-range";
-import { playersDb } from "../connection";
-import { getCurrentPack } from "@/helpers/currentPack";
+import { withinRange } from "@/helpers/rating-range";
+import { getCurrentPack } from "@/helpers/server/currentPack";
 import { ModPool, Rating, SimpleMod } from "@/types/rating";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { GameMode } from "osu-web.js";
 
-const NM_MAPCOUNT = 4,
-   HD_MAPCOUNT = 3,
-   HR_MAPCOUNT = 3,
-   DT_MAPCOUNT = 3,
-   FM_MAPCOUNT = 3;
-
-export async function getMappool(playerIds: number[], mode: GameMode) {
-   const players = await playersDb
-      .find({ osuid: { $in: playerIds }, [`${mode}.pvp`]: { $exists: true } })
-      .toArray();
-   if (players.length < 1) return { error: { status: 404, message: "No players" } };
-   console.log(
-      "Create pool for",
-      players.map(p => ({ id: p.osuid, rating: p[mode].pvp.rating }))
-   );
-   const targetRating = combineRatings(...players.map(p => p[mode].pvp));
-   console.log("Target rating", targetRating);
+export async function getMappool(targetRating: { rating: number; rd: number }, mode: GameMode, keyCount = 4) {
+   console.log("Get mappool for target:", targetRating);
+   const { nmCount, hdCount, hrCount, dtCount, fmCount } =
+      mode === "mania"
+         ? {
+              nmCount: 12,
+              hdCount: 0,
+              hrCount: 0,
+              dtCount: 0,
+              fmCount: 0
+           }
+         : {
+              nmCount: 4,
+              hdCount: 3,
+              hrCount: 3,
+              dtCount: 3,
+              fmCount: 3
+           };
    const checkWithinRange = (rating: Rating) => withinRange(targetRating, rating);
    const sortFunc = (mod: SimpleMod) => (a: DbBeatmap, b: DbBeatmap) => {
       const adiff = Math.abs(targetRating.rating - a.ratings[mod].rating);
@@ -32,20 +32,20 @@ export async function getMappool(playerIds: number[], mode: GameMode) {
       (maplist: Record<ModPool, DbBeatmap[]>, ...mods: ModPool[]) =>
       (candidate: DbBeatmap) => {
          const counts = {
-            nm: NM_MAPCOUNT,
-            hd: HD_MAPCOUNT,
-            hr: HR_MAPCOUNT,
-            dt: DT_MAPCOUNT,
-            fm: FM_MAPCOUNT
+            nm: nmCount,
+            hd: hdCount,
+            hr: hrCount,
+            dt: dtCount,
+            fm: fmCount
          };
          return mods.every(mod => {
             // See if the map being filtered is in the list already
             const i = maplist[mod].findIndex(m => m.setid === candidate.setid);
-            return i < 0 || i > counts[mod];
+            return i < 0 || i >= counts[mod];
          });
       };
 
-   const currentMaps = await getCurrentPack(mode);
+   const currentMaps = await getCurrentPack(mode, keyCount);
    const maplist = currentMaps.reduce(
       (agg: Record<ModPool, DbBeatmap[]>, map) => {
          const candidate = {
@@ -54,6 +54,7 @@ export async function getMappool(playerIds: number[], mode: GameMode) {
             hr: checkWithinRange(map.ratings.hr),
             dt: checkWithinRange(map.ratings.dt)
          };
+         console.log(map.ratings, candidate);
          // HD/HR/FM
          if (candidate.hd)
             if (candidate.hr) agg.fm.push(map);
@@ -83,7 +84,7 @@ export async function getMappool(playerIds: number[], mode: GameMode) {
    });
    // Put extra maps into HD/HR whichever is closer
    console.log(`Before redistributing FM maps: HD-${maplist.hd.length} HR-${maplist.hr.length}`);
-   maplist.fm.slice(FM_MAPCOUNT).forEach(map => {
+   maplist.fm.slice(fmCount).forEach(map => {
       const hdDiff = Math.abs(map.ratings.hd.rating - targetRating.rating);
       const hrDiff = Math.abs(map.ratings.hr.rating - targetRating.rating);
       if (hdDiff > hrDiff) maplist.hr.push(map);
@@ -100,7 +101,7 @@ export async function getMappool(playerIds: number[], mode: GameMode) {
    console.log(`${maplist.hr.length} after filtering`);
    // Put extras into NM if valid
    console.log(`Before redistributing HR maps: NM-${maplist.nm.length}`);
-   maplist.hr.slice(HR_MAPCOUNT).forEach(map => {
+   maplist.hr.slice(hrCount).forEach(map => {
       if (checkWithinRange(map.ratings.nm)) maplist.nm.push(map);
    });
    console.log(`After redistributing HR maps: NM-${maplist.nm.length}`);
@@ -109,7 +110,7 @@ export async function getMappool(playerIds: number[], mode: GameMode) {
    console.log(`${maplist.hd.length} after filtering`);
    // Put extra maps into NM if they're valid
    console.log(`Before redistributing HD maps: NM-${maplist.nm.length}`);
-   maplist.hd.slice(HD_MAPCOUNT).forEach(map => {
+   maplist.hd.slice(hdCount).forEach(map => {
       if (checkWithinRange(map.ratings.nm)) maplist.nm.push(map);
    });
    console.log(`After redistributing HD maps: NM-${maplist.nm.length}`);
@@ -120,12 +121,12 @@ export async function getMappool(playerIds: number[], mode: GameMode) {
 
    return {
       maps: {
-         nm: maplist.nm.slice(0, NM_MAPCOUNT),
-         hd: maplist.hd.slice(0, HD_MAPCOUNT),
-         hr: maplist.hr.slice(0, HR_MAPCOUNT),
-         dt: maplist.dt.slice(0, DT_MAPCOUNT),
-         fm: maplist.fm.slice(0, FM_MAPCOUNT)
+         nm: maplist.nm.slice(0, nmCount),
+         hd: maplist.hd.slice(0, hdCount),
+         hr: maplist.hr.slice(0, hrCount),
+         dt: maplist.dt.slice(0, dtCount),
+         fm: maplist.fm.slice(0, fmCount)
       } as Record<ModPool, DbBeatmap[]>,
-      players
+      target: targetRating
    };
 }

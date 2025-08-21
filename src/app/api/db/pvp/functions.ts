@@ -5,7 +5,7 @@ import { FreemodSelection, MpLobbyResults, SongResultMap } from "@/types/multipl
 import { DbBeatmap } from "@/types/database.beatmap";
 import { ModPool, SimpleMod } from "@/types/rating";
 import { UpdateOneModel } from "mongodb";
-import { getMaplist } from "@/helpers/currentPack";
+import { getMaplist } from "@/helpers/server/currentPack";
 import { matchResultValue } from "@/helpers/rating-range";
 
 const MATCH_HISTORY_SIZE = 10;

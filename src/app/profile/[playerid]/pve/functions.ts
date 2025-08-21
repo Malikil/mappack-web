@@ -1,5 +1,5 @@
 import { mapsDb, playersDb } from "@/app/api/db/connection";
-import { getMaplist } from "@/helpers/currentPack";
+import { getMaplist } from "@/helpers/server/currentPack";
 import { batchArray } from "@/helpers/list-splitter";
 import { getOsuToken } from "@/helpers/osuToken";
 import { matchResultValue } from "@/helpers/rating-range";

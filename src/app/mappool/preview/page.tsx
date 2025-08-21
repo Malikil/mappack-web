@@ -1,28 +1,23 @@
 import ModPool from "@/components/mappool/Modpool";
-import { redirect } from "next/navigation";
 import { getMappool } from "@/app/api/db/mappool/functions";
 import { ModPool as ModPoolType } from "@/types/rating";
 import { GameMode } from "osu-web.js";
-import { combineRatingsById } from "@/helpers/server/ratings";
 
-export default async function PlayerPool({ params, searchParams }) {
+export default async function PlayerPool({ searchParams }) {
    const stringParams = await searchParams;
    const mode: GameMode = ["osu", "fruits", "mania", "taiko"].includes(stringParams.m)
       ? stringParams.m
       : "osu";
-   const playerIds: number[] = (await params).playerids.map((id: string) => parseInt(id));
-   if (playerIds.includes(NaN)) redirect("/mappool");
-
-   const { targetRating, players } = await combineRatingsById(mode, ...playerIds);
-   if (!targetRating) redirect("/mappool");
-   const { maps: maplist } = await getMappool(targetRating, mode);
+   const rating: number = parseInt(stringParams.r) || 1500;
+   const rd: number = parseInt(stringParams.d) || 125;
+   const { maps: maplist } = await getMappool({ rating, rd }, mode);
 
    return (
       <div>
          <div className="d-flex justify-content-between">
-            <div className="fs-3">Pool for: {players.map(p => p.osuname).join(", ")}</div>
+            <div className="fs-3">Pool for: {mode} {rating} rd{rd}</div>
             <div>
-               <small>Target rating: {targetRating.rating.toFixed()}</small>
+               <small>Target rating: {rating}</small>
             </div>
          </div>
          <div className="d-flex flex-column gap-3">

@@ -4,7 +4,7 @@ import { historyDb, playersDb } from "@/app/api/db/connection";
 import { revalidatePath } from "next/cache";
 import { parseMpLobby, submitPveData } from "./functions";
 import { withinRange } from "@/helpers/rating-range";
-import { getCurrentPack } from "@/helpers/currentPack";
+import { getCurrentPack } from "@/helpers/server/currentPack";
 import { SimpleMod } from "@/types/rating";
 
 export async function generateAttack(osuid: number, mapcount = 7) {
