@@ -5,7 +5,7 @@ import { checkExpiry } from "@/auth";
 import AdminNotify from "./components/admin-notify/AdminNotify";
 import DifficultyChart from "./components/difficulty-chart/DifficultyChart";
 import AddAttack from "./components/add-attack/AddAttack";
-import TournamentSubmit from "./components/custom-pool/TournamentSubmit";
+import TournamentSubmit from "./components/bulk-add/TournamentSubmit";
 
 export default async function Admin() {
    const { session } = await verify();
