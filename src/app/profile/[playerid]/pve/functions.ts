@@ -15,7 +15,7 @@ import { Client, GameMode, LegacyClient, Mod } from "osu-web.js";
 function parseSongMods(lobbyMods: Mod[], scoreMods: Mod[], mode: GameMode): SimpleMod {
    // When freemod is set on DT, DT will be in both arrays
    // Just take unique mods in general
-   const ignore: Mod[] = ["NF", "MR", "FI", "SD", "PF"];
+   const ignore: Mod[] = ["NF", "MR", "FI", "SD", "PF", "FL"];
    const mods = [
       ...new Set(
          lobbyMods

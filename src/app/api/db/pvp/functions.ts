@@ -1,9 +1,9 @@
 import { Glicko2, Player } from "glicko2";
-import { GameMode, LegacyClient } from "osu-web.js";
+import { GameMode, LegacyClient, Mod } from "osu-web.js";
 import { mapsDb, playersDb } from "../connection";
 import { FreemodSelection, MpLobbyResults, SongResultMap } from "@/types/multiplayer";
 import { DbBeatmap } from "@/types/database.beatmap";
-import { SimpleMod } from "@/types/rating";
+import { ModPool, SimpleMod } from "@/types/rating";
 import { UpdateOneModel } from "mongodb";
 import { getMaplist } from "@/helpers/currentPack";
 import { matchResultValue } from "@/helpers/rating-range";
@@ -54,23 +54,20 @@ export async function parseMpLobby(
                if (game.scoring_type !== "Score V2") return agg;
                // For now, if the gamemode is changed panic
                if (game.play_mode !== mode) throw new Error("Invalid gamemode");
-               // If length is 0, that means freemod is enabled. Length will be 1 if nomod (nf counts as the 1)
-               const mod =
-                  game.mods.length === 0
-                     ? "fm"
-                     : game.mods.length > 2
-                     ? null
-                     : (game.mods.filter(v => v !== "NF").join("") || "nm").toLowerCase();
-               if (!mod || !["nm", "hd", "hr", "dt", "fm"].includes(mod)) return agg;
-               agg.maps.push({
+               // Ignore NF and mania-specific mods
+               const ignoreMods: Mod[] = ["NF", "MR", "FI", "FL"];
+               const filteredMods = game.mods.filter(mod => !ignoreMods.includes(mod));
+               const mod = filteredMods.length > 1 ? null : (filteredMods[0] || "nm").toLowerCase();
+               if (!mod || !["nm", "hd", "hr", "dt"].includes(mod)) return agg;
+               const playedMap = {
                   map: game.beatmap_id,
-                  mod: mod as SimpleMod | "fm"
-               });
-               console.log(`${mp} - ${game.beatmap_id} +${mod}`);
+                  mod: mod as ModPool
+               };
                game.scores.forEach(score => {
+                  if (score.enabled_mods.length > 0) playedMap.mod = "fm";
                   // Will HD always be first?
                   const scoreMod = score.enabled_mods
-                     .filter(v => v !== "NF")
+                     .filter(m => !ignoreMods.includes(m))
                      .join("")
                      .toLowerCase();
                   if (!(score.user_id in agg.scores)) agg.scores[score.user_id] = [];
@@ -79,6 +76,8 @@ export async function parseMpLobby(
                      mod: ["hd", "hr", "hdhr"].includes(scoreMod) ? (scoreMod as FreemodSelection) : null
                   });
                });
+               console.log(`${mp} - ${game.beatmap_id} +${playedMap.mod}`);
+               agg.maps.push(playedMap);
                if (i >= warmups) {
                   // Find the song winner
                   const winner = game.scores.sort((a, b) => b.score - a.score)[0].user_id;
