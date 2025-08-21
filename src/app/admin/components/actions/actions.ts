@@ -1,7 +1,7 @@
 "use server";
 
 import util from "util";
-import db, { historyDb, maniaDb, mapsDb, playersDb, taikoDb } from "@/app/api/db/connection";
+import db, { fruitsDb, historyDb, maniaDb, mapsDb, osuDb, playersDb, taikoDb } from "@/app/api/db/connection";
 import { batchArray, batchCursor } from "@/helpers/list-splitter";
 import { getOsuToken } from "@/helpers/osuToken";
 import { DbHistory } from "@/types/database.history";
@@ -130,17 +130,9 @@ function prepBeatmapData(
 }
 
 export async function debug() {
-   const result = await maniaDb.updateMany({}, [
-      {
-         $set: {
-            "ratings.dt.rating": {
-               $min: [
-                  { $max: ["$ratings.nm.rating", "$ratings.dt.rating"] },
-                  { $add: ["$ratings.nm.rd", "$ratings.nm.rating"] }
-               ]
-            }
-         }
-      }
-   ]);
+   const result = await taikoDb.updateMany(
+      { matchmakingUntil: { $exists: true } },
+      { $unset: { matchmakingUntil: "" } }
+   );
    console.log(result);
 }

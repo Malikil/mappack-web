@@ -136,8 +136,6 @@ export async function addMapsToDatabase(
    // Get the map info from osu
    const client = new Client(accessToken);
    const predictor = await getPreviousMapScalings(mode);
-   const matchmakingUntil = new Date();
-   matchmakingUntil.setMonth(matchmakingUntil.getMonth() + 1);
    const resultList: DbBeatmap[] = [];
    for (const sublist of batchArray(maps)) {
       const osuBeatmaps = await client.beatmaps.getBeatmaps({ query: { ids: sublist } });
@@ -153,7 +151,6 @@ export async function addMapsToDatabase(
             osuBeatmap.convert = true;
          }
          const dbmap = prepBeatmapData(osuBeatmap, predictor);
-         dbmap.matchmakingUntil = matchmakingUntil;
          resultList.push(dbmap);
       }
    }
