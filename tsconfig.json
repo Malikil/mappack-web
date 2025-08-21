@@ -3,9 +3,7 @@
     "lib": [
       "dom",
       "dom.iterable",
-      "esnext",
-      "ES2023",
-      "ES2023.Collection"
+      "esnext"
     ],
     "target": "es2022",
     "allowJs": true,

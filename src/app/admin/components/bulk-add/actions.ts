@@ -38,10 +38,11 @@ export async function submitTournamentStage(formData: FormData) {
          else results.matches[playerId] = playerResults;
          results.mp[playerId] = mp;
       });
-      Object.entries(lobbyResult.maps).forEach(
-         ([mode, maplist]) =>
-            (results.maps[mode as GameMode] = (results.maps[mode as GameMode] || new Set()).union(maplist))
-      );
+      Object.entries(lobbyResult.maps).forEach(([mode, maplist]) => {
+         const set = results.maps[mode as GameMode] || new Set();
+         maplist.forEach(n => set.add(n));
+         results.maps[mode as GameMode] = set;
+      });
    }
    console.log(results);
    await submitPveData(results);
