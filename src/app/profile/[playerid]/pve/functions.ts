@@ -7,6 +7,7 @@ import { ScoreParser } from "@/helpers/scorev1";
 import { delay, seconds } from "@/time";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { DbPlayer, ModeInfo, PvEMatchHistory } from "@/types/database.player";
+import { PveLobbyResults } from "@/types/multiplayer";
 import { SimpleMod } from "@/types/rating";
 import { Glicko2, Player } from "glicko2";
 import { UpdateFilter } from "mongodb";
@@ -44,7 +45,7 @@ function parseSongMods(lobbyMods: Mod[], scoreMods: Mod[], mode: GameMode): Simp
       }
 }
 
-export async function parseMpLobby(mp: number, allowIncomplete = false) {
+export async function parseMpLobby(mp: number, allowIncomplete = false): Promise<PveLobbyResults> {
    const osuClient = new LegacyClient(process.env.OSU_LEGACY_KEY);
    try {
       const mpLobby = await osuClient.getMultiplayerLobby({ mp });
@@ -99,18 +100,9 @@ export async function parseMpLobby(mp: number, allowIncomplete = false) {
    }
 }
 
-export async function submitPveData(data: {
-   matches: {
-      [user_id: number]: {
-         map: number;
-         mod: SimpleMod;
-         score: ScoreParser;
-         mode: GameMode;
-      }[];
-   };
-   maps: Partial<Record<GameMode, Set<number>>>;
-   mp: number;
-}) {
+export async function submitPveData(
+   data: PveLobbyResults | (Omit<PveLobbyResults, "mp"> & { mp: { [user: number]: number } })
+) {
    const { matches, maps, mp } = data;
    // Create the rating calculator
    const calculator = new Glicko2();
@@ -222,13 +214,16 @@ export async function submitPveData(data: {
          if (!score.score.getScore()) return;
 
          // Prep the player's history
-         if (!(score.mode in playerInfo.history))
+         if (!(score.mode in playerInfo.history)) {
+            let playersMp = mp;
+            if (typeof mp !== "number") playersMp = mp[playerId];
             playerInfo.history[score.mode] = {
-               mp,
+               mp: playersMp as number,
                prevRating: playerInfo.dbplayer[score.mode].pve.rating,
                ratingDiff: 0,
                songs: []
             };
+         }
          // Update the history
          playerInfo.history[score.mode].songs.push({
             map: {

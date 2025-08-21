@@ -18,3 +18,16 @@ export interface MpLobbyResults {
    winnerId: number;
    loserId: number;
 }
+
+export interface PveLobbyResults {
+   matches: {
+      [userid: number]: {
+         map: number;
+         mod: SimpleMod;
+         score: ScoreParser;
+         mode: GameMode;
+      }[];
+   };
+   maps: Partial<Record<GameMode, Set<number>>>;
+   mp: number;
+}

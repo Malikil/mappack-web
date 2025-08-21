@@ -5,7 +5,7 @@ import { checkExpiry } from "@/auth";
 import AdminNotify from "./components/admin-notify/AdminNotify";
 import DifficultyChart from "./components/difficulty-chart/DifficultyChart";
 import AddAttack from "./components/add-attack/AddAttack";
-import CustomPool from "./components/custom-pool/CustomPool";
+import TournamentSubmit from "./components/custom-pool/TournamentSubmit";
 
 export default async function Admin() {
    const { session } = await verify();
@@ -16,10 +16,10 @@ export default async function Admin() {
          <div className="d-flex gap-3 flex-wrap">
             <AdminActions />
             <AddAttack />
-            <CustomPool />
+            <TournamentSubmit />
          </div>
-         <DifficultyChart chartVersion='scaling' />
-         <DifficultyChart chartVersion='recent' />
+         <DifficultyChart chartVersion="scaling" />
+         <DifficultyChart chartVersion="recent" />
          {checkExpiry(session.accessToken) && <AdminNotify />}
       </div>
    );
