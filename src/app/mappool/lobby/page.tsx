@@ -1,7 +1,7 @@
 import { mapsDb } from "@/app/api/db/connection";
-import ModPool from "@/components/mappool/Modpool";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { ModPool as ModPoolType } from "@/types/rating";
+import PoolDisplayByMod from "../PoolDisplayByMod";
 
 const MODLIST: ModPoolType[] = ["nm", "hd", "hr", "dt", "fm"];
 
@@ -25,27 +25,5 @@ export default async function LobbyPool({ searchParams }) {
    );
    console.log(maplist);
 
-   return (
-      <div>
-         <div className="fs-3">{parsedParams.l}</div>
-         <div className="d-flex flex-column gap-3">
-            {Object.keys(maplist).map((mod: ModPoolType) => (
-               <ModPool
-                  key={mod}
-                  maps={maplist[mod]}
-                  modshort={mod}
-                  mod={
-                     {
-                        nm: "NoMod",
-                        hd: "Hidden",
-                        hr: "HardRock",
-                        dt: "DoubleTime",
-                        fm: "Freemod"
-                     }[mod]
-                  }
-               />
-            ))}
-         </div>
-      </div>
-   );
+   return <PoolDisplayByMod title={parsedParams.l} maplist={maplist} />;
 }

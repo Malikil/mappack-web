@@ -4,7 +4,7 @@ import { ModPool, Rating, SimpleMod } from "@/types/rating";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { GameMode } from "osu-web.js";
 
-export async function getMappool(targetRating: { rating: number; rd: number }, mode: GameMode, keyCount = 4) {
+export async function getMappool(targetRating: { rating: number; rd: number }, mode: GameMode, keyCount = 0) {
    console.log("Get mappool for target:", targetRating);
    const { nmCount, hdCount, hrCount, dtCount, fmCount } =
       mode === "mania"

@@ -14,7 +14,7 @@ export async function getMaplist(mode: GameMode, maps: number[]) {
    return maplist;
 }
 
-export async function getCurrentPack<M extends GameMode>(mode: M, keyCount = 4) {
+export async function getCurrentPack<M extends GameMode>(mode: M, keyCount = 0) {
    const pools = await mappacksDb
       .aggregate<Omit<DbMappack, "maps"> & { maps: DbBeatmap[] }>([
          { $match: { mode, $or: [{ active: "fresh" }, { active: "stale" }] } },
@@ -29,8 +29,7 @@ export async function getCurrentPack<M extends GameMode>(mode: M, keyCount = 4) 
       ])
       .toArray();
    const maps = pools.flatMap(p => p.maps);
-   if (mode === 'mania')
-      return maps.filter(m => m.cs === keyCount);
+   if (mode === "mania" && keyCount) return maps.filter(m => m.cs === keyCount);
    return maps;
 }
 

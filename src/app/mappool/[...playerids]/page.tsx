@@ -1,9 +1,8 @@
-import ModPool from "@/components/mappool/Modpool";
 import { redirect } from "next/navigation";
 import { getMappool } from "@/app/api/db/mappool/functions";
-import { ModPool as ModPoolType } from "@/types/rating";
 import { GameMode } from "osu-web.js";
 import { combineRatingsById } from "@/helpers/server/ratings";
+import PoolDisplayByMod from "../PoolDisplayByMod";
 
 export default async function PlayerPool({ params, searchParams }) {
    const stringParams = await searchParams;
@@ -18,31 +17,10 @@ export default async function PlayerPool({ params, searchParams }) {
    const { maps: maplist } = await getMappool(targetRating, mode);
 
    return (
-      <div>
-         <div className="d-flex justify-content-between">
-            <div className="fs-3">Pool for: {players.map(p => p.osuname).join(", ")}</div>
-            <div>
-               <small>Target rating: {targetRating.rating.toFixed()}</small>
-            </div>
-         </div>
-         <div className="d-flex flex-column gap-3">
-            {Object.keys(maplist).map((mod: ModPoolType) => (
-               <ModPool
-                  maps={maplist[mod]}
-                  modshort={mod}
-                  mod={
-                     {
-                        nm: "NoMod",
-                        hd: "Hidden",
-                        hr: "HardRock",
-                        dt: "DoubleTime",
-                        fm: "Freemod"
-                     }[mod]
-                  }
-                  key={mod}
-               />
-            ))}
-         </div>
-      </div>
+      <PoolDisplayByMod
+         title={`Pool for: ${players.map(p => p.osuname).join(", ")}`}
+         target={parseInt(targetRating.rating.toFixed())}
+         maplist={maplist}
+      />
    );
 }

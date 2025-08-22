@@ -12,7 +12,7 @@ export const GET = async (req: NextRequest) => {
       .map(p => parseInt(p))
       .filter(p => p);
    let mode = params.get("m") as GameMode | "4k" | "7k";
-   let keyCount: number = 4;
+   let keyCount: number = 0;
    if (mode === "4k" || mode === "7k") {
       keyCount = mode === "7k" ? 7 : 4;
       mode = "mania";
