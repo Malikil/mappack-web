@@ -10,7 +10,10 @@ export default function PvPRules() {
                      <pre className="border rounded p-1 d-inline lh-lg">!q [mode]</pre> - Join the queue. If
                      no mode is specified &apos;osu&apos; is assumed.
                      <br />
-                     Mode can be any of the following: osu, ctb, fruits, taiko
+                     Mode can be any of the following: osu, ctb, fruits, taiko, mania, 4k, 7k
+                     <br />
+                     If no key count is chosen for mania, you will be matched against any mania variant. If
+                     neither player selected a key count, the key count will be unrestricted in the match.
                   </li>
                   <li>
                      <pre className="border rounded p-1 d-inline lh-lg">!unq</pre> - Leave the queue
