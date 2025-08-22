@@ -52,7 +52,7 @@ async function findMappackTag(packList: UndocumentedBeatmappackCompact[], mode: 
    } else return pack.tag;
 }
 
-// Increase this function's max duration to 30s
+// Increase this function's max duration to 45s
 // Max duration configurable is 60s without enabling fluid compute
 export const maxDuration = 45;
 export async function GET(req: NextRequest) {

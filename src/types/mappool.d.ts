@@ -9,7 +9,7 @@ export interface BeatmapVersion {
    bpm: number;
    cs?: number;
    ar?: number;
-   od: number;
+   od?: number;
    stars: number;
    ratings: ModRatings;
    convert?: boolean;

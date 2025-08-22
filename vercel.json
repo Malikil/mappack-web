@@ -5,8 +5,8 @@
          "schedule": "0 23 * * 1"
       },
       {
-         "path": "/api/cron/ratings",
-         "schedule": "0 0 1 * *"
+         "path": "/api/cron/maps",
+         "schedule": "0 0 * * *"
       }
    ]
 }
