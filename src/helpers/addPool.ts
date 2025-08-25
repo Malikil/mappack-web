@@ -51,7 +51,7 @@ async function getPreviousMapScalings(mode: GameMode) {
       datasets.x.push(xData);
       datasets.y.push([nm.rating, hd?.rating || 0, hr?.rating || 0, dt.rating]);
    }
-   const polyReg: PolynomialRegressor & { meta?: { max: number } } = new PolynomialRegressor(1);
+   const polyReg: PolynomialRegressor & { meta?: { max: number } } = new PolynomialRegressor(2, false, true);
    polyReg.fit(datasets.x, datasets.y);
    polyReg.meta = meta;
    return polyReg;

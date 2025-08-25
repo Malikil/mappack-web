@@ -130,9 +130,17 @@ function prepBeatmapData(
 }
 
 export async function debug() {
-   const result = await taikoDb.updateMany(
-      { matchmakingUntil: { $exists: true } },
-      { $unset: { matchmakingUntil: "" } }
-   );
-   console.log(result);
+   const client = new Client(await getOsuToken());
+   const players = playersDb.aggregate<DbPlayer>([
+      { $match: { "osu.pve.songs": { $gt: 10 }, "osu.pve.games": { $gt: 1 } } },
+      { $sort: { "osu.pve.rd": 1 } },
+      { $limit: 600 }
+   ]);
+   for await (const plist of batchCursor(players)) {
+      const osuPlayers = await client.users.getUsers({ query: { ids: plist.map(p => p.osuid) } });
+      osuPlayers.forEach(op => {
+         const dbp = plist.find(p => p.osuid === op.id);
+         console.log(`${op.statistics_rulesets.osu.pp}, ${dbp.osu.pve.rating}`);
+      });
+   }
 }

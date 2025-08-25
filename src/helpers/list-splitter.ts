@@ -1,4 +1,4 @@
-import { FindCursor } from "mongodb";
+import { AggregationCursor, FindCursor } from "mongodb";
 
 export function* batchArray<T>(arr: Array<T>, size: number = 50) {
    for (let i = 0; i * size < arr.length; i++) {
@@ -7,7 +7,7 @@ export function* batchArray<T>(arr: Array<T>, size: number = 50) {
    }
 }
 
-export async function* batchCursor<T>(cursor: FindCursor<T>, batchSize: number = 50) {
+export async function* batchCursor<T>(cursor: FindCursor<T> | AggregationCursor<T>, batchSize: number = 50) {
    let batch: T[] = [];
    for await (const document of cursor) {
       batch.push(document);

@@ -39,13 +39,15 @@ export function anyWithinRange(mapRatings: ModRatings, candidateRating: Rating) 
 }
 
 export function combineRatings(...ratings: Rating[]) {
-   const agg = ratings.reduce(
-      (agg, r) => ({
-         rating: agg.rating + r.rating,
-         rd: agg.rd + r.rd * r.rd
-      }),
-      { rating: 0, rd: 0 }
-   );
+   const agg = ratings
+      .filter(v => v)
+      .reduce(
+         (agg, r) => ({
+            rating: agg.rating + r.rating,
+            rd: agg.rd + r.rd * r.rd
+         }),
+         { rating: 0, rd: 0 }
+      );
    return {
       rating: agg.rating / ratings.length,
       rd: Math.sqrt(agg.rd)
