@@ -2,24 +2,10 @@
 
 import { mappacksDb, playersDb } from "@/app/api/db/connection";
 import { auth } from "@/auth";
-import { mapsDb } from "@/app/api/db/connection";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { GameMode } from "osu-web.js";
+import { getMaplistForPredictor } from "@/helpers/server/predictor";
 
-function scalingsData(mode: GameMode) {
-   const adding = ["$ratings.nm.rd", "$ratings.dt.rd"];
-   if (mode !== "mania") adding.push("$ratings.hd.rd", "$ratings.hr.rd");
-   return mapsDb[mode].aggregate<DbBeatmap & { rdSum: number }>([
-      {
-         $addFields: {
-            rdSum: { $add: adding }
-         }
-      },
-      { $match: { rdSum: { $lt: mode === "mania" ? 280 : 400 } } },
-      { $sort: { rdSum: 1 } },
-      { $limit: 1000 }
-   ]);
-}
 function recentPackData(mode: GameMode) {
    return mappacksDb.aggregate<DbBeatmap>([
       { $match: { mode, active: "fresh" } },
@@ -45,7 +31,7 @@ function recentPackData(mode: GameMode) {
 export async function fetchScatterData(type: "scaling" | "recent") {
    const session = await auth();
    const mode = session ? (await playersDb.findOne({ osuid: session.user.id })).gamemode || "osu" : "osu";
-   const maps = type === "recent" ? recentPackData(mode) : scalingsData(mode);
+   const maps = type === "scaling" ? getMaplistForPredictor(mode) : recentPackData(mode);
    const modRatios = {
       hd: 0,
       hr: 0,
