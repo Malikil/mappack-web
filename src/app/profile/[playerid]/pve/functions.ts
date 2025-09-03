@@ -140,7 +140,8 @@ export async function submitPveData(
                matches: [],
                games: 0,
                songs: 0
-            }
+            },
+            styles: Array.from({ length: parseInt(process.env.SKILL_CATEGORIES) }, () => Math.random() / 100)
          };
          addingUsers.push(
             ...banchoUsers.map(bu => ({
@@ -180,7 +181,8 @@ export async function submitPveData(
          playerId: dbp.osuid,
          dbplayer: dbp,
          playerCalc,
-         history
+         history,
+         styleSums: Array(parseInt(process.env.SKILL_CATEGORIES)).fill(0) as number[]
       };
    });
    const maplist = await Promise.all(
@@ -190,7 +192,8 @@ export async function submitPveData(
          ).map(map => ({
             map,
             mode,
-            ratings: {} as Partial<Record<SimpleMod, Player>>
+            ratings: {} as Partial<Record<SimpleMod, Player>>,
+            styleSums: Array(parseInt(process.env.SKILL_CATEGORIES)).fill(0) as number[]
          }))
       )
    ).then(modeArr => modeArr.flat());

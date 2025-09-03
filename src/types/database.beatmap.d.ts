@@ -14,4 +14,5 @@ export interface DbBeatmap extends BeatmapVersion {
    lastUpdate?: Date;
    lastQuery?: Date;
    matchmakingUntil?: Date;
+   styles: number[];
 }

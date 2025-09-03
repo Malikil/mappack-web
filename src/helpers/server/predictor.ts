@@ -160,7 +160,8 @@ export function prepBeatmapData(
       ratings: {
          nm: ratingObj(nm),
          dt: ratingObj(dt)
-      }
+      },
+      styles: Array.from({ length: parseInt(process.env.SKILL_CATEGORIES) }, () => Math.random() / 100)
    };
    // If the map is unranked, include dates to re-query later
    if (osuBeatmap.ranked < 1) {
