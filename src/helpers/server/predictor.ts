@@ -2,6 +2,7 @@ import { mapsDb } from "@/app/api/db/connection";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { Rating } from "@/types/rating";
 import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
+import { Glicko2 } from "glicko2";
 import { Beatmap, Beatmapset, GameMode } from "osu-web.js";
 
 const INIT_MAP_RD = 150;
@@ -182,3 +183,16 @@ export function prepBeatmapData(
 
    return mapData;
 }
+
+//#region Predicting actual map score
+export function predictOutcome(playerRating: Rating, mapRating: Rating, playerSkills: number[], mapSkills: number[]) {
+   const calculator = new Glicko2();
+   const playerCalc = calculator.makePlayer(playerRating.rating, playerRating.rd, playerRating.vol);
+   const mapCalc = calculator.makePlayer(mapRating.rating, mapRating.rd, mapRating.vol);
+   const simplePredict = calculator.predict(playerCalc, mapCalc);
+   let residual = 0;
+   for (let i = 0; i < playerSkills.length; i++)
+      residual += playerSkills[i] * mapSkills[i];
+   return simplePredict + residual;
+}
+//#endregion

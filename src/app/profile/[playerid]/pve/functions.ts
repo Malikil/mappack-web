@@ -12,6 +12,7 @@ import { SimpleMod } from "@/types/rating";
 import { Glicko2, Player } from "glicko2";
 import { UpdateFilter } from "mongodb";
 import { Client, GameMode, LegacyClient, Mod } from "osu-web.js";
+import { predictOutcome } from "@/helpers/server/predictor";
 
 function parseSongMods(lobbyMods: Mod[], scoreMods: Mod[], mode: GameMode): SimpleMod {
    // When freemod is set on DT, DT will be in both arrays
@@ -209,6 +210,7 @@ export async function submitPveData(
       if (!playerInfo) return;
       matchInfo.forEach(score => {
          const mapInfo = maplist.find(m => m.map._id === score.map && m.mode === score.mode);
+         const playerModeInfo = playerInfo.dbplayer[score.mode];
          // If the map isn't in the list, ignore it
          if (!mapInfo) return;
          // Set the map info on the parser
@@ -222,7 +224,7 @@ export async function submitPveData(
             if (typeof mp !== "number") playersMp = mp[playerId];
             playerInfo.history[score.mode] = {
                mp: playersMp as number,
-               prevRating: playerInfo.dbplayer[score.mode].pve.rating,
+               prevRating: playerModeInfo.pve.rating,
                ratingDiff: 0,
                songs: []
             };
@@ -240,7 +242,7 @@ export async function submitPveData(
 
          // Create a glicko player for this gamemode if it doesn't already exist
          if (!(score.mode in playerInfo.playerCalc)) {
-            const pveStats = playerInfo.dbplayer[score.mode].pve;
+            const pveStats = playerModeInfo.pve;
             playerInfo.playerCalc[score.mode] = calculator.makePlayer(
                pveStats.rating,
                pveStats.rd,
@@ -254,17 +256,34 @@ export async function submitPveData(
          }
 
          // Calculate the score result
-         calculatorResults.push([
-            playerInfo.playerCalc[score.mode],
-            mapInfo.ratings[score.mod],
-            matchResultValue(score.score.getScore(), score.mode)
-         ]);
+         const scoreResult = matchResultValue(score.score.getScore(), score.mode);
+         calculatorResults.push([playerInfo.playerCalc[score.mode], mapInfo.ratings[score.mod], scoreResult]);
+
+         // To update style weights, get the expected score
+         const expectedResult = predictOutcome(
+            playerModeInfo.pve,
+            mapInfo.ratings[score.mode],
+            playerModeInfo.styles,
+            mapInfo.map.styles
+         );
+         const error = scoreResult - expectedResult;
+         const nSkills = parseInt(process.env.SKILL_CATEGORIES);
+         for (let i = 0; i < nSkills; i++) {
+            // Gradient for player skill comes from sum of errors for each map
+            playerInfo.styleSums[i] += error * mapInfo.map.styles[i];
+            // Thus, gradient for map requirements should come from errors for each player
+            // -= so error is expected - actual, aka the error from map's perspective
+            mapInfo.styleSums[i] -= error * playerModeInfo.styles[i];
+         }
       });
    });
 
    // Update matches
    console.log(`Update results for ${calculatorResults.length} scores`);
    calculator.updateRatings(calculatorResults);
+
+   // Update player skills
+   playerCalculatorPairs.forEach(playerData => {});
 
    // Save results to database
    const playersDbWriteResult = await playersDb.bulkWrite(
