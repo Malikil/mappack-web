@@ -287,7 +287,7 @@ export async function submitPveData(
       let min = 10;
       let max = -10;
       console.log(
-         `${playerId} - Average error: ${
+         `${playerInfo.dbplayer.osuname} - Average error: ${
             (Object.values(playerInfo.styleGradients).reduce(
                (p, v) =>
                   p +
