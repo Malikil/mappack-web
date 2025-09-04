@@ -39,6 +39,7 @@ export async function generateAttack(osuid: number, mapcount = 7) {
 export async function submitPve(formData: FormData) {
    const mpLink = formData.get("mp").toString();
    const matchIdSegment = parseInt(mpLink.slice(mpLink.lastIndexOf("/") + 1));
+   console.log(`Submit PvE ${matchIdSegment}`);
    if (await mpLinksDb.findOne({ _id: matchIdSegment }))
       return {
          http: {
