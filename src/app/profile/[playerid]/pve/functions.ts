@@ -12,6 +12,11 @@ import { SimpleMod } from "@/types/rating";
 import { Glicko2, Player } from "glicko2";
 import { UpdateFilter } from "mongodb";
 import { Client, GameMode, LegacyClient, Mod } from "osu-web.js";
+import { predictOutcome } from "@/helpers/server/ratings";
+
+const MAP_STYLE_LEARNING_RATE = 0.001;
+const STYLES_LEARNING_RATE = 0.01;
+const STYLES_REGULARIZATION = 0.1;
 
 function parseSongMods(lobbyMods: Mod[], scoreMods: Mod[], mode: GameMode): SimpleMod {
    // When freemod is set on DT, DT will be in both arrays
@@ -140,7 +145,8 @@ export async function submitPveData(
                matches: [],
                games: 0,
                songs: 0
-            }
+            },
+            styles: Array.from({ length: parseInt(process.env.SKILL_CATEGORIES) }, () => Math.random() / 100)
          };
          addingUsers.push(
             ...banchoUsers.map(bu => ({
@@ -176,11 +182,13 @@ export async function submitPveData(
    const playerCalculatorPairs = playerList.map(dbp => {
       const playerCalc: Partial<Record<GameMode, Player>> = {};
       const history: Partial<Record<GameMode, PvEMatchHistory>> = {};
+      const styleGradients: Partial<Record<GameMode, number[]>> = {};
       return {
          playerId: dbp.osuid,
          dbplayer: dbp,
          playerCalc,
-         history
+         history,
+         styleGradients
       };
    });
    const maplist = await Promise.all(
@@ -190,7 +198,8 @@ export async function submitPveData(
          ).map(map => ({
             map,
             mode,
-            ratings: {} as Partial<Record<SimpleMod, Player>>
+            ratings: {} as Partial<Record<SimpleMod, Player>>,
+            styleGradients: Array(parseInt(process.env.SKILL_CATEGORIES)).fill(0) as number[]
          }))
       )
    ).then(modeArr => modeArr.flat());
@@ -206,6 +215,7 @@ export async function submitPveData(
       if (!playerInfo) return;
       matchInfo.forEach(score => {
          const mapInfo = maplist.find(m => m.map._id === score.map && m.mode === score.mode);
+         const playerModeInfo = playerInfo.dbplayer[score.mode];
          // If the map isn't in the list, ignore it
          if (!mapInfo) return;
          // Set the map info on the parser
@@ -219,7 +229,7 @@ export async function submitPveData(
             if (typeof mp !== "number") playersMp = mp[playerId];
             playerInfo.history[score.mode] = {
                mp: playersMp as number,
-               prevRating: playerInfo.dbplayer[score.mode].pve.rating,
+               prevRating: playerModeInfo.pve.rating,
                ratingDiff: 0,
                songs: []
             };
@@ -237,7 +247,7 @@ export async function submitPveData(
 
          // Create a glicko player for this gamemode if it doesn't already exist
          if (!(score.mode in playerInfo.playerCalc)) {
-            const pveStats = playerInfo.dbplayer[score.mode].pve;
+            const pveStats = playerModeInfo.pve;
             playerInfo.playerCalc[score.mode] = calculator.makePlayer(
                pveStats.rating,
                pveStats.rd,
@@ -251,12 +261,48 @@ export async function submitPveData(
          }
 
          // Calculate the score result
-         calculatorResults.push([
-            playerInfo.playerCalc[score.mode],
-            mapInfo.ratings[score.mod],
-            matchResultValue(score.score.getScore(), score.mode)
-         ]);
+         const scoreResult = matchResultValue(score.score.getScore(), score.mode);
+         calculatorResults.push([playerInfo.playerCalc[score.mode], mapInfo.ratings[score.mod], scoreResult]);
+
+         // To update style weights, get the expected score
+         const expectedResult = predictOutcome(
+            playerModeInfo.pve,
+            mapInfo.map.ratings[score.mod],
+            playerModeInfo.styles,
+            mapInfo.map.styles
+         );
+         const error = scoreResult - expectedResult;
+         // Make sure the gradients array is available
+         if (!(score.mode in playerInfo.styleGradients))
+            playerInfo.styleGradients[score.mode] = Array(parseInt(process.env.SKILL_CATEGORIES)).fill(0);
+
+         const nSkills = parseInt(process.env.SKILL_CATEGORIES);
+         for (let i = 0; i < nSkills; i++) {
+            // Gradient for player skill comes from sum of errors for each map
+            playerInfo.styleGradients[score.mode][i] += error * mapInfo.map.styles[i];
+            // Thus, gradient for map requirements should come from errors for each player
+            mapInfo.styleGradients[i] -= error * playerModeInfo.styles[i];
+         }
       });
+      let min = 10;
+      let max = -10;
+      console.log(
+         `${playerInfo.dbplayer.osuname} - Average error: ${
+            (Object.values(playerInfo.styleGradients).reduce(
+               (p, v) =>
+                  p +
+                  v.reduce((a, b) => {
+                     min = Math.min(min, b);
+                     max = Math.max(max, b);
+                     return a + b;
+                  }),
+               0
+            ) /
+               Object.keys(playerInfo.styleGradients).length) *
+            parseInt(process.env.SKILL_CATEGORIES)
+         }`
+      );
+      console.log(`Min gradient: ${min}, Max gradient: ${max}`);
    });
 
    // Update matches
@@ -266,7 +312,7 @@ export async function submitPveData(
    // Save results to database
    const playersDbWriteResult = await playersDb.bulkWrite(
       playerCalculatorPairs
-         .map(({ playerId, playerCalc, history }) => {
+         .map(({ playerId, dbplayer, playerCalc, history, styleGradients }) => {
             const updateFilter: UpdateFilter<DbPlayer> = {
                $set: {},
                $inc: {},
@@ -275,6 +321,10 @@ export async function submitPveData(
             const playedModes = Object.keys(playerCalc) as GameMode[];
             if (playedModes.length < 1) return;
             for (const mode of playedModes) {
+               // Update the player skills here for this game mode
+               updateFilter.$set[`${mode}.styles`] = dbplayer[mode].styles.map(
+                  (v, i) => v + STYLES_LEARNING_RATE * (styleGradients[mode][i] - STYLES_REGULARIZATION * v)
+               );
                const updatedRating = playerCalc[mode].getRating();
                history[mode].ratingDiff = updatedRating - history[mode].prevRating;
                updateFilter.$set[`${mode}.pve.rating`] = updatedRating;
@@ -307,9 +357,15 @@ export async function submitPveData(
       const filteredMaplist = maplist.filter(m => m.mode === mode);
       const modeDbWriteResult = await mapsDb[mode].bulkWrite(
          filteredMaplist
-            .map(({ map, ratings }) => {
+            .map(({ map, ratings, styleGradients }) => {
+               // Update the map's styles here
                const updateFilter: UpdateFilter<DbBeatmap> = {
-                  $set: {}
+                  $set: {
+                     styles: map.styles.map(
+                        (v, i) =>
+                           v + MAP_STYLE_LEARNING_RATE * (styleGradients[i] - STYLES_REGULARIZATION * v)
+                     )
+                  }
                };
                const playedMods = Object.keys(ratings) as SimpleMod[];
                if (playedMods.length < 1) return;

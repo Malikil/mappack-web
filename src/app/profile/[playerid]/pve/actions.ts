@@ -1,6 +1,6 @@
 "use server";
 
-import { historyDb, playersDb } from "@/app/api/db/connection";
+import { mpLinksDb, playersDb } from "@/app/api/db/connection";
 import { revalidatePath } from "next/cache";
 import { parseMpLobby, submitPveData } from "./functions";
 import { withinRange } from "@/helpers/rating-range";
@@ -39,7 +39,8 @@ export async function generateAttack(osuid: number, mapcount = 7) {
 export async function submitPve(formData: FormData) {
    const mpLink = formData.get("mp").toString();
    const matchIdSegment = parseInt(mpLink.slice(mpLink.lastIndexOf("/") + 1));
-   if (await historyDb.findOne({ _id: "mpLinks", items: matchIdSegment }))
+   console.log(`Submit PvE ${matchIdSegment}`);
+   if (await mpLinksDb.findOne({ _id: matchIdSegment }))
       return {
          http: {
             status: 400,
@@ -62,7 +63,7 @@ export async function submitPve(formData: FormData) {
          }
       };
    // Add the mp link to history
-   historyDb.updateOne({ _id: "mpLinks" }, { $push: { items: matchIdSegment } });
+   mpLinksDb.insertOne({ _id: matchIdSegment });
    console.log(data.matches);
    try {
       await submitPveData(data);

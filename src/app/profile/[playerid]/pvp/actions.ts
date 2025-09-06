@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { addMatchData, createPvpRegistration, parseMpLobby } from "@/app/api/db/pvp/functions";
 import { GameMode, LegacyClient } from "osu-web.js";
-import { historyDb, playersDb } from "@/app/api/db/connection";
+import { mpLinksDb, playersDb } from "@/app/api/db/connection";
 import { redirect } from "next/navigation";
 import { register } from "@/app/api/db/register/functions";
 import { auth } from "@/auth";
@@ -29,7 +29,7 @@ export async function submitPvp(formData: FormData) {
    const mpLink = formData.get("mp").toString();
    const warmups = parseInt(formData.get("warmup").toString()) || 0;
    const matchIdSegment = parseInt(mpLink.slice(mpLink.lastIndexOf("/") + 1));
-   if (await historyDb.findOne({ _id: "mpLinks", items: matchIdSegment }))
+   if (await mpLinksDb.findOne({ _id: matchIdSegment }))
       return {
          http: {
             status: 400,
@@ -52,7 +52,7 @@ export async function submitPvp(formData: FormData) {
             message: "Please only submit matches where you were a player"
          }
       };
-   await historyDb.updateOne({ _id: "mpLinks" }, { $push: { items: matchIdSegment } });
+   await mpLinksDb.insertOne({ _id: matchIdSegment });
    // Verify registrations for both players
    const osuClient = new LegacyClient(process.env.OSU_LEGACY_KEY);
    const players = await playersDb

@@ -2,6 +2,7 @@ import { mapsDb } from "@/app/api/db/connection";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { Rating } from "@/types/rating";
 import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
+import { Glicko2 } from "glicko2";
 import { Beatmap, Beatmapset, GameMode } from "osu-web.js";
 
 const INIT_MAP_RD = 150;
@@ -160,7 +161,8 @@ export function prepBeatmapData(
       ratings: {
          nm: ratingObj(nm),
          dt: ratingObj(dt)
-      }
+      },
+      styles: Array.from({ length: parseInt(process.env.SKILL_CATEGORIES) }, () => Math.random() / 100)
    };
    // If the map is unranked, include dates to re-query later
    if (osuBeatmap.ranked < 1) {

@@ -26,5 +26,6 @@ export const mapsDb = {
 } as const;
 export const playersDb = db.collection<DbPlayer>("players");
 export const historyDb = db.collection<DbHistory>("history");
+export const mpLinksDb = db.collection<{ _id: number }>("mpLinks");
 
 export default db;
