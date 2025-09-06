@@ -1,6 +1,6 @@
 "use server";
 
-import { historyDb, playersDb } from "@/app/api/db/connection";
+import { historyDb, mpLinksDb, playersDb } from "@/app/api/db/connection";
 import { addMatchData, createPvpRegistration, parseMpLobby as parsePvp } from "@/app/api/db/pvp/functions";
 import { register } from "@/app/api/db/register/functions";
 import { parseMpLobby as parsePve, submitPveData } from "@/app/profile/[playerid]/pve/functions";
@@ -18,7 +18,10 @@ export async function adminPvp(formData: FormData) {
             message: "Invalid 1v1 match"
          }
       };
-   await historyDb.updateOne({ _id: "mpLinks" }, { $push: { items: matchIdSegment } });
+   await mpLinksDb.insertOne({ _id: matchIdSegment }).catch(err => {
+      console.warn("Admin pvp add existing mp link");
+      console.warn(err);
+   });
    // Verify registrations for both players
    const osuClient = new LegacyClient(process.env.OSU_LEGACY_KEY);
    const players = await playersDb
@@ -64,7 +67,10 @@ export async function adminPve(formData: FormData) {
    try {
       await submitPveData(data);
       // Add the mp link to history
-      historyDb.updateOne({ _id: "mpLinks" }, { $push: { items: matchIdSegment } });
+      mpLinksDb.insertOne({ _id: matchIdSegment }).catch(err => {
+         console.warn("Admin pve add existing mp link");
+         console.warn(err);
+      });
    } catch (err) {
       console.warn(err);
       return {
