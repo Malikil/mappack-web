@@ -12,7 +12,7 @@ import { SimpleMod } from "@/types/rating";
 import { Glicko2, Player } from "glicko2";
 import { UpdateFilter } from "mongodb";
 import { Client, GameMode, LegacyClient, Mod } from "osu-web.js";
-import { predictOutcome } from "@/helpers/server/predictor";
+import { predictOutcome } from "@/helpers/server/ratings";
 
 const MAP_STYLE_LEARNING_RATE = 0.001;
 const STYLES_LEARNING_RATE = 0.01;
