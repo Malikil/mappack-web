@@ -6,10 +6,11 @@ import { addMapsToDatabase } from "../addPool";
 import { getOsuToken } from "../osuToken";
 
 export async function getMaplist(mode: GameMode, maps: number[]) {
+   console.log(`Get ${maps.length} maps`);
    const maplist: DbBeatmap[] = await mapsDb[mode].find({ _id: { $in: maps } }).toArray();
    // Get map info for any maps not in the database
    const missing = maps.filter(m => !maplist.find(exist => exist._id === m));
-   console.log("missing", missing);
+   console.log(`Missing ${missing.length}`);
    if (missing.length > 0) maplist.push(...(await addMapsToDatabase(await getOsuToken(), mode, missing)));
    return maplist;
 }
