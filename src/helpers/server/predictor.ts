@@ -2,7 +2,6 @@ import { mapsDb } from "@/app/api/db/connection";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { Rating } from "@/types/rating";
 import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
-import { Glicko2 } from "glicko2";
 import { Beatmap, Beatmapset, GameMode } from "osu-web.js";
 
 const INIT_MAP_RD = 150;
@@ -31,24 +30,22 @@ export function getMaplistForPredictor(mode: GameMode) {
                { $sort: { "ratings.dt.rd": 1 } },
                { $limit: 100 }
             ],
-            hdMaps:
-               mode === "mania"
-                  ? []
-                  : [
+            ...(mode === "mania"
+               ? {}
+               : {
+                    hdMaps: [
                        { $match: { "ratings.hd.rd": { $lt: 100 } } },
                        { $sort: { "ratings.hd.rd": 1 } },
                        { $limit: 100 }
                     ],
-            hrMaps:
-               mode === "mania"
-                  ? []
-                  : [
+                    hrMaps: [
                        { $match: { "ratings.hr.rd": { $lt: 100 } } },
                        { $sort: { "ratings.hr.rd": 1 } },
                        { $limit: 100 }
-                    ],
+                    ]
+                 }),
             combinedMaps: [
-               { $match: { rdSum: { $lt: mode === "mania" ? 200 : 400 } } },
+               { $match: { rdSum: { $lt: mode === "mania" ? 270 : 400 } } },
                { $sort: { rdSum: 1 } },
                { $limit: 1400 }
             ]
@@ -58,7 +55,13 @@ export function getMaplistForPredictor(mode: GameMode) {
       {
          $project: {
             allMaps: {
-               $concatArrays: ["$nmMaps", "$hdMaps", "$hrMaps", "$dtMaps", "$combinedMaps"]
+               $concatArrays: [
+                  "$nmMaps",
+                  { $ifNull: ["$hdMaps", []] },
+                  { $ifNull: ["$hrMaps", []] },
+                  "$dtMaps",
+                  "$combinedMaps"
+               ]
             }
          }
       },
