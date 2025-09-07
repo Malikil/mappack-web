@@ -10,8 +10,8 @@ export default function NavbarItems() {
             </Link>
          </li>
          <li className="nav-item">
-            <Link className="nav-link" href="/maps">
-               Maps
+            <Link className="nav-link" href="/mappool/preview">
+               Preview Pool
             </Link>
          </li>
          <li className="nav-item">
