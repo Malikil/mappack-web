@@ -8,13 +8,24 @@ import { anyWithinRange } from "@/helpers/rating-range";
 import { ModRatings, Rating } from "@/types/rating";
 import interpolate from "color-interpolate";
 import { buildUrl } from "osu-web.js";
+import { ModeInfo } from "@/types/database.player";
 
 const palette = interpolate(["#4fc0ff", "#7cff4f", "#f6f05c", "#ff4e6f", "#c645b8", "#6563de", "black"]);
+
+function getTargetRating(modeInfo: ModeInfo): Rating {
+   if (!modeInfo) return;
+   // Players are provisional until they hit 3 wins or 4 losses
+   if (modeInfo.pvp) {
+      const pvp = modeInfo.pvp;
+      if (pvp.wins > 2 || pvp.losses > 3) return pvp;
+   }
+   return modeInfo.pve;
+}
 
 export default async function Mappool() {
    const session = await auth();
    const player = session && (await playersDb.findOne({ osuid: session.user.id }));
-   const playerRating: Rating = player && (player[player.gamemode]?.pvp || player[player.gamemode]?.pve);
+   const playerRating: Rating = player && getTargetRating(player[player.gamemode]);
    const mode = player?.gamemode || "osu";
 
    const pools = (await mappacksDb
