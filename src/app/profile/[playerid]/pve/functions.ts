@@ -70,6 +70,8 @@ export async function parseMpLobby(mp: number, allowIncomplete = false): Promise
                   maps[game.play_mode].add(game.beatmap_id);
                   // Add individual player scores
                   for (const score of game.scores) {
+                     // If more than half the song is misses, discard the play
+                     if (score.countmiss > score.maxcombo) continue;
                      const scoreResult = {
                         map: game.beatmap_id,
                         mod: parseSongMods(game.mods, score.enabled_mods, game.play_mode),
