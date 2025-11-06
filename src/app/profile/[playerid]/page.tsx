@@ -10,7 +10,14 @@ import PvPResultsCard from "./pvp/PvPResultsCard";
 import { DbPlayer, RankedPlayer } from "@/types/database.player";
 
 export default async function Profile({ params }) {
-   const playerid = parseInt((await params).playerid);
+   const playerParam = (await params).playerid;
+   const playerid = parseInt(playerParam);
+   if (!playerid) {
+      // If the playerid is a string, lookup by name and redirect to the id url
+      const player = await playersDb.findOne({ osuname: playerParam });
+      if (player) return redirect(`/profile/${player.osuid}`);
+      else return redirect(`/leaderboard`);
+   }
    const session = await auth();
    const user = await playersDb.findOne({ osuid: session?.user.id });
    const gamemode = user?.gamemode || "osu";

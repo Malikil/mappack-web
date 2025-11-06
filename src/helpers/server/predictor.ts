@@ -12,6 +12,8 @@ export function getMaplistForPredictor(mode: GameMode) {
    const adding = ["$ratings.nm.rd", "$ratings.dt.rd"];
    if (mode !== "mania") adding.push("$ratings.hd.rd", "$ratings.hr.rd");
    return mapsDb[mode].aggregate<DbBeatmap & { rdSum: number }>([
+      // Discard maps with 0 stars. I expect this will really only happen during SR reworks
+      { $match: { stars: { $gt: 0 } } },
       {
          $addFields: {
             rdSum: { $add: adding }
