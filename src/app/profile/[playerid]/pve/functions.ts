@@ -22,7 +22,7 @@ function parseSongMods(lobbyMods: Mod[], scoreMods: Mod[], mode: GameMode): Simp
    // When freemod is set on DT, DT will be in both arrays
    // Just take unique mods in general
    const ignore: Mod[] = ["NF", "MR", "FI", "SD", "PF", "FL"];
-   const mods = [
+   let mods = [
       ...new Set(
          lobbyMods
             .concat(scoreMods)
@@ -30,6 +30,8 @@ function parseSongMods(lobbyMods: Mod[], scoreMods: Mod[], mode: GameMode): Simp
             .filter(m => !ignore.includes(m))
       )
    ];
+   // Catch generally allows HD in addition to other mods. Discard HD if it's not the only mod
+   if (mode === "fruits" && mods.length > 1) mods = mods.filter(m => m !== "HD");
    // In order for the score to be valid, only one mod should be used
    if (mods.length > 1) return null;
    if (mods.length === 0) return "nm";
