@@ -20,9 +20,9 @@ export function matchResultValue(score: number, gamemode: GameMode) {
    return (score - min) / (max - min);
 }
 
-export function scoreFromResult(result: number, gamemode: GameMode) {
+export function scoreFromResult(result: number, gamemode: GameMode, capped: boolean = true) {
    const min: number = MIN_TARGETS[gamemode];
-   const max: number = gamemode === "mania" ? 925000 : 900000;
+   const max: number = !capped ? 1000000 : gamemode === "mania" ? 925000 : 900000;
    return Math.max(0, Math.min(result * (max - min) + min, 1000000));
 }
 

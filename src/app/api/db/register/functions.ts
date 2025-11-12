@@ -16,10 +16,10 @@ export async function register(osuid: number, osuname: string) {
       {
          $set: {
             osuname,
-            osu: { pve, styles },
-            fruits: { pve, styles },
-            taiko: { pve, styles },
-            mania: { pve, styles }
+            osu: { pve, styles, pools: [] },
+            fruits: { pve, styles, pools: [] },
+            taiko: { pve, styles, pools: [] },
+            mania: { pve, styles, pools: [] }
          },
          $unset: { hideLeaderboard: "" }
       },

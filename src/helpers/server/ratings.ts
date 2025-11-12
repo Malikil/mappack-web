@@ -20,11 +20,20 @@ export async function combineRatingsById(mode: GameMode, ...playerIds: number[])
    };
 }
 
+/**
+ * Gives the outcome (0, 1) the player is expected to get on this map. If an array of skills is
+ * provided they are also used in the prediction. Both skills arrays should be equal length.
+ * @param playerRating 
+ * @param mapRating 
+ * @param playerSkills 
+ * @param mapSkills 
+ * @returns 
+ */
 export function predictOutcome(
    playerRating: Rating,
    mapRating: Rating,
-   playerSkills: number[],
-   mapSkills: number[]
+   playerSkills: number[] = [],
+   mapSkills: number[] = []
 ) {
    const calculator = new Glicko2();
    const playerCalc = calculator.makePlayer(playerRating.rating, playerRating.rd, playerRating.vol);

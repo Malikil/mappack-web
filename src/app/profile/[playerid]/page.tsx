@@ -8,6 +8,7 @@ import { buildUrl } from "osu-web.js";
 import CreatePvpStats from "./pvp/CreatePvpStats";
 import PvPResultsCard from "./pvp/PvPResultsCard";
 import { DbPlayer, RankedPlayer } from "@/types/database.player";
+import PoolSetupCard from "./pools/PoolSetupCard";
 
 export default async function Profile({ params }) {
    const playerParam = (await params).playerid;
@@ -39,7 +40,7 @@ export default async function Profile({ params }) {
             {
                $setWindowFields: {
                   partitionBy: {
-                     $and: [{ $gt: [`$${gamemode}.pve.songs`, 10] }, { $gt: [`$${gamemode}.pve.games`, 1] }]
+                     $and: [{ $gt: [`$${gamemode}.pve.songs`, 10] }, { $gt: [`$${gamemode}.pve.games`, 2] }]
                   },
                   sortBy: { [`${gamemode}.pve.rating`]: -1 },
                   output: {
@@ -55,6 +56,7 @@ export default async function Profile({ params }) {
 
    const pvpStats = player[gamemode].pvp;
    const pveStats = player[gamemode].pve;
+   const pools = player[gamemode].pools;
    return (
       <div className="d-flex flex-column gap-2">
          <div className="d-flex justify-content-between align-items-center px-2">
@@ -95,6 +97,7 @@ export default async function Profile({ params }) {
                mode={gamemode}
             />
          )}
+         {user.osuid === player.osuid && <PoolSetupCard data={pools} osuid={player.osuid} mode={gamemode} />}
       </div>
    );
 }

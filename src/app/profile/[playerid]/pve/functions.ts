@@ -8,7 +8,7 @@ import { delay, seconds } from "@/time";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { DbPlayer, ModeInfo, PvEMatchHistory } from "@/types/database.player";
 import { PveLobbyResults } from "@/types/multiplayer";
-import { SimpleMod } from "@/types/rating";
+import { ModPool, SimpleMod } from "@/types/rating";
 import { Glicko2, Player } from "glicko2";
 import { UpdateFilter } from "mongodb";
 import { Client, GameMode, LegacyClient, Mod } from "osu-web.js";
@@ -150,7 +150,8 @@ export async function submitPveData(
                games: 0,
                songs: 0
             },
-            styles: Array.from({ length: parseInt(process.env.SKILL_CATEGORIES) }, () => Math.random() / 100)
+            styles: Array.from({ length: parseInt(process.env.SKILL_CATEGORIES) }, () => Math.random() / 100),
+            pools: []
          };
          addingUsers.push(
             ...banchoUsers.map(bu => ({
@@ -210,6 +211,13 @@ export async function submitPveData(
    console.log(`Got ${maplist.length} maps`);
 
    // Create matches for all scores and prep the player's history
+   const practicePoolUpdates: {
+      player: number;
+      mode: GameMode;
+      map: number;
+      mod: ModPool;
+      score: number;
+   }[] = [];
    Object.keys(matches).forEach(playerIdStr => {
       const playerId = parseInt(playerIdStr);
       const matchInfo = matches[playerId];
@@ -245,6 +253,14 @@ export async function submitPveData(
                setid: mapInfo.map.setid,
                version: mapInfo.map.version
             },
+            mod: score.mod,
+            score: score.score.getScore()
+         });
+         // Add to the practice pool update list
+         practicePoolUpdates.push({
+            player: playerId,
+            mode: score.mode,
+            map: score.map,
             mod: score.mod,
             score: score.score.getScore()
          });
@@ -314,6 +330,27 @@ export async function submitPveData(
    calculator.updateRatings(calculatorResults);
 
    // Save results to database
+   // First player practice pools
+   const practicePoolDbResult = await playersDb.bulkWrite(
+      practicePoolUpdates.map(ppu => {
+         return {
+            updateOne: {
+               filter: { osuid: ppu.player },
+               update: {
+                  $push: {
+                     [`${ppu.mode}.pools.$[pool].maps.$[map].scores`]: ppu.score
+                  }
+               },
+               arrayFilters: [
+                  { "pool.maps.id": ppu.map },
+                  { "map.id": ppu.map, "map.mod": { $in: ["fm", ppu.mod] } }
+               ]
+            }
+         };
+      })
+   );
+   console.log(practicePoolDbResult);
+   // Then remaining player info
    const playersDbWriteResult = await playersDb.bulkWrite(
       playerCalculatorPairs
          .map(({ playerId, dbplayer, playerCalc, history, styleGradients }) => {

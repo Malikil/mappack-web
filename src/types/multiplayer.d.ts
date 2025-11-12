@@ -1,5 +1,6 @@
 import { GameMode } from "osu-web.js";
 import { ModPool } from "./rating";
+import { ScoreParser } from "@/helpers/scorev1";
 
 export type FreemodSelection = "hd" | "hr" | "hdhr";
 
