@@ -97,7 +97,7 @@ export default async function Profile({ params }) {
                mode={gamemode}
             />
          )}
-         {user.osuid === player.osuid && <PoolSetupCard data={pools} osuid={player.osuid} mode={gamemode} />}
+         {user?.osuid === player.osuid && <PoolSetupCard data={pools} osuid={player.osuid} mode={gamemode} />}
       </div>
    );
 }

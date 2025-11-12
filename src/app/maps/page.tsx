@@ -48,7 +48,6 @@ export default async function Mappool({ searchParams }) {
             : null
       ).filter(v => v)
    );
-   console.log(maplist);
 
    return (
       <div>
