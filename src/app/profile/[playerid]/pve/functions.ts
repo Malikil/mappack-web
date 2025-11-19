@@ -18,7 +18,7 @@ const MAP_STYLE_LEARNING_RATE = 0.001;
 const STYLES_LEARNING_RATE = 0.01;
 const STYLES_REGULARIZATION = 0.1;
 
-function parseSongMods(lobbyMods: Mod[], scoreMods: Mod[], mode: GameMode): SimpleMod {
+export function parseSongMods(lobbyMods: Mod[], scoreMods: Mod[], mode: GameMode): SimpleMod {
    // When freemod is set on DT, DT will be in both arrays
    // Just take unique mods in general
    const ignore: Mod[] = ["NF", "MR", "FI", "SD", "PF", "FL"];
@@ -120,12 +120,12 @@ export async function submitPveData(
    const playerIds = Object.keys(matches).map(id => parseInt(id));
    const playerList: DbPlayer[] = await playersDb
       .find({
-         osuid: { $in: playerIds }
+         _id: { $in: playerIds }
       })
       .toArray();
    console.log(`Found ${playerList.length} of ${playerIds.length} players`);
    // Look up anyone we don't already have
-   const missingPlayers = playerIds.filter(id => !playerList.find(p => p.osuid === id));
+   const missingPlayers = playerIds.filter(id => !playerList.find(p => p._id === id));
    if (missingPlayers.length > 0) {
       const client = new Client(await getOsuToken());
       const addingUsers: DbPlayer[] = [];
@@ -155,7 +155,7 @@ export async function submitPveData(
          };
          addingUsers.push(
             ...banchoUsers.map(bu => ({
-               osuid: bu.id,
+               _id: bu.id,
                osuname: bu.username,
                osu: ratingSet,
                fruits: ratingSet,
@@ -189,7 +189,7 @@ export async function submitPveData(
       const history: Partial<Record<GameMode, PvEMatchHistory>> = {};
       const styleGradients: Partial<Record<GameMode, number[]>> = {};
       return {
-         playerId: dbp.osuid,
+         playerId: dbp._id,
          dbplayer: dbp,
          playerCalc,
          history,
@@ -335,7 +335,7 @@ export async function submitPveData(
       practicePoolUpdates.map(ppu => {
          return {
             updateOne: {
-               filter: { osuid: ppu.player },
+               filter: { _id: ppu.player },
                update: {
                   $push: {
                      [`${ppu.mode}.pools.$[pool].maps.$[map].scores`]: ppu.score
@@ -384,7 +384,7 @@ export async function submitPveData(
             }
             return {
                updateOne: {
-                  filter: { osuid: playerId },
+                  filter: { _id: playerId },
                   update: updateFilter
                }
             };

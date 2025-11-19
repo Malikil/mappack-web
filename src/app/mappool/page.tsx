@@ -24,7 +24,7 @@ function getTargetRating(modeInfo: ModeInfo): Rating {
 
 export default async function Mappool() {
    const session = await auth();
-   const player = session && (await playersDb.findOne({ osuid: session.user.id }));
+   const player = session && (await playersDb.findOne({ _id: session.user.id }));
    const playerRating: Rating = player && getTargetRating(player[player.gamemode]);
    const mode = player?.gamemode || "osu";
 

@@ -12,7 +12,7 @@ export async function register(osuid: number, osuname: string) {
    };
    const styles = Array.from({ length: parseInt(process.env.SKILL_CATEGORIES) }, () => Math.random() / 100);
    const player = await playersDb.findOneAndUpdate(
-      { osuid },
+      { _id: osuid },
       {
          $set: {
             osuname,

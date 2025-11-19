@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Beatmap, Beatmapset, Client, Fails, GameMode } from "osu-web.js";
+import { Client, GameMode } from "osu-web.js";
 import { mapsDb } from "../../db/connection";
 import { AnyBulkWriteOperation, UpdateFilter } from "mongodb";
 import { getOsuToken } from "@/helpers/osuToken";

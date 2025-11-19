@@ -30,7 +30,7 @@ function recentPackData(mode: GameMode) {
 
 export async function fetchScatterData(type: "scaling" | "recent") {
    const session = await auth();
-   const mode = session ? (await playersDb.findOne({ osuid: session.user.id })).gamemode || "osu" : "osu";
+   const mode = session ? (await playersDb.findOne({ _id: session.user.id })).gamemode || "osu" : "osu";
    const maps = type === "scaling" ? getMaplistForPredictor(mode) : recentPackData(mode);
    const modRatios = {
       hd: 0,

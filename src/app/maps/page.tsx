@@ -91,14 +91,14 @@ export default async function Mappool({ searchParams }) {
                               }}
                            >
                               <CardBody className="text-outline">
-                                 <Row>
-                                    <Col>
+                                 <div className="d-flex gap-3">
+                                    <div>
                                        <CardTitle>
                                           {beatmap.title} [{beatmap.version}]
                                        </CardTitle>
                                        <CardSubtitle>{beatmap.artist}</CardSubtitle>
-                                    </Col>
-                                    <Col>
+                                    </div>
+                                    <div className="ms-auto">
                                        <div className="d-flex gap-3">
                                           <div>
                                              <div>Rating</div>
@@ -123,7 +123,7 @@ export default async function Mappool({ searchParams }) {
                                                    <div>{avg.toFixed()}</div>
                                                 </div>
                                                 <div>
-                                                   <div>Weighted Avg</div>
+                                                   <div className="text-nowrap">Weighted Avg</div>
                                                    <div>{wavg.toFixed()}</div>
                                                 </div>
                                                 <div>
@@ -136,8 +136,8 @@ export default async function Mappool({ searchParams }) {
                                              </>
                                           )}
                                        </div>
-                                    </Col>
-                                 </Row>
+                                    </div>
+                                 </div>
                               </CardBody>
                            </Card>
                         );

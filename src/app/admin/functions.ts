@@ -5,7 +5,7 @@ import { playersDb } from "../api/db/connection";
 import { cache } from "react";
 
 const checkAdmin = cache(async (osuid: number) => {
-   const player = await playersDb.findOne({ osuid, admin: true });
+   const player = await playersDb.findOne({ _id: osuid, admin: true });
    return player;
 });
 

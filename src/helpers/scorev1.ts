@@ -2,6 +2,12 @@ import { DbBeatmap } from "@/types/database.beatmap";
 import { GameMode, LegacyMatchScore, ScoringType } from "osu-web.js";
 
 export class ScoreParser {
+   static parseV1Score(score: LegacyMatchScore, mode: GameMode, map: DbBeatmap) {
+      const parser = new ScoreParser(score, "Score", mode);
+      parser.setMap(map);
+      return parser.getScore();
+   }
+
    #score: LegacyMatchScore;
    #scoreCache: number;
    #scoreMode: ScoringType;

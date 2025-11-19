@@ -10,7 +10,7 @@ const STYLES_REGULARIZATION = 0.1;
 
 export async function combineRatingsById(mode: GameMode, ...playerIds: number[]) {
    const players = await playersDb
-      .find({ osuid: { $in: playerIds }, [`${mode}.pvp`]: { $exists: true } })
+      .find({ _id: { $in: playerIds }, [`${mode}.pvp`]: { $exists: true } })
       .toArray();
    if (players.length < 1) return;
    const targetRating = combineRatings(...players.map(p => p[mode].pvp));

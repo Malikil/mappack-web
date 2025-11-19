@@ -16,7 +16,7 @@ export default async function Profile({ params }) {
    if (!playerid) {
       // If the playerid is a string, lookup by name and redirect to the id url
       const player = await playersDb.findOne({ osuname: playerParam });
-      if (player) return redirect(`/profile/${player.osuid}`);
+      if (player) return redirect(`/profile/${player._id}`);
       else return redirect(`/leaderboard`);
    }
    const session = await auth();
@@ -63,7 +63,7 @@ export default async function Profile({ params }) {
             <h1>
                <Image
                   alt="avatar"
-                  src={buildUrl.userAvatar(player.osuid)}
+                  src={buildUrl.userAvatar(player._id)}
                   height={64}
                   width={64}
                   className="rounded"
@@ -77,27 +77,27 @@ export default async function Profile({ params }) {
                pvpStats={pvpStats}
                playerid={playerid}
                mode={gamemode}
-               allowSubmit={user?.osuid === player.osuid}
+               allowSubmit={user?._id === player._id}
             />
          ) : (
             <Card>
                <CardHeader>Vs. Players</CardHeader>
                <CardBody className="d-flex justify-content-between align-items-center">
                   <span>
-                     Play a match to create PvP stats{user?.osuid === player.osuid && ", or click the button"}
+                     Play a match to create PvP stats{user?._id === player._id && ", or click the button"}
                   </span>
-                  {user?.osuid === player.osuid && <CreatePvpStats playerid={playerid} gamemode={gamemode} />}
+                  {user?._id === player._id && <CreatePvpStats playerid={playerid} gamemode={gamemode} />}
                </CardBody>
             </Card>
          )}
          {pveStats && (
             <PvEResultsCard
                data={pveStats}
-               osuid={user?.osuid === player.osuid ? playerid : null}
+               osuid={user?._id === player._id ? playerid : null}
                mode={gamemode}
             />
          )}
-         {user?.osuid === player.osuid && <PoolSetupCard data={pools} osuid={player.osuid} mode={gamemode} />}
+         {user?._id === player._id && <PoolSetupCard data={pools} osuid={player._id} mode={gamemode} />}
       </div>
    );
 }

@@ -8,7 +8,7 @@ export async function changeGamemode(gamemode) {
    if (!session) return;
 
    await playersDb.updateOne(
-      { osuid: session.user.id },
+      { _id: session.user.id },
       {
          $set: {
             gamemode

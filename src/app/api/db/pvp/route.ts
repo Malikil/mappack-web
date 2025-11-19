@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { addMatchData, createPvpRegistration, parseMpLobby } from "./functions";
+import { addMatchData, parseMpLobby } from "./functions";
+import { createPvpRegistration } from "@/helpers/server/players";
+import { MpLobbyResults } from "@/types/multiplayer";
 
 export const POST = async (req: NextRequest) => {
    const auth = req.headers.get("Authorization");
-   if (auth !== process.env.MATCH_SUBMIT_AUTH)
-      return new NextResponse("Bad auth key", { status: 401 });
+   if (auth !== process.env.MATCH_SUBMIT_AUTH) return new NextResponse("Bad auth key", { status: 401 });
 
    const { mp, playerDefault } = await req.json();
    console.log(`Add results from ${mp}`);
@@ -14,17 +15,18 @@ export const POST = async (req: NextRequest) => {
       mpResults.winnerId = mpResults.loserId;
       mpResults.loserId = playerDefault;
    }
-   await addMatchData(mpResults);
+   if (mpResults.winnerId === "Red" || mpResults.winnerId === "Blue")
+      return new NextResponse("Invalid 1v1", { status: 400 });
+   await addMatchData(mpResults as MpLobbyResults);
    return new NextResponse(null, { status: 200 });
 };
 
 export const PUT = async (req: NextRequest) => {
    const auth = req.headers.get("Authorization");
-   if (auth !== process.env.MATCH_SUBMIT_AUTH)
-      return new NextResponse("Bad auth key", { status: 401 });
+   if (auth !== process.env.MATCH_SUBMIT_AUTH) return new NextResponse("Bad auth key", { status: 401 });
 
-   const { id, pp_raw, mode } = await req.json();
-   const player = await createPvpRegistration(id, pp_raw, mode);
+   const { id, mode } = await req.json();
+   const player = await createPvpRegistration(id, mode);
    if (player) return NextResponse.json(player[mode].pvp, { status: 201 });
    else return new NextResponse("Couldn't create PvP stats", { status: 400 });
 };

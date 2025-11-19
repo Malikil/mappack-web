@@ -27,7 +27,7 @@ export interface MatchHistory {
    songs: MatchHistorySong[];
 }
 export interface MatchHistoryOpponent {
-   id: number;
+   id?: number;
    name: string;
    rating: number;
 }
@@ -69,7 +69,7 @@ export interface ModeInfo {
 }
 
 export interface DbPlayer extends Record<GameMode, ModeInfo> {
-   osuid: number;
+   _id: number;
    osuname: string;
    admin?: boolean;
    hideLeaderboard?: boolean;

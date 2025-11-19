@@ -62,9 +62,13 @@ export default async function MatchHistoryItem({ match, mode }: { match: PvPMatc
                </div>
                <div className="ms-auto">
                   vs.{" "}
-                  <Link href={`/profile/${match.opponent.id}`} className="text-decoration-none">
-                     {match.opponent.name}
-                  </Link>{" "}
+                  {match.opponent.id ? (
+                     <Link href={`/profile/${match.opponent.id}`} className="text-decoration-none">
+                        {match.opponent.name}
+                     </Link>
+                  ) : (
+                     match.opponent.name
+                  )}{" "}
                   ({match.opponent.rating?.toFixed(0)})
                   <Link
                      className="ms-2 text-decoration-none"

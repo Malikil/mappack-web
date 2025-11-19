@@ -10,7 +10,7 @@ import ClickableTableRow from "@/components/ClickableTableRow";
 export default async function Leaderboard() {
    const session = await auth();
    let adminFilter: Filter<DbPlayer> = { hideLeaderboard: { $exists: false } };
-   const user = await playersDb.findOne({ osuid: session?.user.id });
+   const user = await playersDb.findOne({ _id: session?.user.id });
    const gamemode = user?.gamemode || "osu";
    if (user && user.admin) adminFilter = {};
    const pvePlayers = await playersDb
@@ -48,10 +48,10 @@ export default async function Leaderboard() {
             </thead>
             <tbody>
                {pvpPlayers.map((p, i) => (
-                  <ClickableTableRow key={p.osuid} href={`/profile/${p.osuid}`}>
+                  <ClickableTableRow key={p._id} href={`/profile/${p._id}`}>
                      <td>
                         <Image
-                           src={buildUrl.userAvatar(p.osuid)}
+                           src={buildUrl.userAvatar(p._id)}
                            alt="Avatar"
                            width={32}
                            height={32}
@@ -86,10 +86,10 @@ export default async function Leaderboard() {
             </thead>
             <tbody>
                {pvePlayers.map((p, i) => (
-                  <ClickableTableRow key={p.osuid} href={`/profile/${p.osuid}`}>
+                  <ClickableTableRow key={p._id} href={`/profile/${p._id}`}>
                      <td>
                         <Image
-                           src={buildUrl.userAvatar(p.osuid)}
+                           src={buildUrl.userAvatar(p._id)}
                            alt="Avatar"
                            width={32}
                            height={32}

@@ -6,7 +6,7 @@ import Image from "next/image";
 
 export default async function AvatarMenu() {
    const session = await auth();
-   const player = await playersDb.findOne({ osuid: session.user.id }).catch(err => console.warn(err));
+   const player = await playersDb.findOne({ _id: session.user.id }).catch(err => console.warn(err));
    return (
       <ul className="dropdown-menu dropdown-menu-end">
          {player?.admin && (
