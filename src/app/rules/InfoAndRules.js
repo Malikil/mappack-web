@@ -1,6 +1,6 @@
 import Mappools from "./Mappools";
 import PvPRules from "./PvPRules";
-import ScoreAttackRules from "./ScoreAttackRules";
+import PvERules from "./PvERules";
 
 export default function InfoAndRules() {
    return (
@@ -8,7 +8,7 @@ export default function InfoAndRules() {
          <h2>Info and Rules</h2>
          <Mappools />
          <PvPRules />
-         <ScoreAttackRules />
+         <PvERules />
          <hr />
          <h5>Links</h5>
          <ul>
