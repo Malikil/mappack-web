@@ -38,7 +38,7 @@ export default async function Leaderboard() {
          <Table className="table-hover table-striped flex-fill align-middle">
             <thead>
                <tr>
-                  <th className="text-decoration-underline">1v1</th>
+                  <th className="text-decoration-underline">PvP</th>
                   <th>Rank</th>
                   <th>Name</th>
                   <th>Rating</th>
