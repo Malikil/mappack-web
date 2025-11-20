@@ -48,15 +48,16 @@ export default function PvERules() {
                      <ul>
                         <li>
                            <pre className="border rounded p-1 d-inline lh-lg">
-                              !quali [mode] ...[map|mod|shuffle]
+                              !quali &lt;mode&gt; ...[map|mod|shuffle]
                            </pre>
-                           &nbsp;- Create a lobby and invite you to it. If no mode is specified &apos;osu&apos; is
-                           assumed. Specifying &apos;mania&apos; will not restrict key count
+                           &nbsp;- Create a lobby and invite you to it. If mode is unrecognized,
+                           &apos;osu&apos; is assumed. Specifying &apos;mania&apos; will not restrict key
+                           count
                            <br />
                            Mode can be any of the following: osu, ctb, fruits, taiko, mania, 4k, 7k
                            <br />
-                           Include <pre className="d-inline">shuffle</pre> at the beginning or end of the maps list to pick maps in
-                           a random order
+                           Include <pre className="d-inline">shuffle</pre> at the beginning or end of the maps
+                           list to pick maps in a random order
                            <br />
                            List maps by id, to change the selected mod put the mod ahead of the list of maps
                            that use it. Eg:
