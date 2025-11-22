@@ -1,11 +1,17 @@
 import { ModRatings, Rating } from "@/types/rating";
 import { GameMode } from "osu-web.js";
 
-const MIN_TARGETS = {
+export const MIN_TARGETS = {
    osu: 100000,
    fruits: 500000,
    taiko: 300000,
-   mania: 475000
+   mania: 600000
+};
+export const MAX_TARGETS = {
+   osu: 900000,
+   fruits: 900000,
+   taiko: 900000,
+   mania: 950000
 };
 
 /**
@@ -13,7 +19,7 @@ const MIN_TARGETS = {
  */
 export function matchResultValue(score: number, gamemode: GameMode) {
    const min: number = MIN_TARGETS[gamemode];
-   const max: number = gamemode === "mania" ? 925000 : 900000;
+   const max: number = MAX_TARGETS[gamemode];
    if (score < min) return 0;
    if (score > max) return 1;
    // Scale linearly between min and max scores
@@ -22,7 +28,7 @@ export function matchResultValue(score: number, gamemode: GameMode) {
 
 export function scoreFromResult(result: number, gamemode: GameMode, capped: boolean = true) {
    const min: number = MIN_TARGETS[gamemode];
-   const max: number = !capped ? 1000000 : gamemode === "mania" ? 925000 : 900000;
+   const max: number = !capped ? 1000000 : MAX_TARGETS[gamemode];
    return Math.max(0, Math.min(result * (max - min) + min, 1000000));
 }
 

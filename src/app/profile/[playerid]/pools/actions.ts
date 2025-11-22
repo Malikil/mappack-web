@@ -9,7 +9,7 @@ import { GameMode } from "osu-web.js";
 
 export async function addPool(osuid: number, mode: GameMode) {
    const result = await playersDb.updateOne(
-      { osuid, [`${mode}.pools.name`]: { $ne: "" } },
+      { _id: osuid, [`${mode}.pools.name`]: { $ne: "" } },
       {
          $push: {
             [`${mode}.pools`]: {
@@ -18,6 +18,16 @@ export async function addPool(osuid: number, mode: GameMode) {
             }
          }
       }
+   );
+   console.log(result);
+
+   revalidatePath("/profile");
+}
+
+export async function removePool(osuid: number, mode: GameMode, poolname: string) {
+   const result = await playersDb.updateOne(
+      { _id: osuid },
+      { $pull: { [`${mode}.pools`]: { name: poolname } } }
    );
    console.log(result);
 
@@ -35,7 +45,7 @@ export async function savePool(
       const nameConflict = await playersDb.findOne({ osuid, [`${mode}.pools.name`]: newName });
       if (nameConflict) throw new Error("Pool name already exists");
    }
-   const oldPool = (await playersDb.findOne({ osuid }))[mode].pools.find(p => p.name === oldName);
+   const oldPool = (await playersDb.findOne({ _id: osuid }))[mode].pools.find(p => p.name === oldName);
    const maplist = await getMaplist(
       mode,
       maps.map(m => m.map._id).filter(v => v)
@@ -50,7 +60,7 @@ export async function savePool(
    };
 
    const result = await playersDb.updateOne(
-      { osuid, [`${mode}.pools.name`]: oldName },
+      { _id: osuid, [`${mode}.pools.name`]: oldName },
       {
          $set: {
             [`${mode}.pools.$`]: {

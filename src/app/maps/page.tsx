@@ -1,5 +1,5 @@
 import { mapsDb, playersDb } from "../api/db/connection";
-import { Card, CardBody, CardSubtitle, CardTitle, Col, Row } from "react-bootstrap";
+import { Button, Card, CardBody, CardSubtitle, CardTitle, Col, Row } from "react-bootstrap";
 //import interpolate from "color-interpolate";
 import { buildUrl } from "osu-web.js";
 import { DbBeatmap } from "@/types/database.beatmap";
@@ -8,6 +8,7 @@ import { auth } from "@/auth";
 import { predictOutcome } from "@/helpers/server/ratings";
 import { scoreFromResult } from "@/helpers/rating-range";
 import mathplus from "@/mathplus";
+import ButtonRow from "./ButtonRow";
 //import { PracticePool } from "@/types/database.player";
 
 //const palette = interpolate(["#4fc0ff", "#7cff4f", "#f6f05c", "#ff4e6f", "#c645b8", "#6563de", "black"]);
@@ -51,6 +52,7 @@ export default async function Mappool({ searchParams }) {
 
    return (
       <div>
+         <ButtonRow maplist={maplist} mode={mode} />
          {Object.entries(maplist).map(
             ([mod, modMaps]: [ModPoolType, (DbBeatmap & { scores: number[] })[]]) => {
                return (
@@ -63,9 +65,10 @@ export default async function Mappool({ searchParams }) {
                            .sort((a, b) => b - a)
                            .reduce(
                               (agg, score, i) => {
+                                 const weight = Math.sqrt(i + 1);
                                  agg.sum += score;
-                                 agg.weightedSum += score / (i + 1);
-                                 agg.weightedCount += 1 / (i + 1);
+                                 agg.weightedSum += score / weight;
+                                 agg.weightedCount += 1 / weight;
                                  return agg;
                               },
                               { sum: 0, weightedSum: 0, weightedCount: 0 }

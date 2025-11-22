@@ -4,7 +4,7 @@ import { DbBeatmap } from "@/types/database.beatmap";
 import { ModPool } from "@/types/rating";
 import { useEffect, useState } from "react";
 import { Button, Card, CardBody, CardImg, CardSubtitle, Form, FormControl, Spinner } from "react-bootstrap";
-import { fetchMapFromDb, savePool } from "./actions";
+import { fetchMapFromDb, removePool, savePool } from "./actions";
 import { buildUrl, GameMode } from "osu-web.js";
 import Link from "next/link";
 import { toast } from "react-toastify";
@@ -41,8 +41,7 @@ export default function PoolRow({
    useEffect(() => {
       const params = new URLSearchParams();
       params.append("m", mode);
-      if (data.name)
-         params.append('p', data.name);
+      if (data.name) params.append("p", data.name);
       mods.forEach(mod => {
          const list = data.maps.filter(m => m.mod === mod);
          const idlist = list.map(m => m.map._id).join(",");
@@ -82,29 +81,36 @@ export default function PoolRow({
                   disabled={!editing}
                />
             </div>
-            {editing && <div className="d-flex gap-1">
-               <FormControl
-                  type="text"
-                  name="addmap"
-                  placeholder="MapID +NM"
-                  value={addMapId}
-                  onChange={e => setAddMapId(e.target.value)}
-                  onKeyDown={e => {
-                     if (e.key !== "Enter") return;
-                     addMap();
-                  }}
-               />
-               <Button disabled={addingMap} onClick={addMap}>
-                  {addingMap ? <Spinner size="sm" /> : "+"}
-               </Button>
-            </div>}
+            {editing && (
+               <div className="d-flex gap-1">
+                  <FormControl
+                     type="text"
+                     name="addmap"
+                     placeholder="MapID +NM"
+                     value={addMapId}
+                     onChange={e => setAddMapId(e.target.value)}
+                     onKeyDown={e => {
+                        if (e.key !== "Enter") return;
+                        addMap();
+                     }}
+                  />
+                  <Button disabled={addingMap} onClick={addMap}>
+                     {addingMap ? <Spinner size="sm" /> : "+"}
+                  </Button>
+               </div>
+            )}
             <div className="ms-auto">
-               {!editing && <Link href={`/maps?${linkParams.toString()}`}>
-                  <Button>View Stats</Button>
-               </Link>}
+               {!editing && (
+                  <Link href={`/maps?${linkParams.toString()}`}>
+                     <Button>View Stats</Button>
+                  </Link>
+               )}
             </div>
-               {editing ? (
-                  <><Button
+            {editing ? (
+               <>
+                  <Button
+                     variant="success"
+                     disabled={!changed}
                      onClick={async () => {
                         if (!changed) return;
                         const properMaplist = await toast.promise(
@@ -121,10 +127,25 @@ export default function PoolRow({
                      }}
                   >
                      Save
-                  </Button><Button onClick={() => setEditing(false)}>Cancel</Button></>
-               ) : (
-                  <Button onClick={() => setEditing(true)}>Edit</Button>
-               )}
+                  </Button>
+                  <Button variant="danger" onClick={() => removePool(osuid, mode, data.name)}>
+                     Delete
+                  </Button>
+                  <Button
+                     onClick={() => {
+                        if (changed) {
+                           setName(data.name);
+                           setMaps(data.maps);
+                        }
+                        setEditing(false);
+                     }}
+                  >
+                     Cancel
+                  </Button>
+               </>
+            ) : (
+               <Button onClick={() => setEditing(true)}>Edit</Button>
+            )}
          </div>
          <div className="d-flex gap-1 mt-2 flex-wrap">
             {maps.map((m, i) => (
@@ -146,15 +167,19 @@ export default function PoolRow({
                               <span>{m.map.version || "No Info"}</span>
                            </div>
                         </div>
-                        {editing && <div>
-                           <Button
-                              size="sm"
-                              variant="danger"
-                              onClick={() => setMaps(arr => arr.filter(rmMap => rmMap.map._id !== m.map._id))}
-                           >
-                              x
-                           </Button>
-                        </div>}
+                        {editing && (
+                           <div>
+                              <Button
+                                 size="sm"
+                                 variant="danger"
+                                 onClick={() =>
+                                    setMaps(arr => arr.filter(rmMap => rmMap.map._id !== m.map._id))
+                                 }
+                              >
+                                 x
+                              </Button>
+                           </div>
+                        )}
                      </div>
                      <div className="d-flex mt-auto">
                         <span>{m.mod.toUpperCase()}</span>

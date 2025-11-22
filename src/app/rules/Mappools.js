@@ -1,7 +1,12 @@
+import { MAX_TARGETS, MIN_TARGETS } from "@/helpers/rating-range";
 import Link from "next/link";
 import { Table } from "react-bootstrap";
 
 export default function Mappools() {
+   const osuTarget = (MIN_TARGETS.osu + MAX_TARGETS.osu) / 2000;
+   const fruitsTarget = (MIN_TARGETS.fruits + MAX_TARGETS.fruits) / 2000;
+   const taikoTarget = (MIN_TARGETS.taiko + MAX_TARGETS.taiko) / 2000;
+   const maniaTarget = (MIN_TARGETS.mania + MAX_TARGETS.mania) / 2000;
    return (
       <div>
          <h3 id="mappools">Mappools</h3>
@@ -35,27 +40,27 @@ export default function Mappools() {
                   <tbody>
                      <tr>
                         <td>osu!</td>
-                        <td>100k</td>
-                        <td>900k</td>
-                        <td>500k</td>
+                        <td>{MIN_TARGETS.osu / 1000}k</td>
+                        <td>{MAX_TARGETS.osu / 1000}k</td>
+                        <td>{osuTarget}k</td>
                      </tr>
                      <tr>
                         <td>Catch</td>
-                        <td>500k</td>
-                        <td>900k</td>
-                        <td>700k</td>
+                        <td>{MIN_TARGETS.fruits / 1000}k</td>
+                        <td>{MAX_TARGETS.fruits / 1000}k</td>
+                        <td>{fruitsTarget}k</td>
                      </tr>
                      <tr>
                         <td>Taiko</td>
-                        <td>300k</td>
-                        <td>900k</td>
-                        <td>600k</td>
+                        <td>{MIN_TARGETS.taiko / 1000}k</td>
+                        <td>{MAX_TARGETS.taiko / 1000}k</td>
+                        <td>{taikoTarget}k</td>
                      </tr>
                      <tr>
                         <td>Mania</td>
-                        <td>475k</td>
-                        <td>925k</td>
-                        <td>700k</td>
+                        <td>{MIN_TARGETS.mania / 1000}k</td>
+                        <td>{MAX_TARGETS.mania / 1000}k</td>
+                        <td>{maniaTarget}k</td>
                      </tr>
                   </tbody>
                </Table>

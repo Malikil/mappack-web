@@ -36,10 +36,21 @@ export default async function PoolSetupCard({
             <CreatePoolButton osuid={osuid} mode={mode} />
          </CardHeader>
          <CardBody className="d-flex flex-column gap-3">
-            {pools.map(pool => <PoolRow key={pool.name} osuid={osuid} data={pool} mode={mode} revalidate={async () => {
-               'use server';
-               revalidatePath('/profile');
-            }} />)}
+            {pools
+               .flatMap((pool, i) => [
+                  <PoolRow
+                     key={pool.name}
+                     osuid={osuid}
+                     data={pool}
+                     mode={mode}
+                     revalidate={async () => {
+                        "use server";
+                        revalidatePath("/profile");
+                     }}
+                  />,
+                  <hr key={i} />
+               ])
+               .slice(0, -1)}
          </CardBody>
       </Card>
    );

@@ -1,4 +1,4 @@
-import { GameMode } from "osu-web.js";
+import { GameMode, Mod } from "osu-web.js";
 import { BeatmapVersion } from "./mappool";
 import { ManiaMod, ModRatings, Rating, SimpleMod } from "./rating";
 
