@@ -24,8 +24,8 @@ export async function getMappool(targetRating: { rating: number; rd: number }, m
            };
    const checkWithinRange = (rating: Rating) => withinRange(targetRating, rating);
    const sortFunc = (mod: SimpleMod) => (a: DbBeatmap, b: DbBeatmap) => {
-      const adiff = Math.abs(targetRating.rating - a.ratings[mod].rating);
-      const bdiff = Math.abs(targetRating.rating - b.ratings[mod].rating);
+      const adiff = Math.abs(targetRating.rating - a.rating.rating * a.mods[mod.toUpperCase()]);
+      const bdiff = Math.abs(targetRating.rating - b.rating.rating * b.mods[mod.toUpperCase()]);
       return adiff - bdiff;
    };
    const filterFunc =
@@ -49,12 +49,12 @@ export async function getMappool(targetRating: { rating: number; rd: number }, m
    const maplist = currentMaps.reduce(
       (agg: Record<ModPool, DbBeatmap[]>, map) => {
          const candidate = {
-            nm: checkWithinRange(map.ratings.nm),
-            hd: checkWithinRange(map.ratings.hd),
-            hr: checkWithinRange(map.ratings.hr),
-            dt: checkWithinRange(map.ratings.dt)
+            nm: checkWithinRange(map.rating),
+            hd: checkWithinRange({ ...map.rating, rating: map.rating.rating * (map.mods.HD || 1) }),
+            hr: checkWithinRange({ ...map.rating, rating: map.rating.rating * (map.mods.HR || 1) }),
+            dt: checkWithinRange({ ...map.rating, rating: map.rating.rating * (map.mods.DT || 1) })
          };
-         console.log(map.ratings, candidate);
+         console.log(map.rating, candidate);
          // HD/HR/FM
          if (candidate.hd)
             if (candidate.hr) agg.fm.push(map);
@@ -74,19 +74,30 @@ export async function getMappool(targetRating: { rating: number; rd: number }, m
    maplist.fm.sort((a, b) => {
       // Special sort for FM
       // Minimize the difference between difference to target and difference to each other
-      const adiff =
-         Math.abs(targetRating.rating - (a.ratings.hd.rating + a.ratings.hr.rating) / 2) / 2 +
-         Math.abs(a.ratings.hd.rating - a.ratings.hr.rating);
-      const bdiff =
-         Math.abs(targetRating.rating - (b.ratings.hd.rating + b.ratings.hr.rating) / 2) / 2 +
-         Math.abs(b.ratings.hd.rating - b.ratings.hr.rating);
-      return adiff - bdiff;
+      const eligibility = (song: DbBeatmap) => {
+         // How close are mod difficulties
+         const modMults = [song.mods.HD || 1, song.mods.HR || 1];
+         const modsDiff = Math.abs(modMults[0] - modMults[1]);
+         const avgMult = (modMults[0] + modMults[1]) / 2;
+         const modError = modsDiff / avgMult;
+         // How close to the target rating
+         const ratingDiff = Math.abs(song.rating.rating * avgMult - targetRating.rating);
+         const ratingError = ratingDiff / targetRating.rating;
+         return modError + ratingError;
+      };
+      // const adiff =
+      //    Math.abs(targetRating.rating - (a.ratings.hd.rating + a.ratings.hr.rating) / 2) / 2 +
+      //    Math.abs(a.ratings.hd.rating - a.ratings.hr.rating);
+      // const bdiff =
+      //    Math.abs(targetRating.rating - (b.ratings.hd.rating + b.ratings.hr.rating) / 2) / 2 +
+      //    Math.abs(b.ratings.hd.rating - b.ratings.hr.rating);
+      return eligibility(a) - eligibility(b);
    });
    // Put extra maps into HD/HR whichever is closer
    console.log(`Before redistributing FM maps: HD-${maplist.hd.length} HR-${maplist.hr.length}`);
    maplist.fm.slice(fmCount).forEach(map => {
-      const hdDiff = Math.abs(map.ratings.hd.rating - targetRating.rating);
-      const hrDiff = Math.abs(map.ratings.hr.rating - targetRating.rating);
+      const hdDiff = Math.abs(map.rating.rating * (map.mods.HD || 1) - targetRating.rating);
+      const hrDiff = Math.abs(map.rating.rating * (map.mods.HR || 1) - targetRating.rating);
       if (hdDiff > hrDiff) maplist.hr.push(map);
       else maplist.hd.push(map);
    });
@@ -102,7 +113,7 @@ export async function getMappool(targetRating: { rating: number; rd: number }, m
    // Put extras into NM if valid
    console.log(`Before redistributing HR maps: NM-${maplist.nm.length}`);
    maplist.hr.slice(hrCount).forEach(map => {
-      if (checkWithinRange(map.ratings.nm)) maplist.nm.push(map);
+      if (checkWithinRange(map.rating)) maplist.nm.push(map);
    });
    console.log(`After redistributing HR maps: NM-${maplist.nm.length}`);
    console.log(`${maplist.hd.length} available HD maps`);
@@ -111,7 +122,7 @@ export async function getMappool(targetRating: { rating: number; rd: number }, m
    // Put extra maps into NM if they're valid
    console.log(`Before redistributing HD maps: NM-${maplist.nm.length}`);
    maplist.hd.slice(hdCount).forEach(map => {
-      if (checkWithinRange(map.ratings.nm)) maplist.nm.push(map);
+      if (checkWithinRange(map.rating)) maplist.nm.push(map);
    });
    console.log(`After redistributing HD maps: NM-${maplist.nm.length}`);
    // Sort NM
