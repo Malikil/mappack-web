@@ -1,5 +1,5 @@
 import { ModRatings, Rating } from "@/types/rating";
-import { GameMode } from "osu-web.js";
+import { GameMode, Mod } from "osu-web.js";
 
 export const MIN_TARGETS = {
    osu: 100000,
@@ -17,7 +17,20 @@ export const MAX_TARGETS = {
 /**
  * Returns the match result to use, assuming player first then map second
  */
-export function matchResultValue(score: number, gamemode: GameMode) {
+export function matchResultValue(
+   score: number,
+   gamemode: GameMode,
+   mods: {
+      mods: Mod[];
+      player: Partial<Record<Mod, number>>;
+      map: Partial<Record<Mod, number>>;
+   } = null
+) {
+   if (mods) {
+      const playerMult = mods.mods.reduce((mult, mod) => mult * (mods.player[mod] || 1), 1);
+      const mapMult = mods.mods.reduce((mult, mod) => mult * (mods.map[mod] || 1), 1);
+      score *= playerMult * mapMult;
+   }
    const min: number = MIN_TARGETS[gamemode];
    const max: number = MAX_TARGETS[gamemode];
    if (score < min) return 0;

@@ -5,7 +5,7 @@ import { ScoreParser } from "@/helpers/scorev1";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { DbPlayer, MatchHistory } from "@/types/database.player";
 import { PveLobbyResults } from "@/types/multiplayer";
-import { ModPool, Rating, SimpleMod } from "@/types/rating";
+import { ModPool, Rating } from "@/types/rating";
 import { Glicko2, Player } from "glicko2";
 import { UpdateFilter } from "mongodb";
 import { GameMode, getModsEnum, LegacyClient, Mod } from "osu-web.js";
@@ -15,17 +15,8 @@ import { getPlayerList } from "@/helpers/server/players";
 const MAP_STYLE_LEARNING_RATE = 0.001;
 const STYLES_LEARNING_RATE = 0.01;
 const STYLES_REGULARIZATION = 0.1;
-/**
- * This is basically the largest update per-map. So if 10 maps are played, the mods adjustment
- * could go from 1.1 to 1.11
- */
-const MODS_LEARNING_RATE = 0.001;
-/**
- * How aggresively should the updated mods be nudged back towards 1x after an update
- */
-const MODS_REGULARIZATION = 0.01;
 
-function parseModpool(mods: Mod[], mode: GameMode): ModPool {
+export function parseModpool(mods: Mod[], mode: GameMode): ModPool {
    mods = ignoreSongMods(mods);
    // If DT is in the modlist, assume the pool is DT and ignore everything else
    if (mods.includes("DT") || mods.includes("NC")) return "dt";
@@ -329,7 +320,7 @@ export async function submitPveData(data: PveLobbyResults) {
          };
       })
    );
-   console.log(practicePoolDbResult);
+   console.log("Practice pool results", practicePoolDbResult);
    // Then remaining player info
    const playersDbWriteResult = await playersDb.bulkWrite(
       playerCalculatorPairs

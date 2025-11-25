@@ -1,15 +1,17 @@
 import { Glicko2, Player } from "glicko2";
-import { GameMode, LegacyClient, LegacyMultiplayerLobby, Mod } from "osu-web.js";
+import { GameMode, getModsEnum, LegacyClient, LegacyMultiplayerLobby, Mod } from "osu-web.js";
 import { mapsDb, playersDb } from "../connection";
 import { FreemodSelection, MpLobbyResults, SongResultMap, TeamMpLobbyResults } from "@/types/multiplayer";
 import { DbBeatmap } from "@/types/database.beatmap";
-import { ModPool, SimpleMod } from "@/types/rating";
+import { ModPool, Rating, SimpleMod } from "@/types/rating";
 import { UpdateOneModel } from "mongodb";
 import { getMaplist } from "@/helpers/server/currentPack";
 import { matchResultValue } from "@/helpers/rating-range";
-import { ignoreSongMods } from "@/app/profile/[playerid]/pve/functions";
+import { ignoreSongMods, parseModpool } from "@/app/profile/[playerid]/pve/functions";
 import { ScoreParser } from "@/helpers/scorev1";
 import { getPlayerList } from "@/helpers/server/players";
+import { getUpdatedModsFromBatch } from "@/helpers/server/ratings";
+import { DbPlayer } from "@/types/database.player";
 
 const MATCH_HISTORY_SIZE = 10;
 
@@ -44,7 +46,7 @@ function parseTeamsLobby(lobby: LegacyMultiplayerLobby, warmups: number): TeamMp
       player: number;
       map: number;
       score: ScoreParser;
-      mods: SimpleMod;
+      mods: Mod[];
    }[] = [];
    const teams = {
       Red: {
@@ -80,8 +82,7 @@ function parseTeamsLobby(lobby: LegacyMultiplayerLobby, warmups: number): TeamMp
 
          // Find the map/modpool
          const map = game.beatmap_id;
-         let modpool: ModPool = ignoreSongMods(game.mods, [], game.play_mode);
-         let nmSeen = false;
+         const allMods = game.mods;
 
          const matchScore = {
             Red: 0,
@@ -98,18 +99,8 @@ function parseTeamsLobby(lobby: LegacyMultiplayerLobby, warmups: number): TeamMp
             }
             // Add to team's total score
             matchScore[score.team] += score.score;
-            // If this score uses different mods from the lobby's mods, upgrade the lobby's mods
-            // nm -> hd/hr -> fm      If the lobby mod is dt leave it as-is
-            const playerMods = ignoreSongMods(game.mods, score.enabled_mods, game.play_mode);
-            if (modpool === "nm")
-               if (playerMods === "nm") nmSeen = true;
-               else modpool = playerMods;
-            else if (
-               (modpool === "hd" && playerMods === "hr") ||
-               (modpool === "hr" && playerMods === "hd") ||
-               (nmSeen && playerMods !== "nm")
-            )
-               modpool = "fm";
+            const playerMods = ignoreSongMods(game.mods, score.enabled_mods);
+            allMods.push(...playerMods);
 
             // Add the individual score
             scores.push({
@@ -143,7 +134,7 @@ function parseTeamsLobby(lobby: LegacyMultiplayerLobby, warmups: number): TeamMp
          else teams.Blue.points++;
 
          // Add the map/mod to the maplist
-         maps.push({ map, mod: modpool });
+         maps.push({ map, modpool: parseModpool(allMods, matchSettings.mode) });
       });
 
    const [loserId, winnerId] =
@@ -156,8 +147,8 @@ function parseTeamsLobby(lobby: LegacyMultiplayerLobby, warmups: number): TeamMp
       individualScores: scores,
       loserId,
       winnerId,
-      loserScores: teams[loserId].scores.map(s => [s, null]),
-      winnerScores: teams[winnerId].scores.map(s => [s, null]),
+      loserScores: teams[loserId].scores.map(s => ({ score: s })),
+      winnerScores: teams[winnerId].scores.map(s => ({ score: s })),
       maps,
       redTeam: teams.Red.players,
       blueTeam: teams.Blue.players
@@ -182,9 +173,13 @@ export async function addTeamsData({
       mode,
       maps.map(item => item.map)
    );
-   const playedMaps = maps.map(item => ({
+   const playedMaps: {
+      map: DbBeatmap;
+      modpool: ModPool;
+      mapCalc?: Player;
+   }[] = maps.map(item => ({
       map: maplist.find(m => m._id === item.map),
-      mod: item.mod
+      modpool: item.modpool
    }));
    console.log(playedMaps);
 
@@ -249,16 +244,22 @@ export async function addTeamsData({
                               prevRating: p.player[mode].pvp.rating,
                               ratingDiff: p.ratingCalc.getRating() - p.player[mode].pvp.rating,
                               opponent,
-                              songs: playedMaps.map((m, i) => ({
-                                 map: {
-                                    id: m.map._id,
-                                    setid: m.map.setid,
-                                    version: m.map.version
-                                 },
-                                 mod: m.mod,
-                                 score: playerScores[i][0],
-                                 opponentScore: opponentScores[i][0]
-                              })),
+                              songs: playedMaps.map((m, i) => {
+                                 const score = individualScores.find(
+                                    is => is.player === p.player._id && is.map === m.map._id
+                                 );
+                                 return {
+                                    map: {
+                                       id: m.map._id,
+                                       setid: m.map.setid,
+                                       version: m.map.version
+                                    },
+                                    modpool: m.modpool,
+                                    mods: getModsEnum(score.mods, true),
+                                    score: playerScores[i].score,
+                                    opponentScore: opponentScores[i].score
+                                 };
+                              }),
                               warmups
                            }
                         ],
@@ -271,73 +272,107 @@ export async function addTeamsData({
          };
       })
    );
-   console.log(playerUpdateResult);
+   console.log("Player ratings", playerUpdateResult);
 
    // Update map ratings
-   const calculatorMaplist: { map: number; mod: SimpleMod; rating: Player }[] = [];
    const mapCalculatorResults: [Player, Player, number][] = [];
+   const modUpdatesObj: {
+      mode: GameMode;
+      score: { score: number; mods: Mod[] };
+      player: {
+         rating: Rating;
+         _id: number;
+         mods: Partial<Record<Mod, number>>;
+         styles: number[];
+      };
+      map: {
+         _id: number;
+         rating: Rating;
+         mods: Partial<Record<Mod, number>>;
+         styles: number[];
+      };
+   }[] = [];
+
    for (const score of individualScores) {
       if (!score.mods) continue;
-      const map = playedMaps.find(pm => pm.map._id === score.map).map;
-      score.score.setMap(map);
-      if (!calculatorMaplist.find(m => m.map === score.map && m.mod === score.mods)) {
-         calculatorMaplist.push({
-            map: score.map,
-            mod: score.mods,
-            rating: calculator.makePlayer(
-               map.ratings[score.mods].rating,
-               map.ratings[score.mods].rd,
-               map.ratings[score.mods].vol
-            )
-         });
-      }
-      const mapCalc = calculatorMaplist.find(m => m.map === score.map && m.mod === score.mods).rating;
-      const playerCalc = players.find(p => p.player._id === score.player).ratingCalc;
-      mapCalculatorResults.push([playerCalc, mapCalc, matchResultValue(score.score.getScore(), mode)]);
+      const pMap = playedMaps.find(pm => pm.map._id === score.map);
+      score.score.setMap(pMap.map);
+      if (!pMap.mapCalc)
+         pMap.mapCalc = calculator.makePlayer(
+            pMap.map.rating.rating,
+            pMap.map.rating.rd,
+            pMap.map.rating.vol
+         );
+      const player = players.find(p => p.player._id === score.player);
+      const playerCalc = player.ratingCalc;
+      // Get mods multipliers
+      const playerModsMult = score.mods.reduce((mult, mod) => mult * (player.player[mode].mods[mod] || 1), 1);
+      const mapModsMult = score.mods.reduce((mult, mod) => mult * (pMap.map.mods[mod] || 1), 1);
+      mapCalculatorResults.push([
+         playerCalc,
+         pMap.mapCalc,
+         matchResultValue(score.score.getScore() * playerModsMult * mapModsMult, mode)
+      ]);
+      // Add data for mod multiplier updates
+      modUpdatesObj.push({
+         map: pMap.map,
+         player: {
+            _id: player.player._id,
+            mods: player.player[mode].mods,
+            rating: player.player[mode].pvp,
+            styles: player.player[mode].styles
+         },
+         mode,
+         score: {
+            score: score.score.getScore(),
+            mods: score.mods
+         }
+      });
    }
    calculator.updateRatings(mapCalculatorResults);
+   const modRatingUpdates = getUpdatedModsFromBatch(modUpdatesObj);
 
    // Update song ratings in database
-   const uniqueMaps = calculatorMaplist.reduce(
-      (unique, candidate) => {
-         let exist = unique.find(m => m.map === candidate.map);
-         if (!exist) {
-            exist = { map: candidate.map, mod: [] };
-            unique.push(exist);
-         }
-         if (!exist.mod.find(m => m.mod === candidate.mod))
-            exist.mod.push({ mod: candidate.mod, calc: candidate.rating });
-
-         return unique;
-      },
-      [] as {
-         map: number;
-         mod: {
-            mod: SimpleMod;
-            calc: Player;
-         }[];
-      }[]
-   );
    const mapsResult = await mapsDb[mode].bulkWrite(
-      uniqueMaps.map(outcome => ({
+      playedMaps.map(pMap => ({
          updateOne: {
-            filter: { _id: outcome.map },
+            filter: { _id: pMap.map._id },
             update: {
-               $set: Object.fromEntries(
-                  outcome.mod.map(mod => [
-                     `ratings.${mod.mod}`,
-                     {
-                        rating: mod.calc.getRating(),
-                        rd: mod.calc.getRd(),
-                        vol: mod.calc.getVol()
-                     }
-                  ])
-               )
+               $set: {
+                  rating: {
+                     rating: pMap.mapCalc.getRating(),
+                     rd: pMap.mapCalc.getRd(),
+                     vol: pMap.mapCalc.getVol()
+                  },
+                  ...Object.fromEntries(
+                     Object.entries(modRatingUpdates.maps[mode][pMap.map._id]).map(
+                        ([mod, multiplier]: [Mod, number]) => [`mods.${mod}`, multiplier]
+                     )
+                  )
+               }
             }
          } as UpdateOneModel<DbBeatmap>
       }))
    );
-   console.log(mapsResult);
+   console.log("Maps", mapsResult);
+   // Update player mod multipliers
+   const playerModResults = await playersDb.bulkWrite(
+      players.map(p => ({
+         updateOne: {
+            filter: { _id: p.player._id },
+            update: {
+               $set: {
+                  ...Object.fromEntries(
+                     Object.entries(modRatingUpdates.players[p.player._id][mode]).map(
+                        ([mod, multiplier]: [Mod, number]) => [`${mode}.mods.${mod}`, multiplier]
+                     )
+                  )
+               }
+            }
+         }
+      }))
+   );
+   console.log("Player mods", playerModResults);
 }
 
 function parse1v1Lobby(lobby: LegacyMultiplayerLobby, warmups: number): MpLobbyResults {
@@ -356,25 +391,23 @@ function parse1v1Lobby(lobby: LegacyMultiplayerLobby, warmups: number): MpLobbyR
             const filteredMods = game.mods.filter(mod => !ignoreMods.includes(mod));
             const mod = filteredMods.length > 1 ? null : (filteredMods[0] || "nm").toLowerCase();
             if (!mod || !["nm", "hd", "hr", "dt"].includes(mod)) return agg;
-            const playedMap = {
-               map: game.beatmap_id,
-               mod: mod as ModPool
-            };
+            const allMods = game.mods;
             game.scores.forEach(score => {
-               if (score.enabled_mods.length > 0) playedMap.mod = "fm";
                // Will HD always be first?
-               const scoreMod = score.enabled_mods
-                  .filter(m => !ignoreMods.includes(m))
-                  .join("")
-                  .toLowerCase();
+               const scoreMods = ignoreSongMods(game.mods, score.enabled_mods);
+               allMods.push(...scoreMods);
                if (!(score.user_id in agg.scores)) agg.scores[score.user_id] = [];
                agg.scores[score.user_id].push({
                   score: score.score,
-                  mod: ["hd", "hr", "hdhr"].includes(scoreMod) ? (scoreMod as FreemodSelection) : null
+                  mods: scoreMods
                });
             });
-            console.log(`${lobby.match.match_id} - ${game.beatmap_id} +${playedMap.mod}`);
-            agg.maps.push(playedMap);
+            const modpool = parseModpool(allMods, mode);
+            console.log(`${lobby.match.match_id} - ${game.beatmap_id} +${modpool}`);
+            agg.maps.push({
+               map: game.beatmap_id,
+               modpool
+            });
             if (i >= warmups) {
                // Find the song winner
                const winner = game.scores.sort((a, b) => b.score - a.score)[0].user_id;
@@ -386,7 +419,7 @@ function parse1v1Lobby(lobby: LegacyMultiplayerLobby, warmups: number): MpLobbyR
          },
          {
             maps: [] as SongResultMap[],
-            scores: {} as { [id: number]: { score: number; mod?: FreemodSelection }[] },
+            scores: {} as { [id: number]: { score: number; mods: Mod[] }[] },
             resultScore: {} as { [id: number]: number }
          }
       );
@@ -403,8 +436,8 @@ function parse1v1Lobby(lobby: LegacyMultiplayerLobby, warmups: number): MpLobbyR
       mode,
       warmups,
       maps: result.maps,
-      winnerScores: result.scores[winnerId].map(item => [item.score, item.mod]),
-      loserScores: result.scores[loserId].map(item => [item.score, item.mod]),
+      winnerScores: result.scores[winnerId],
+      loserScores: result.scores[loserId],
       winnerId,
       loserId
    };
@@ -424,73 +457,6 @@ export async function parseMpLobby(mp: number, warmups = 0, acceptIncomplete = f
       if (mpLobby.games[warmups].team_type === "Head To Head") return parse1v1Lobby(mpLobby, warmups);
       else if (mpLobby.games[warmups].team_type === "Team VS") return parseTeamsLobby(mpLobby, warmups);
       // Other team types are invalid
-
-      // Is end time an indicator of aborted matches?
-      // const result = mpLobby.games
-      //    .filter(l => l.end_time)
-      //    .reduce(
-      //       (agg, game, i) => {
-      //          // For now only accept score v2 songs
-      //          if (game.scoring_type !== "Score V2") return agg;
-      //          // For now, if the gamemode is changed panic
-      //          if (game.play_mode !== mode) throw new Error("Invalid gamemode");
-      //          // Ignore NF and mania-specific mods
-      //          const ignoreMods: Mod[] = ["NF", "MR", "FI", "FL", "SD", "PF"];
-      //          const filteredMods = game.mods.filter(mod => !ignoreMods.includes(mod));
-      //          const mod = filteredMods.length > 1 ? null : (filteredMods[0] || "nm").toLowerCase();
-      //          if (!mod || !["nm", "hd", "hr", "dt"].includes(mod)) return agg;
-      //          const playedMap = {
-      //             map: game.beatmap_id,
-      //             mod: mod as ModPool
-      //          };
-      //          game.scores.forEach(score => {
-      //             if (score.enabled_mods.length > 0) playedMap.mod = "fm";
-      //             // Will HD always be first?
-      //             const scoreMod = score.enabled_mods
-      //                .filter(m => !ignoreMods.includes(m))
-      //                .join("")
-      //                .toLowerCase();
-      //             if (!(score.user_id in agg.scores)) agg.scores[score.user_id] = [];
-      //             agg.scores[score.user_id].push({
-      //                score: score.score,
-      //                mod: ["hd", "hr", "hdhr"].includes(scoreMod) ? (scoreMod as FreemodSelection) : null
-      //             });
-      //          });
-      //          console.log(`${mp} - ${game.beatmap_id} +${playedMap.mod}`);
-      //          agg.maps.push(playedMap);
-      //          if (i >= warmups) {
-      //             // Find the song winner
-      //             const winner = game.scores.sort((a, b) => b.score - a.score)[0].user_id;
-      //             agg.resultScore[winner] = (agg.resultScore[winner] || 0) + 1;
-      //             // Make sure the loser is still counted
-      //             agg.resultScore[game.scores[1].user_id] = agg.resultScore[game.scores[1].user_id] || 0;
-      //          }
-      //          return agg;
-      //       },
-      //       {
-      //          maps: [] as SongResultMap[],
-      //          scores: {} as { [id: number]: { score: number; mod?: FreemodSelection }[] },
-      //          resultScore: {} as { [id: number]: number }
-      //       }
-      //    );
-      // const playersWithResults = Object.keys(result.resultScore).map(v => parseInt(v));
-      // console.log(`${mp} - ${playersWithResults.length} players with results`);
-      // // If there are more or less than 2 players, this must not be a 1v1 match
-      // if (playersWithResults.length !== 2) return;
-      // const [winnerId, loserId] = playersWithResults.sort(
-      //    (a, b) => result.resultScore[b] - result.resultScore[a]
-      // );
-      // console.log(mp, result);
-      // return {
-      //    mp,
-      //    mode,
-      //    warmups,
-      //    maps: result.maps,
-      //    winnerScores: result.scores[winnerId].map(item => [item.score, item.mod]),
-      //    loserScores: result.scores[loserId].map(item => [item.score, item.mod]),
-      //    winnerId,
-      //    loserId
-      // };
    } catch (err) {
       console.warn(err);
    }
@@ -523,7 +489,7 @@ export async function addMatchData({
    );
    const playedMaps = maps.map(item => ({
       map: maplist.find(m => m._id === item.map),
-      mod: item.mod
+      modpool: item.modpool
    }));
    console.log(playedMaps);
 
@@ -562,9 +528,10 @@ export async function addMatchData({
                                  setid: m.map.setid,
                                  version: m.map.version
                               },
-                              mod: m.mod,
-                              score: winnerScores[i][0],
-                              opponentScore: loserScores[i][0]
+                              mods: getModsEnum(winnerScores[i].mods, true),
+                              modpool: m.modpool,
+                              score: winnerScores[i].score,
+                              opponentScore: loserScores[i].score
                            })),
                            warmups
                         }
@@ -604,9 +571,10 @@ export async function addMatchData({
                                  setid: m.map.setid,
                                  version: m.map.version
                               },
-                              mod: m.mod,
-                              score: loserScores[i][0],
-                              opponentScore: winnerScores[i][0]
+                              mods: getModsEnum(winnerScores[i].mods, true),
+                              modpool: m.modpool,
+                              score: loserScores[i].score,
+                              opponentScore: winnerScores[i].score
                            })),
                            warmups
                         }
@@ -619,128 +587,119 @@ export async function addMatchData({
          }
       }
    ]);
-   console.log(playerUpdateResult);
+   console.log("Player ratings", playerUpdateResult);
 
    // Update map ratings
-   const songlistCombined = playedMaps.flatMap((result, i) => {
-      const { map, mod } = result;
-      const wscore = winnerScores[i][0];
-      const lscore = loserScores[i][0];
-      if (mod === "fm") {
-         const wmod = winnerScores[i][1];
-         const lmod = loserScores[i][1];
-         // If they used the same mods, treat it like a map from a specific modpool
-         // If they both used HDHR the map can be skipped entirely
-         if (wmod === lmod)
-            if (wmod === "hdhr") return [];
-            else {
-               // On freemod maps the w/l mods may actually be null
-               const r = map.ratings[wmod || "nm"];
-               const resultObj: {
-                  map: DbBeatmap;
-                  calc: Player;
-                  mod: SimpleMod;
-               } = {
-                  map,
-                  calc: calculator.makePlayer(r.rating, r.rd, r.vol),
-                  mod: wmod || "nm"
-               };
-               return [
-                  { ...resultObj, score: wscore, player: winnerPlayer },
-                  { ...resultObj, score: lscore, player: loserPlayer }
-               ];
-            }
-         else {
-            // They used different mods, handle each individually
-            const resultArr: {
-               map: DbBeatmap;
-               mod: SimpleMod;
-               calc: Player;
-               score: number;
-               player: Player;
-            }[] = [];
-            if (wmod in map.ratings) {
-               const r = map.ratings[wmod];
-               resultArr.push({
-                  map,
-                  mod: wmod as SimpleMod,
-                  calc: calculator.makePlayer(r.rating, r.rd, r.vol),
-                  score: wscore,
-                  player: winnerPlayer
-               });
-            }
-            if (lmod in map.ratings) {
-               const r = map.ratings[lmod];
-               resultArr.push({
-                  map,
-                  mod: lmod as SimpleMod,
-                  calc: calculator.makePlayer(r.rating, r.rd, r.vol),
-                  score: lscore,
-                  player: loserPlayer
-               });
-            }
-            return resultArr;
+   const mapResultsForCalc: {
+      player: {
+         player: DbPlayer;
+         calc: Player;
+      };
+      map: {
+         map: DbBeatmap;
+         calc: Player;
+      };
+      score: number;
+      mods: Mod[];
+   }[] = playedMaps.flatMap((result, i) => {
+      const { map } = result;
+      const calc = calculator.makePlayer(map.rating.rating, map.rating.rd, map.rating.vol);
+      return [
+         {
+            player: {
+               player: winner,
+               calc: winnerPlayer
+            },
+            map: { map, calc },
+            mods: winnerScores[i].mods,
+            score: winnerScores[i].score
+         },
+         {
+            player: {
+               player: loser,
+               calc: loserPlayer
+            },
+            map: { map, calc },
+            mods: loserScores[i].mods,
+            score: loserScores[i].score
          }
-      } else {
-         // Not from FM pool
-         console.log(result);
-         const r = map.ratings[mod];
-         const resultObj = { map, mod, calc: calculator.makePlayer(r.rating, r.rd, r.vol) };
-         return [
-            { ...resultObj, score: wscore, player: winnerPlayer },
-            { ...resultObj, score: lscore, player: loserPlayer }
-         ];
-      }
+      ];
    });
 
-   const calculatorMatches: [Player, Player, number][] = songlistCombined.map(result => [
-      result.player,
-      result.calc,
-      matchResultValue(result.score, "osu")
+   const calculatorMatches: [Player, Player, number][] = mapResultsForCalc.map(result => [
+      result.player.calc,
+      result.map.calc,
+      matchResultValue(result.score, mode, {
+         mods: result.mods,
+         player: result.player.player[mode].mods,
+         map: result.map.map.mods
+      })
    ]);
    calculator.updateRatings(calculatorMatches);
-
-   // Update song ratings in database
-   const uniqueMaps = songlistCombined.reduce(
-      (unique, candidate) => {
-         let exist = unique.find(m => m.map._id === candidate.map._id);
-         if (!exist) {
-            exist = { map: candidate.map, mod: [] };
-            unique.push(exist);
+   const updatedModsValues = getUpdatedModsFromBatch(
+      mapResultsForCalc.map(result => ({
+         map: result.map.map,
+         player: {
+            _id: result.player.player._id,
+            mods: result.player.player[mode].mods,
+            rating: result.player.player[mode].pvp,
+            styles: result.player.player[mode].styles
+         },
+         mode,
+         score: {
+            score: result.score,
+            mods: result.mods
          }
-         if (!exist.mod.find(m => m.mod === candidate.mod))
-            exist.mod.push({ mod: candidate.mod, calc: candidate.calc });
-
-         return unique;
-      },
-      [] as {
-         map: DbBeatmap;
-         mod: {
-            mod: SimpleMod;
-            calc: Player;
-            //player: Player;
-            //score: number;
-         }[];
-      }[]
-   );
-   const mapsResult = await mapsDb[mode].bulkWrite(
-      uniqueMaps.map(outcome => ({
-         updateOne: {
-            filter: { _id: outcome.map._id },
-            update: {
-               $set: Object.fromEntries(
-                  outcome.mod.map(mod => [
-                     `ratings.${mod.mod}`,
-                     {
-                        rating: mod.calc.getRating(),
-                        rd: mod.calc.getRd(),
-                        vol: mod.calc.getVol()
-                     }
-                  ])
-               )
-            }
-         } as UpdateOneModel<DbBeatmap>
       }))
    );
-   console.log(mapsResult);
+
+   // Update song ratings in database
+   const mapsResult = await mapsDb[mode].bulkWrite(
+      Object.keys(updatedModsValues.maps).map(mapidstr => {
+         const mapid = parseInt(mapidstr);
+         const mapRating = mapResultsForCalc.find(res => res.map.map._id === mapid).map.calc;
+         return {
+            updateOne: {
+               filter: { _id: mapid },
+               update: {
+                  $set: {
+                     rating: {
+                        rating: mapRating.getRating(),
+                        rd: mapRating.getRd(),
+                        vol: mapRating.getVol()
+                     },
+                     ...Object.fromEntries(
+                        Object.entries(updatedModsValues.maps[mapid]).map(
+                           ([mod, multiplier]: [Mod, number]) => [`mods.${mod}`, multiplier]
+                        )
+                     )
+                  }
+               }
+            } as UpdateOneModel<DbBeatmap>
+         };
+      })
+   );
+   console.log("Map ratings", mapsResult);
+
+   // Update player mods values
+   const playerModsResults = await playersDb.bulkWrite(
+      Object.keys(updatedModsValues.players).map(pidstr => {
+         const playerid = parseInt(pidstr);
+         return {
+            updateOne: {
+               filter: { _id: playerid },
+               update: {
+                  $set: {
+                     ...Object.fromEntries(
+                        Object.entries(updatedModsValues.players[playerid][mode]).map(
+                           ([mod, multiplier]: [Mod, number]) => [`${mode}.mods.${mod}`, multiplier]
+                        )
+                     )
+                  }
+               }
+            }
+         };
+      })
+   );
+   console.log("Player mods", playerModsResults);
 }

@@ -17,11 +17,11 @@ export interface MpLobbyResults {
    winnerScores: {
       score: number;
       mods?: Mod[];
-   };
+   }[];
    loserScores: {
       score: number;
       mods?: Mod[];
-   };
+   }[];
    winnerId: number;
    loserId: number;
 }
