@@ -1,4 +1,5 @@
-import { ModRatings, Rating } from "@/types/rating";
+import { DbBeatmap, ModRatings } from "@/types/database.beatmap";
+import { Rating } from "@/types/rating";
 import { GameMode, Mod } from "osu-web.js";
 
 export const MIN_TARGETS = {
@@ -61,8 +62,12 @@ export function withinRange(...ratings: { rating: number; rd: number }[]) {
    return diff <= range;
 }
 
-export function anyWithinRange(mapRatings: ModRatings, candidateRating: Rating) {
-   return Object.keys(mapRatings).some(key => withinRange(mapRatings[key], candidateRating));
+export function anyWithinRange(map: DbBeatmap, candidateRating: Rating) {
+   if (withinRange(map.rating, candidateRating)) return true;
+   const searchMods = ["HD", "HR", "DT"] as Mod[];
+   return searchMods.some(mod =>
+      withinRange({ ...map.rating, rating: map.rating.rating * (map.mods[mod] || 1) }, candidateRating)
+   );
 }
 
 export function combineRatings(...ratings: Rating[]) {

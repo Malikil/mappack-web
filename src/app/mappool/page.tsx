@@ -5,10 +5,11 @@ import averageRating from "@/helpers/average-rating";
 import { Card, CardBody, CardImg, CardSubtitle, CardTitle, Col, Row } from "react-bootstrap";
 import MapCardBody from "@/components/mappool/MapCardBody";
 import { anyWithinRange } from "@/helpers/rating-range";
-import { ModRatings, Rating } from "@/types/rating";
+import { Rating } from "@/types/rating";
 import interpolate from "color-interpolate";
-import { buildUrl } from "osu-web.js";
+import { buildUrl, Mod } from "osu-web.js";
 import { ModeInfo } from "@/types/database.player";
+import { DbBeatmap } from "@/types/database.beatmap";
 
 const palette = interpolate(["#4fc0ff", "#7cff4f", "#f6f05c", "#ff4e6f", "#c645b8", "#6563de", "black"]);
 
@@ -50,18 +51,22 @@ export default async function Mappool() {
                _id: "$maps.setid",
                artist: { $first: "$maps.artist" },
                title: { $first: "$maps.title" },
+               mapper: { $first: "$maps.mapper" },
                maps: {
-                  $push: {
-                     id: "$maps._id",
-                     version: "$maps.version",
-                     length: "$maps.length",
-                     bpm: "$maps.bpm",
-                     cs: "$maps.cs",
-                     ar: "$maps.ar",
-                     od: "$maps.od",
-                     stars: "$maps.stars",
-                     ratings: "$maps.ratings"
-                  }
+                  $push: "$maps"
+                  // {
+                  //    id: "$maps._id",
+                  //    version: "$maps.version",
+                  //    length: "$maps.length",
+                  //    bpm: "$maps.bpm",
+                  //    cs: "$maps.cs",
+                  //    ar: "$maps.ar",
+                  //    od: "$maps.od",
+                  //    stars: "$maps.stars",
+                  //    rating: "$maps.rating",
+                  //    mods: '$maps.mods',
+                  //    maxCombo: '$maps.maxCombo'
+                  // }
                },
                name: { $first: "$name" },
                download: { $first: "$download" },
@@ -92,17 +97,21 @@ export default async function Mappool() {
          setid: number;
          artist: string;
          title: string;
-         versions: {
-            id: number;
-            version: string;
-            length: number;
-            bpm: number;
-            cs: number;
-            ar: number;
-            od: number;
-            stars: number;
-            ratings: ModRatings;
-         }[];
+         mapper: string;
+         versions: DbBeatmap[];
+         // {
+         //    id: number;
+         //    version: string;
+         //    length: number;
+         //    bpm: number;
+         //    cs: number;
+         //    ar: number;
+         //    od: number;
+         //    stars: number;
+         //    rating: Rating;
+         //    mods: Partial<Record<Mod, number>>,
+         //    maxCombo: number;
+         // }[];
       }[];
    }[];
    console.log(pools);
@@ -133,7 +142,7 @@ export default async function Mappool() {
                         {pool.maps
                            .sort((a, b) => a.setid - b.setid)
                            .map(mapset => {
-                              mapset.versions.sort((a, b) => averageRating(a) - averageRating(b));
+                              mapset.versions.sort((a, b) => a.rating.rating - b.rating.rating);
                               return (
                                  <Card key={mapset.setid}>
                                     <CardBody className="d-flex flex-column gap-2">
@@ -157,10 +166,10 @@ export default async function Mappool() {
                                                 <CardSubtitle>{mapset.artist}</CardSubtitle>
                                                 <CardSubtitle className="d-flex gap-1 mt-1">
                                                    {mapset.versions.map(bm => {
-                                                      const valid = anyWithinRange(bm.ratings, playerRating);
+                                                      const valid = anyWithinRange(bm, playerRating);
                                                       return (
                                                          <span
-                                                            key={bm.id}
+                                                            key={bm._id}
                                                             className={`rounded ${
                                                                valid ? "" : "bg-body-secondary"
                                                             }`}
@@ -203,7 +212,7 @@ export default async function Mappool() {
                                           <div className="d-flex gap-1 flex-wrap">
                                              {mapset.versions.map(bm => (
                                                 <Card
-                                                   key={bm.id}
+                                                   key={bm._id}
                                                    style={{
                                                       flexBasis: "225px",
                                                       flexGrow: 1,
@@ -213,10 +222,10 @@ export default async function Mappool() {
                                                    <CardBody className="d-flex flex-column">
                                                       <CardTitle className="d-flex gap-2">
                                                          <div className="text-break">{bm.version}</div>
-                                                         <div className="ms-auto">{bm.id}</div>
+                                                         <div className="ms-auto">{bm._id}</div>
                                                       </CardTitle>
                                                       <MapCardBody
-                                                         beatmap={{ setid: mapset.setid, _id: bm.id, ...bm }}
+                                                         beatmap={bm}
                                                          rating={playerRating}
                                                          className="mt-auto"
                                                       />

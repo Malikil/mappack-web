@@ -60,7 +60,7 @@ export default function MapCardBody(props: MapCardBodyProps) {
          {!props.hideRatings && (
             <>
                <hr className="mt-2" />
-               <CardSubtitle>Ratings:</CardSubtitle>
+               <CardSubtitle>Rating:</CardSubtitle>
                <Container>
                   <Row>
                      <Col className={withinRangeClass(props.beatmap.rating)}>

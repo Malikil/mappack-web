@@ -17,13 +17,15 @@ import { Client } from "osu-web.js";
 import { DbPlayer } from "@/types/database.player";
 
 export async function debug() {
-   const result = await playersDb.updateMany({}, [
+   const result = await maniaDb.updateMany({ rating: { $exists: false } }, [
       {
          $set: {
-            "osu.mods": {},
-            "fruits.mods": {},
-            "taiko.mods": {},
-            "mania.mods": {}
+            rating: "$ratings.nm",
+            mods: {
+               //HD: { $divide: ["$ratings.hd.rating", "$ratings.nm.rating"] },
+               //HR: { $divide: ["$ratings.hr.rating", "$ratings.nm.rating"] },
+               DT: { $divide: ["$ratings.dt.rating", "$ratings.nm.rating"] }
+            }
          }
       }
    ]);

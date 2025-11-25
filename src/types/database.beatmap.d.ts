@@ -1,6 +1,8 @@
 import { GameMode, Mod } from "osu-web.js";
 import { BeatmapVersion } from "./mappool";
-import { ManiaMod, ModRatings, Rating, SimpleMod } from "./rating";
+import { ManiaMod, Rating, SimpleMod } from "./rating";
+
+export type ModRatings = Partial<Record<Mod, number>>;
 
 export interface DbBeatmap extends BeatmapVersion {
    artist: string;
@@ -15,6 +17,6 @@ export interface DbBeatmap extends BeatmapVersion {
    lastQuery?: Date;
    matchmakingUntil?: Date;
    styles: number[];
-   mods: Partial<Record<Mod, number>>;
+   mods: ModRatings;
    rating: Rating;
 }
