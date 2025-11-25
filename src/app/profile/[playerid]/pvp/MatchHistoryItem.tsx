@@ -1,8 +1,7 @@
 import { Card, CardBody, CardImg, CardSubtitle } from "react-bootstrap";
 import Link from "next/link";
-import { buildUrl, GameMode } from "osu-web.js";
+import { buildUrl, GameMode, getEnumMods } from "osu-web.js";
 import {
-   ArrowDown,
    ArrowDownRightCircle,
    ArrowUpRightCircle,
    CheckCircle,
@@ -21,19 +20,12 @@ export default async function MatchHistoryItem({ match, mode }: { match: PvPMatc
    // Get map details
    const details = match.songs.map(songResult => {
       const dbmap = maplist.find(map => map._id === songResult.map.id);
-      const fmIncluded = dbmap && {
-         ...dbmap,
-         ratings: {
-            ...dbmap.ratings,
-            fm: { rating: (dbmap.ratings.hd?.rating + dbmap.ratings.hr?.rating) / 2 }
-         }
-      };
       return {
          ...songResult,
-         map: fmIncluded || { ...songResult.map, _id: songResult.map.id }
+         map: dbmap,
+         mapInfo: songResult.map
       };
    });
-
    return (
       <Card>
          <CardBody>
@@ -82,51 +74,58 @@ export default async function MatchHistoryItem({ match, mode }: { match: PvPMatc
             </div>
             <div className="collapse" id={`collapse${match.mp}`}>
                <div className="d-flex gap-1 flex-wrap mt-3">
-                  {details.map((m, i) => (
-                     <Card
-                        className={`flex-shrink-0 flex-grow-1 border-3 ${
-                           i >= (match.warmups || 0) &&
-                           `border-${m.score > m.opponentScore ? "success" : "danger"}`
-                        }`}
-                        key={i}
-                        style={{ flexBasis: "140px" }}
-                     >
-                        <Link href={buildUrl.beatmap(m.map._id)} target="_blank" rel="noopener noreferrer">
-                           <CardImg
-                              src={`https://assets.ppy.sh/beatmaps/${m.map.setid}/covers/cover.jpg`}
-                              alt="Cover"
-                              style={{ objectFit: "cover" }}
-                           />
-                        </Link>
-                        <CardBody className="d-flex flex-column">
-                           <CardSubtitle className="d-flex justify-content-between flex-wrap">
-                              <span>{m.score.toLocaleString()}</span>
-                              <span
-                                 className={`mx-1 ${
-                                    i >= (match.warmups || 0) &&
-                                    `text-${m.score > m.opponentScore ? "success" : "danger"}`
-                                 }`}
-                              >
-                                 {i < (match.warmups || 0) ? (
-                                    <DashCircle />
-                                 ) : m.score > m.opponentScore ? (
-                                    <CheckCircle />
-                                 ) : (
-                                    <XCircle />
+                  {details.map((m, i) => {
+                     const mods = getEnumMods(m.mods || 0);
+                     const modsMult = mods.reduce((mult, mod) => mult * (m.map.mods[mod] || 1), 1);
+                     const map = m.map || { ...m.mapInfo, _id: m.mapInfo.id };
+                     return (
+                        <Card
+                           className={`flex-shrink-0 flex-grow-1 border-3 ${
+                              i >= (match.warmups || 0) &&
+                              `border-${m.score > m.opponentScore ? "success" : "danger"}`
+                           }`}
+                           key={i}
+                           style={{ flexBasis: "140px" }}
+                        >
+                           <Link href={buildUrl.beatmap(map._id)} target="_blank" rel="noopener noreferrer">
+                              <CardImg
+                                 src={`https://assets.ppy.sh/beatmaps/${map.setid}/covers/cover.jpg`}
+                                 alt="Cover"
+                                 style={{ objectFit: "cover" }}
+                              />
+                           </Link>
+                           <CardBody className="d-flex flex-column">
+                              <CardSubtitle className="d-flex justify-content-between flex-wrap">
+                                 <span>{m.score.toLocaleString()}</span>
+                                 <span
+                                    className={`mx-1 ${
+                                       i >= (match.warmups || 0) &&
+                                       `text-${m.score > m.opponentScore ? "success" : "danger"}`
+                                    }`}
+                                 >
+                                    {i < (match.warmups || 0) ? (
+                                       <DashCircle />
+                                    ) : m.score > m.opponentScore ? (
+                                       <CheckCircle />
+                                    ) : (
+                                       <XCircle />
+                                    )}
+                                 </span>
+                                 <span>{m.opponentScore.toLocaleString()}</span>
+                              </CardSubtitle>
+                              <div>{map.version}</div>
+                              <div className="d-flex mt-auto">
+                                 <span>{mods.join("") || "NM"}</span>
+                                 {"rating" in map && (
+                                    <span className="ms-auto">
+                                       {(map.rating.rating * modsMult).toFixed()}
+                                    </span>
                                  )}
-                              </span>
-                              <span>{m.opponentScore.toLocaleString()}</span>
-                           </CardSubtitle>
-                           <div>{m.map.version}</div>
-                           <div className="d-flex mt-auto">
-                              <span>{m.mod.toUpperCase()}</span>
-                              {"ratings" in m.map && (
-                                 <span className="ms-auto">{m.map.ratings[m.mod].rating.toFixed()}</span>
-                              )}
-                           </div>
-                        </CardBody>
-                     </Card>
-                  ))}
+                              </div>
+                           </CardBody>
+                        </Card>
+                     );
+                  })}
                </div>
             </div>
          </CardBody>

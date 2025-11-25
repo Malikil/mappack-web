@@ -1,24 +1,20 @@
 import { Card, CardBody, CardImg, CardSubtitle } from "react-bootstrap";
 import Link from "next/link";
-import { buildUrl, GameMode } from "osu-web.js";
-import {
-   ArrowDown,
-   ArrowDownRightCircle,
-   ArrowUpRightCircle,
-   DashCircle,
-   PlusCircle
-} from "react-bootstrap-icons";
-import { PvEMatchHistory } from "@/types/database.player";
+import { buildUrl, GameMode, getEnumMods } from "osu-web.js";
+import { ArrowDownRightCircle, ArrowUpRightCircle, DashCircle, PlusCircle } from "react-bootstrap-icons";
+import { MatchHistory } from "@/types/database.player";
 import { mapsDb } from "@/app/api/db/connection";
 
-export default async function ScoreHistoryItem({ match, mode }: { match: PvEMatchHistory; mode: GameMode }) {
+export default async function ScoreHistoryItem({ match, mode }: { match: MatchHistory; mode: GameMode }) {
    const maplist = await mapsDb[mode].find({ _id: { $in: match.songs.map(map => map.map.id) } }).toArray();
+
    // Get map details
    const details = match.songs.map(songResult => {
       const dbmap = maplist.find(map => map._id === songResult.map.id);
       return {
          ...songResult,
-         map: dbmap || { ...songResult.map, _id: songResult.map.id }
+         map: dbmap,
+         mapSimple: songResult.map
       };
    });
 
@@ -61,27 +57,34 @@ export default async function ScoreHistoryItem({ match, mode }: { match: PvEMatc
             </div>
             <div className="collapse" id={`collapse${match.mp}`}>
                <div className="d-flex gap-1 flex-wrap mt-3">
-                  {details.map((m, i) => (
-                     <Card key={i} className="flex-shrink-0 flex-grow-1" style={{ flexBasis: "140px" }}>
-                        <Link href={buildUrl.beatmap(m.map._id)} target="_blank" rel="noopener noreferrer">
-                           <CardImg
-                              src={`https://assets.ppy.sh/beatmaps/${m.map.setid}/covers/cover.jpg`}
-                              alt="Cover"
-                              style={{ objectFit: "cover" }}
-                           />
-                        </Link>
-                        <CardBody className="d-flex flex-column">
-                           <CardSubtitle>{m.score.toLocaleString()}</CardSubtitle>
-                           <div>{m.map.version}</div>
-                           <div className="d-flex mt-auto">
-                              <span>{m.mod.toUpperCase()}</span>
-                              {"ratings" in m.map && (
-                                 <span className="ms-auto">{m.map.ratings[m.mod].rating.toFixed()}</span>
-                              )}
-                           </div>
-                        </CardBody>
-                     </Card>
-                  ))}
+                  {details.map((m, i) => {
+                     const mods = getEnumMods(m.mods || 0);
+                     const modsMult = mods.reduce((mult, mod) => mult * (m.map.mods[mod] || 1), 1);
+                     const map = m.map || { ...m.mapSimple, _id: m.mapSimple.id };
+                     return (
+                        <Card key={i} className="flex-shrink-0 flex-grow-1" style={{ flexBasis: "140px" }}>
+                           <Link href={buildUrl.beatmap(map._id)} target="_blank" rel="noopener noreferrer">
+                              <CardImg
+                                 src={buildUrl.beatmapsetCover(map.setid)}
+                                 alt="Cover"
+                                 style={{ objectFit: "cover" }}
+                              />
+                           </Link>
+                           <CardBody className="d-flex flex-column">
+                              <CardSubtitle>{m.score.toLocaleString()}</CardSubtitle>
+                              <div>{map.version}</div>
+                              <div className="d-flex mt-auto">
+                                 <span>{mods.join("") || "NM"}</span>
+                                 {"rating" in map && (
+                                    <span className="ms-auto">
+                                       {(map.rating.rating * modsMult).toFixed()}
+                                    </span>
+                                 )}
+                              </div>
+                           </CardBody>
+                        </Card>
+                     );
+                  })}
                </div>
             </div>
          </CardBody>

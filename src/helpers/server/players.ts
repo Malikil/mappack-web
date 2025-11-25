@@ -20,10 +20,10 @@ export async function registerPlayer(osuid: number, osuname: string) {
       {
          $set: {
             osuname,
-            osu: { pve, styles, pools: [] },
-            fruits: { pve, styles, pools: [] },
-            taiko: { pve, styles, pools: [] },
-            mania: { pve, styles, pools: [] }
+            osu: { pve, styles, pools: [], mods: {} },
+            fruits: { pve, styles, pools: [], mods: {} },
+            taiko: { pve, styles, pools: [], mods: {} },
+            mania: { pve, styles, pools: [], mods: {} }
          },
          $unset: { hideLeaderboard: "" }
       },
@@ -33,6 +33,7 @@ export async function registerPlayer(osuid: number, osuname: string) {
 }
 
 export async function createPvpRegistration(osuid: number, mode: GameMode = "osu") {
+   console.log(`Create ${mode} pvp stats for ${osuid}`);
    const player = await playersDb.findOneAndUpdate(
       { _id: osuid, [`${mode}.pvp`]: { $exists: false } },
       {
@@ -54,6 +55,7 @@ export async function createPvpRegistration(osuid: number, mode: GameMode = "osu
 
 export async function getPlayerList(playerIds: number[], mode: GameMode = "osu", createPvP = false) {
    const existingPlayers: DbPlayer[] = await playersDb.find({ _id: { $in: playerIds } }).toArray();
+   console.log(`Found ${existingPlayers.length} of ${playerIds.length} players`);
    const missingIds = playerIds.filter(pid => !existingPlayers.find(p => p._id === pid));
    const addedPlayers: DbPlayer[] = [];
    if (missingIds.length > 0) {
@@ -81,7 +83,8 @@ export async function getPlayerList(playerIds: number[], mode: GameMode = "osu",
                songs: 0
             },
             styles: Array.from({ length: parseInt(process.env.SKILL_CATEGORIES) }, () => Math.random() / 100),
-            pools: []
+            pools: [],
+            mods: {}
          };
          addingUsers.push(
             ...banchoUsers.map(bu => ({
@@ -115,6 +118,7 @@ export async function getPlayerList(playerIds: number[], mode: GameMode = "osu",
    }
    let playerList = existingPlayers.concat(addedPlayers);
    // Add pvp stats if requested
+   console.log(`Create pvp stats? ${createPvP}`);
    if (createPvP)
       playerList = await Promise.all(
          playerList.map(p => {

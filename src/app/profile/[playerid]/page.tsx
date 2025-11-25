@@ -7,7 +7,6 @@ import Image from "next/image";
 import { buildUrl } from "osu-web.js";
 import CreatePvpStats from "./pvp/CreatePvpStats";
 import PvPResultsCard from "./pvp/PvPResultsCard";
-import { DbPlayer, RankedPlayer } from "@/types/database.player";
 import PoolSetupCard from "./pools/PoolSetupCard";
 
 export default async function Profile({ params }) {
@@ -20,38 +19,9 @@ export default async function Profile({ params }) {
       else return redirect(`/leaderboard`);
    }
    const session = await auth();
-   const user = await playersDb.findOne({ osuid: session?.user.id });
+   const user = await playersDb.findOne({ _id: session?.user.id });
    const gamemode = user?.gamemode || "osu";
-
-   const player = (
-      await playersDb
-         .aggregate<RankedPlayer<DbPlayer, typeof gamemode>>([
-            {
-               $setWindowFields: {
-                  partitionBy: {
-                     $or: [{ $gt: [`$${gamemode}.pvp.wins`, 2] }, { $gt: [`$${gamemode}.pvp.losses`, 3] }]
-                  },
-                  sortBy: { [`${gamemode}.pvp.rating`]: -1 },
-                  output: {
-                     [`${gamemode}.pvp.rank`]: { $rank: {} }
-                  }
-               }
-            },
-            {
-               $setWindowFields: {
-                  partitionBy: {
-                     $and: [{ $gt: [`$${gamemode}.pve.songs`, 10] }, { $gt: [`$${gamemode}.pve.games`, 2] }]
-                  },
-                  sortBy: { [`${gamemode}.pve.rating`]: -1 },
-                  output: {
-                     [`${gamemode}.pve.rank`]: { $rank: {} }
-                  }
-               }
-            },
-            { $match: { osuid: playerid } }
-         ])
-         .toArray()
-   )[0];
+   const player = await playersDb.findOne({ _id: playerid });
    if (!player) return redirect("/leaderboard");
 
    const pvpStats = player[gamemode].pvp;

@@ -15,4 +15,6 @@ export interface DbBeatmap extends BeatmapVersion {
    lastQuery?: Date;
    matchmakingUntil?: Date;
    styles: number[];
+   mods: Partial<Record<Mod, number>>;
+   rating: Rating;
 }

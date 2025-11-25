@@ -5,6 +5,7 @@ import db, {
    fruitsDb,
    historyDb,
    maniaDb,
+   mapsDb,
    mpLinksDb,
    osuDb,
    playersDb,
@@ -16,6 +17,15 @@ import { Client } from "osu-web.js";
 import { DbPlayer } from "@/types/database.player";
 
 export async function debug() {
-   const result = await playersDb.findOne({ osuname: "malikil" });
+   const result = await playersDb.updateMany({}, [
+      {
+         $set: {
+            "osu.mods": {},
+            "fruits.mods": {},
+            "taiko.mods": {},
+            "mania.mods": {}
+         }
+      }
+   ]);
    console.log(result);
 }

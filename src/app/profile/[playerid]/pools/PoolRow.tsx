@@ -148,50 +148,52 @@ export default function PoolRow({
             )}
          </div>
          <div className="d-flex gap-1 mt-2 flex-wrap">
-            {maps.map((m, i) => (
-               <Card key={i} className="flex-shrink-0 flex-grow-1" style={{ flexBasis: "140px" }}>
-                  <Link href={buildUrl.beatmap(m.map._id)} target="_blank" rel="noopener noreferrer">
-                     <CardImg
-                        src={buildUrl.beatmapsetCover(m.map.setid)}
-                        alt="Cover"
-                        style={{ objectFit: "cover" }}
-                     />
-                  </Link>
-                  <CardBody className="d-flex flex-column">
-                     <div className="d-flex justify-content-between">
-                        <div>
-                           <CardSubtitle>
-                              {m.map.artist || m.map._id} - {m.map.title}
-                           </CardSubtitle>
-                           <div className="d-flex justify-content-between align-items-center">
-                              <span>{m.map.version || "No Info"}</span>
-                           </div>
-                        </div>
-                        {editing && (
+            {maps.map((m, i) => {
+               const mod = m.mod.toUpperCase();
+               const modMult = m.map.mods[mod] || 1;
+               return (
+                  <Card key={i} className="flex-shrink-0 flex-grow-1" style={{ flexBasis: "140px" }}>
+                     <Link href={buildUrl.beatmap(m.map._id)} target="_blank" rel="noopener noreferrer">
+                        <CardImg
+                           src={buildUrl.beatmapsetCover(m.map.setid)}
+                           alt="Cover"
+                           style={{ objectFit: "cover" }}
+                        />
+                     </Link>
+                     <CardBody className="d-flex flex-column">
+                        <div className="d-flex justify-content-between">
                            <div>
-                              <Button
-                                 size="sm"
-                                 variant="danger"
-                                 onClick={() =>
-                                    setMaps(arr => arr.filter(rmMap => rmMap.map._id !== m.map._id))
-                                 }
-                              >
-                                 x
-                              </Button>
+                              <CardSubtitle>
+                                 {m.map.artist || m.map._id} - {m.map.title}
+                              </CardSubtitle>
+                              <div className="d-flex justify-content-between align-items-center">
+                                 <span>{m.map.version || "No Info"}</span>
+                              </div>
                            </div>
-                        )}
-                     </div>
-                     <div className="d-flex mt-auto">
-                        <span>{m.mod.toUpperCase()}</span>
-                        {"ratings" in m.map && (
-                           <span className="ms-auto">
-                              {m.map.ratings[m.mod === "fm" ? "nm" : m.mod].rating.toFixed()}
-                           </span>
-                        )}
-                     </div>
-                  </CardBody>
-               </Card>
-            ))}
+                           {editing && (
+                              <div>
+                                 <Button
+                                    size="sm"
+                                    variant="danger"
+                                    onClick={() =>
+                                       setMaps(arr => arr.filter(rmMap => rmMap.map._id !== m.map._id))
+                                    }
+                                 >
+                                    x
+                                 </Button>
+                              </div>
+                           )}
+                        </div>
+                        <div className="d-flex mt-auto">
+                           <span>{mod}</span>
+                           {"rating" in m.map && (
+                              <span className="ms-auto">{(m.map.rating.rating * modMult).toFixed()}</span>
+                           )}
+                        </div>
+                     </CardBody>
+                  </Card>
+               );
+            })}
          </div>
       </Form>
    );

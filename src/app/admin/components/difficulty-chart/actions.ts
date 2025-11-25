@@ -37,51 +37,62 @@ export async function fetchScatterData(type: "scaling" | "recent") {
       hr: 0,
       dt: 0
    };
-   const chartData = { nm: [], hd: [], hr: [], dt: [] };
+   const modCounts = {
+      hd: 0,
+      hr: 0,
+      dt: 0
+   };
+   const chartData = [];
    for await (const map of maps) {
-      const { nm, hd, hr, dt } = map.ratings;
-      modRatios.hd += hd?.rating / nm.rating;
-      modRatios.hr += hr?.rating / nm.rating;
-      modRatios.dt += dt.rating / nm.rating;
-      Object.keys(map.ratings).forEach(k => {
-         chartData[k].push({
-            x: map.stars,
-            y: map.ratings[k].rating,
-            label: `${map.artist} - ${map.title} [${map.version}]`
-         });
+      if (map.mods.HD) {
+         modRatios.hd += map.mods.HD || 0;
+         modCounts.hd++;
+      }
+      if (map.mods.HR) {
+         modRatios.hr += map.mods.HR || 0;
+         modCounts.hr++;
+      }
+      if (map.mods.DT) {
+         modRatios.dt += map.mods.DT || 0;
+         modCounts.dt++;
+      }
+      chartData.push({
+         x: map.stars,
+         y: map.rating.rating,
+         label: `${map.artist} - ${map.title} [${map.version}]`
       });
    }
 
    return {
-      hd: modRatios.hd / chartData.hd.length,
-      hr: modRatios.hr / chartData.hr.length,
-      dt: modRatios.dt / chartData.dt.length,
-      mapCount: chartData.nm.length,
+      hd: modRatios.hd / modCounts.hd,
+      hr: modRatios.hr / modCounts.hr,
+      dt: modRatios.dt / modCounts.dt,
+      mapCount: chartData.length,
       chart: [
          {
-            label: "NoMod",
-            data: chartData.nm,
-            borderColor: "#00EEEE",
-            backgroundColor: "#00FFFF"
-         },
-         {
-            label: "Hidden",
-            data: chartData.hd,
-            borderColor: "#EEEE00",
-            backgroundColor: "#FFFF00"
-         },
-         {
-            label: "HardRock",
-            data: chartData.hr,
-            borderColor: "#EE9400",
-            backgroundColor: "#FFA500"
-         },
-         {
-            label: "DoubleTime",
-            data: chartData.dt,
-            borderColor: "#EE00EE",
-            backgroundColor: "#FF00FF"
+            //label: "NoMod",
+            data: chartData
+            // borderColor: "#00EEEE",
+            // backgroundColor: "#00FFFF"
          }
+         // {
+         //    label: "Hidden",
+         //    data: chartData.hd,
+         //    borderColor: "#EEEE00",
+         //    backgroundColor: "#FFFF00"
+         // },
+         // {
+         //    label: "HardRock",
+         //    data: chartData.hr,
+         //    borderColor: "#EE9400",
+         //    backgroundColor: "#FFA500"
+         // },
+         // {
+         //    label: "DoubleTime",
+         //    data: chartData.dt,
+         //    borderColor: "#EE00EE",
+         //    backgroundColor: "#FF00FF"
+         // }
       ]
    };
 }

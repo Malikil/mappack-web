@@ -1,5 +1,5 @@
 import { playersDb } from "@/app/api/db/connection";
-import { GameMode } from "osu-web.js";
+import { GameMode, Mod } from "osu-web.js";
 import { combineRatings, matchResultValue } from "../rating-range";
 import { Rating } from "@/types/rating";
 import { Glicko2 } from "glicko2";
@@ -7,6 +7,15 @@ import { Glicko2 } from "glicko2";
 const MAP_STYLE_LEARNING_RATE = 0.001;
 const STYLES_LEARNING_RATE = 0.01;
 const STYLES_REGULARIZATION = 0.1;
+/**
+ * This is basically the largest update per-map. So if 10 maps are played, the mods adjustment
+ * could go from 1.1 to 1.11
+ */
+const MODS_LEARNING_RATE = 0.001;
+/**
+ * How aggresively should the updated mods be nudged back towards 1x after an update
+ */
+const MODS_REGULARIZATION = 0.01;
 
 export async function combineRatingsById(mode: GameMode, ...playerIds: number[]) {
    const players = await playersDb
@@ -23,11 +32,11 @@ export async function combineRatingsById(mode: GameMode, ...playerIds: number[])
 /**
  * Gives the outcome (0, 1) the player is expected to get on this map. If an array of skills is
  * provided they are also used in the prediction. Both skills arrays should be equal length.
- * @param playerRating 
- * @param mapRating 
- * @param playerSkills 
- * @param mapSkills 
- * @returns 
+ * @param playerRating
+ * @param mapRating
+ * @param playerSkills
+ * @param mapSkills
+ * @returns
  */
 export function predictOutcome(
    playerRating: Rating,
@@ -42,6 +51,152 @@ export function predictOutcome(
    let residual = 0;
    for (let i = 0; i < playerSkills.length; i++) residual += playerSkills[i] * mapSkills[i];
    return simplePredict + residual;
+}
+
+export function getUpdatedModsFromBatch(
+   results: {
+      mode: GameMode;
+      score: {
+         score: number;
+         mods: Mod[];
+      };
+      player: {
+         rating: Rating;
+         _id: number;
+         mods: Partial<Record<Mod, number>>;
+         styles: number[];
+      };
+      map: {
+         _id: number;
+         rating: Rating;
+         mods: Partial<Record<Mod, number>>;
+         styles: number[];
+      };
+   }[]
+) {
+   const playerGradientsByPlayerId: {
+      [id: number]: Partial<Record<GameMode, Partial<Record<Mod, number>>>>;
+   } = {};
+   const mapGradientsByMode: Partial<
+      Record<
+         GameMode,
+         {
+            [id: number]: Partial<Record<Mod, number>>;
+         }
+      >
+   > = {};
+   const originalPlayerMultipliers: {
+      [id: number]: Partial<Record<GameMode, Partial<Record<Mod, number>>>>;
+   } = {};
+   const originalMapMultipliers: Partial<
+      Record<
+         GameMode,
+         {
+            [id: number]: Partial<Record<Mod, number>>;
+         }
+      >
+   > = {};
+
+   for (const { mode, map, player, score } of results) {
+      // Make sure the approprate gradients are available
+      if (!(player._id in playerGradientsByPlayerId)) {
+         playerGradientsByPlayerId[player._id] = {};
+         originalPlayerMultipliers[player._id] = {};
+      }
+      if (!(mode in playerGradientsByPlayerId[player._id])) {
+         playerGradientsByPlayerId[player._id][mode] = {};
+         originalPlayerMultipliers[player._id][mode] = player.mods;
+      }
+      if (!(mode in mapGradientsByMode)) {
+         mapGradientsByMode[mode] = {};
+         originalMapMultipliers[mode] = {};
+      }
+      if (!(map._id in mapGradientsByMode[mode])) {
+         mapGradientsByMode[mode][map._id] = {};
+         originalMapMultipliers[mode][map._id] = map.mods;
+      }
+
+      // Calculate the adjusted score
+      const playerModsModifier = score.mods.reduce((mult, mod) => mult * (player.mods[mod] || 1), 1);
+      const mapModsModifier = score.mods.reduce((mult, mod) => mult * (map.mods[mod] || 1), 1);
+      const modAdjustedScore = score.score * playerModsModifier * mapModsModifier;
+      const outcome = matchResultValue(modAdjustedScore, mode);
+
+      // Calculate the expected result
+      const expectedResult = predictOutcome(player.rating, map.rating, player.styles, map.styles);
+      const error = outcome - expectedResult;
+      // Update mods gradients
+      // Applying the same adjustment for multiple mods like this will cause multi-mod plays to create a larger adjustment
+      // but I'm okay with that for now.
+      score.mods.forEach(mod => {
+         // The adjusted score came from score * playerMod * mapMod
+         // If the score is too low (error is negative) then playerMod and mapMod should both be increased
+         // Error will be a value between -1 and 1. Add to the gradient a percentage of that error
+         mapGradientsByMode[mode][map._id][mod] =
+            (mapGradientsByMode[mode][map._id][mod] || 0) - error * MODS_LEARNING_RATE;
+         playerGradientsByPlayerId[player._id][mode][mod] =
+            (playerGradientsByPlayerId[player._id][mode][mod] || 0) - error * MODS_LEARNING_RATE;
+      });
+   }
+
+   const playerModsUpdated: {
+      [id: number]: Partial<Record<GameMode, Partial<Record<Mod, number>>>>;
+   } = {};
+   const mapModsUpdated: Partial<
+      Record<
+         GameMode,
+         {
+            [id: number]: Partial<Record<Mod, number>>;
+         }
+      >
+   > = {};
+   // Update the player mods
+   Object.entries(playerGradientsByPlayerId).forEach(([idstr, gradientsByMode]) => {
+      const id = parseInt(idstr);
+      if (!(id in playerModsUpdated)) playerModsUpdated[id] = {};
+      Object.entries(gradientsByMode).forEach(
+         ([mode, gradients]: [GameMode, Partial<Record<Mod, number>>]) => {
+            if (!(mode in playerModsUpdated[id])) playerModsUpdated[id][mode] = {};
+            Object.entries(gradients).forEach(([mod, adjustment]: [Mod, number]) => {
+               // First just add the gradient to the previous mod value
+               const naiveUpdatedMod = (originalPlayerMultipliers[id][mode][mod] || 1) + adjustment;
+               // Nudge the value towards 1, for safety and control
+               const nudgeDifference = (naiveUpdatedMod - 1) * MODS_REGULARIZATION;
+               const finalModifier = naiveUpdatedMod - nudgeDifference;
+               playerModsUpdated[id][mode][mod] = finalModifier;
+            });
+         }
+      );
+   });
+
+   // Update map mods
+   Object.entries(mapGradientsByMode).forEach(
+      ([mode, gradientsByMapId]: [
+         GameMode,
+         {
+            [id: number]: Partial<Record<Mod, number>>;
+         }
+      ]) => {
+         if (!(mode in mapModsUpdated)) mapModsUpdated[mode] = {};
+         Object.entries(gradientsByMapId).forEach(([idstr, gradients]) => {
+            const id = parseInt(idstr);
+            if (!(id in mapModsUpdated[mode])) mapModsUpdated[mode][id] = {};
+            Object.entries(gradients).forEach(([mod, adjustment]: [Mod, number]) => {
+               // Add gradient
+               const naiveUpdatedMod = (originalMapMultipliers[mode][id][mod] || 1) + adjustment;
+               // Nudge towards 1
+               const nudgeDifference = (naiveUpdatedMod - 1) * MODS_REGULARIZATION;
+               const finalModifier = naiveUpdatedMod - nudgeDifference;
+               mapModsUpdated[mode][id][mod] = finalModifier;
+            });
+         });
+      }
+   );
+
+   return {
+      players: playerModsUpdated,
+      maps: mapModsUpdated
+   };
 }
 
 export async function getUpdatedStylesFromBatch(

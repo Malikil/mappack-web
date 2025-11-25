@@ -7,7 +7,7 @@ import { ModPool, SimpleMod } from "@/types/rating";
 import { UpdateOneModel } from "mongodb";
 import { getMaplist } from "@/helpers/server/currentPack";
 import { matchResultValue } from "@/helpers/rating-range";
-import { parseSongMods } from "@/app/profile/[playerid]/pve/functions";
+import { ignoreSongMods } from "@/app/profile/[playerid]/pve/functions";
 import { ScoreParser } from "@/helpers/scorev1";
 import { getPlayerList } from "@/helpers/server/players";
 
@@ -80,7 +80,7 @@ function parseTeamsLobby(lobby: LegacyMultiplayerLobby, warmups: number): TeamMp
 
          // Find the map/modpool
          const map = game.beatmap_id;
-         let modpool: ModPool = parseSongMods(game.mods, [], game.play_mode);
+         let modpool: ModPool = ignoreSongMods(game.mods, [], game.play_mode);
          let nmSeen = false;
 
          const matchScore = {
@@ -100,7 +100,7 @@ function parseTeamsLobby(lobby: LegacyMultiplayerLobby, warmups: number): TeamMp
             matchScore[score.team] += score.score;
             // If this score uses different mods from the lobby's mods, upgrade the lobby's mods
             // nm -> hd/hr -> fm      If the lobby mod is dt leave it as-is
-            const playerMods = parseSongMods(game.mods, score.enabled_mods, game.play_mode);
+            const playerMods = ignoreSongMods(game.mods, score.enabled_mods, game.play_mode);
             if (modpool === "nm")
                if (playerMods === "nm") nmSeen = true;
                else modpool = playerMods;

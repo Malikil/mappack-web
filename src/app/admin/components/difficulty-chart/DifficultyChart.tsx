@@ -11,7 +11,7 @@ import { fetchScatterData } from "./actions";
       recent: "Recent Pack"
    };
 
-   export default function DifficultyChart({ chartVersion }) {
+   export default function DifficultyChart({ chartVersion }: { chartVersion: "scaling" | "recent" }) {
       const [data, setData] = useState({
          hd: 0,
          hr: 0,
@@ -41,6 +41,9 @@ import { fetchScatterData } from "./actions";
                      data={data.chart}
                      options={{
                         plugins: {
+                           legend: {
+                              display: false
+                           },
                            tooltip: {
                               callbacks: {
                                  label: ctx =>

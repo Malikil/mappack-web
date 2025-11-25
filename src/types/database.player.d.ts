@@ -9,15 +9,10 @@ export interface MatchHistoryMap {
 
 export interface MatchHistorySong {
    map: MatchHistoryMap;
-   mod: string;
+   mods: number;
+   modpool?: ModPool;
    score: number;
-}
-export interface PvEMatchHistorySong extends MatchHistorySong {
-   mod: SimpleMod;
-}
-export interface PvPMatchHistorySong extends MatchHistorySong {
-   mod: ModPool;
-   opponentScore: number;
+   opponentScore?: number;
 }
 
 export interface MatchHistory {
@@ -31,11 +26,7 @@ export interface MatchHistoryOpponent {
    name: string;
    rating: number;
 }
-export interface PvEMatchHistory extends MatchHistory {
-   songs: PvEMatchHistorySong[];
-}
 export interface PvPMatchHistory extends MatchHistory {
-   songs: PvPMatchHistorySong[];
    opponent: MatchHistoryOpponent;
    warmups?: number;
 }
@@ -47,7 +38,7 @@ export interface PvPInfo extends Rating {
 }
 
 export interface PvEInfo extends Rating {
-   matches: PvEMatchHistory[];
+   matches: MatchHistory[];
    games: number;
    songs: number;
 }
@@ -66,6 +57,7 @@ export interface ModeInfo {
    pve: PvEInfo;
    styles: number[];
    pools: PracticePool[];
+   mods: Partial<Record<Mod, number>>;
 }
 
 export interface DbPlayer extends Record<GameMode, ModeInfo> {
@@ -75,11 +67,3 @@ export interface DbPlayer extends Record<GameMode, ModeInfo> {
    hideLeaderboard?: boolean;
    gamemode?: GameMode;
 }
-
-type WithRank<T extends Rating> = T & { rank?: number };
-type RankedPlayer<T extends DbPlayer, K extends GameMode> = Omit<T, K> & {
-   [P in K]: T[P] & {
-      pvp?: WithRank<T[P]["pvp"]>;
-      pve: WithRank<T[P]["pve"]>;
-   };
-};

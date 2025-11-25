@@ -15,7 +15,9 @@ export default async function PoolSetupCard({
    osuid: number;
    mode: GameMode;
 }) {
-   const maplist = await mapsDb[mode].find({ _id: { $in: data.flatMap(pool => pool.maps.map(m => m.id))}}).toArray();
+   const maplist = await mapsDb[mode]
+      .find({ _id: { $in: data.flatMap(pool => pool.maps.map(m => m.id)) } })
+      .toArray();
    const pools = data.map(p => {
       const mapinfo = p.maps.map(m => {
          const map = maplist.find(dbbm => dbbm._id === m.id);
@@ -28,7 +30,7 @@ export default async function PoolSetupCard({
          name: p.name,
          maps: mapinfo
       };
-   })
+   });
    return (
       <Card>
          <CardHeader className="d-flex justify-content-between align-items-center">

@@ -10,7 +10,7 @@ export default async function Profile() {
 
    if (!session) return redirect("/");
    const player = await playersDb.findOne({
-      osuid: session.user.id,
+      _id: session.user.id,
       hideLeaderboard: { $exists: false }
    });
 

@@ -1,44 +1,43 @@
 import { mapsDb, playersDb } from "@/app/api/db/connection";
 import { getMaplist } from "@/helpers/server/currentPack";
-import { batchArray } from "@/helpers/list-splitter";
-import { getOsuToken } from "@/helpers/osuToken";
 import { matchResultValue } from "@/helpers/rating-range";
 import { ScoreParser } from "@/helpers/scorev1";
-import { delay, seconds } from "@/time";
 import { DbBeatmap } from "@/types/database.beatmap";
-import { DbPlayer, ModeInfo, PvEMatchHistory } from "@/types/database.player";
+import { DbPlayer, MatchHistory } from "@/types/database.player";
 import { PveLobbyResults } from "@/types/multiplayer";
-import { ModPool, SimpleMod } from "@/types/rating";
+import { ModPool, Rating, SimpleMod } from "@/types/rating";
 import { Glicko2, Player } from "glicko2";
 import { UpdateFilter } from "mongodb";
-import { Client, GameMode, LegacyClient, Mod } from "osu-web.js";
-import { predictOutcome } from "@/helpers/server/ratings";
+import { GameMode, getModsEnum, LegacyClient, Mod } from "osu-web.js";
+import { getUpdatedModsFromBatch, predictOutcome } from "@/helpers/server/ratings";
+import { getPlayerList } from "@/helpers/server/players";
 
 const MAP_STYLE_LEARNING_RATE = 0.001;
 const STYLES_LEARNING_RATE = 0.01;
 const STYLES_REGULARIZATION = 0.1;
+/**
+ * This is basically the largest update per-map. So if 10 maps are played, the mods adjustment
+ * could go from 1.1 to 1.11
+ */
+const MODS_LEARNING_RATE = 0.001;
+/**
+ * How aggresively should the updated mods be nudged back towards 1x after an update
+ */
+const MODS_REGULARIZATION = 0.01;
 
-export function parseSongMods(lobbyMods: Mod[], scoreMods: Mod[], mode: GameMode): SimpleMod {
-   // When freemod is set on DT, DT will be in both arrays
-   // Just take unique mods in general
-   const ignore: Mod[] = ["NF", "MR", "FI", "SD", "PF", "FL"];
-   let mods = [
-      ...new Set(
-         lobbyMods
-            .concat(scoreMods)
-            // Ignore NF
-            .filter(m => !ignore.includes(m))
-      )
-   ];
+function parseModpool(mods: Mod[], mode: GameMode): ModPool {
+   mods = ignoreSongMods(mods);
+   // If DT is in the modlist, assume the pool is DT and ignore everything else
+   if (mods.includes("DT") || mods.includes("NC")) return "dt";
    // Catch generally allows HD in addition to other mods. Discard HD if it's not the only mod
    if (mode === "fruits" && mods.length > 1) mods = mods.filter(m => m !== "HD");
    // In order for the score to be valid, only one mod should be used
-   if (mods.length > 1) return null;
+   if (mods.length > 1) return "fm";
    if (mods.length === 0) return "nm";
    else if (mode === "mania") {
       if (mods[0] === "DT" || mods[0] === "NC") return "dt";
       // Only reject EZ and HT
-      if (mods[0] === "EZ" || mods[0] === "HT") return null;
+      if (mods[0] === "EZ" || mods[0] === "HT") return "fm";
       else return "nm";
    } else
       switch (mods[0]) {
@@ -50,6 +49,20 @@ export function parseSongMods(lobbyMods: Mod[], scoreMods: Mod[], mode: GameMode
          case "NC":
             return "dt";
       }
+}
+export function ignoreSongMods(lobbyMods: Mod[], scoreMods: Mod[] = []): Mod[] {
+   // When freemod is set on DT, DT will be in both arrays
+   // Just take unique mods in general
+   const ignore: Mod[] = ["NF", "MR", "SD", "PF"];
+   const mods = [
+      ...new Set(
+         lobbyMods
+            .concat(scoreMods)
+            // Ignore NF
+            .filter(m => !ignore.includes(m))
+      )
+   ];
+   return mods;
 }
 
 export async function parseMpLobby(mp: number, allowIncomplete = false): Promise<PveLobbyResults> {
@@ -74,16 +87,13 @@ export async function parseMpLobby(mp: number, allowIncomplete = false): Promise
                   for (const score of game.scores) {
                      // If there are at least twice as many misses as good hits, discard the play
                      if (score.countmiss > score.count300 * 2) continue;
-                     const scoreResult = {
+                     if (!(score.user_id in scoreAgg)) scoreAgg[score.user_id] = [];
+                     scoreAgg[score.user_id].push({
                         map: game.beatmap_id,
-                        mod: parseSongMods(game.mods, score.enabled_mods, game.play_mode),
+                        mods: ignoreSongMods(game.mods, score.enabled_mods),
                         score: new ScoreParser(score, scoreType, game.play_mode),
                         mode: game.play_mode
-                     };
-                     if (scoreResult.mod && scoreResult.score) {
-                        if (!(score.user_id in scoreAgg)) scoreAgg[score.user_id] = [];
-                        scoreAgg[score.user_id].push(scoreResult);
-                     }
+                     });
                   }
                }
                return scoreAgg;
@@ -92,7 +102,7 @@ export async function parseMpLobby(mp: number, allowIncomplete = false): Promise
             {} as {
                [user_id: number]: {
                   map: number;
-                  mod: SimpleMod;
+                  mods: Mod[];
                   score: ScoreParser;
                   mode: GameMode;
                }[];
@@ -109,84 +119,18 @@ export async function parseMpLobby(mp: number, allowIncomplete = false): Promise
    }
 }
 
-export async function submitPveData(
-   data: PveLobbyResults | (Omit<PveLobbyResults, "mp"> & { mp: { [user: number]: number } })
-) {
+export async function submitPveData(data: PveLobbyResults) {
    const { matches, maps, mp } = data;
    // Create the rating calculator
    const calculator = new Glicko2();
    const calculatorResults: [Player, Player, number][] = [];
    // Get each player's data
    const playerIds = Object.keys(matches).map(id => parseInt(id));
-   const playerList: DbPlayer[] = await playersDb
-      .find({
-         _id: { $in: playerIds }
-      })
-      .toArray();
-   console.log(`Found ${playerList.length} of ${playerIds.length} players`);
-   // Look up anyone we don't already have
-   const missingPlayers = playerIds.filter(id => !playerList.find(p => p._id === id));
-   if (missingPlayers.length > 0) {
-      const client = new Client(await getOsuToken());
-      const addingUsers: DbPlayer[] = [];
-      let panic = false;
-      for (const batch of batchArray(missingPlayers)) {
-         console.log(`Get ${batch.length} players from bancho`);
-         const banchoUsers = await client.users.getUsers({ query: { ids: batch } }).catch(err => {
-            console.error(err);
-            return { panic: true };
-         });
-         if ("panic" in banchoUsers) {
-            panic = true;
-            break;
-         }
-
-         const ratingSet: ModeInfo = {
-            pve: {
-               rating: 1500,
-               rd: 350,
-               vol: 0.06,
-               matches: [],
-               games: 0,
-               songs: 0
-            },
-            styles: Array.from({ length: parseInt(process.env.SKILL_CATEGORIES) }, () => Math.random() / 100),
-            pools: []
-         };
-         addingUsers.push(
-            ...banchoUsers.map(bu => ({
-               _id: bu.id,
-               osuname: bu.username,
-               osu: ratingSet,
-               fruits: ratingSet,
-               taiko: ratingSet,
-               mania: ratingSet
-            }))
-         );
-         console.log(`Done! Now ${addingUsers.length} total`);
-         const iteration = ((addingUsers.length / 50) | 0) % 4;
-         if (!iteration) {
-            const n = addingUsers.length / 200;
-            const s = Math.min(((n * (n + 1)) / 2) | 0, 20);
-            console.log(`Cool down! ${s.toFixed(1)} seconds`);
-            await delay(seconds(s));
-         }
-      }
-      // Done looking everyone up, add to db
-      if (addingUsers.length > 0) {
-         const addPlayerResult = await playersDb.insertMany(addingUsers);
-         console.log(addPlayerResult);
-      }
-      // Add to the player list
-      playerList.push(...addingUsers);
-
-      // Stop the function if we hit an error
-      if (panic) throw new Error("Failed to fetch players");
-   }
+   const playerList = await getPlayerList(playerIds);
 
    const playerCalculatorPairs = playerList.map(dbp => {
       const playerCalc: Partial<Record<GameMode, Player>> = {};
-      const history: Partial<Record<GameMode, PvEMatchHistory>> = {};
+      const history: Partial<Record<GameMode, MatchHistory>> = {};
       const styleGradients: Partial<Record<GameMode, number[]>> = {};
       return {
          playerId: dbp._id,
@@ -203,7 +147,7 @@ export async function submitPveData(
          ).map(map => ({
             map,
             mode,
-            ratings: {} as Partial<Record<SimpleMod, Player>>,
+            mapCalc: calculator.makePlayer(map.rating.rating, map.rating.rd, map.rating.vol),
             styleGradients: Array(parseInt(process.env.SKILL_CATEGORIES)).fill(0) as number[]
          }))
       )
@@ -217,6 +161,25 @@ export async function submitPveData(
       map: number;
       mod: ModPool;
       score: number;
+   }[] = [];
+   const modRatingsUpdateObj: {
+      mode: GameMode;
+      score: {
+         score: number;
+         mods: Mod[];
+      };
+      player: {
+         _id: number;
+         rating: Rating;
+         mods: Partial<Record<Mod, number>>;
+         styles: number[];
+      };
+      map: {
+         _id: number;
+         rating: Rating;
+         mods: Partial<Record<Mod, number>>;
+         styles: number[];
+      };
    }[] = [];
    Object.keys(matches).forEach(playerIdStr => {
       const playerId = parseInt(playerIdStr);
@@ -237,10 +200,8 @@ export async function submitPveData(
 
          // Prep the player's history
          if (!(score.mode in playerInfo.history)) {
-            let playersMp = mp;
-            if (typeof mp !== "number") playersMp = mp[playerId];
             playerInfo.history[score.mode] = {
-               mp: playersMp as number,
+               mp,
                prevRating: playerModeInfo.pve.rating,
                ratingDiff: 0,
                songs: []
@@ -253,7 +214,7 @@ export async function submitPveData(
                setid: mapInfo.map.setid,
                version: mapInfo.map.version
             },
-            mod: score.mod,
+            mods: getModsEnum(score.mods, true),
             score: score.score.getScore()
          });
          // Add to the practice pool update list
@@ -261,8 +222,23 @@ export async function submitPveData(
             player: playerId,
             mode: score.mode,
             map: score.map,
-            mod: score.mod,
+            mod: parseModpool(score.mods, score.mode) || "fm",
             score: score.score.getScore()
+         });
+         // Add to the mods updates list
+         modRatingsUpdateObj.push({
+            player: {
+               _id: playerId,
+               mods: playerModeInfo.mods,
+               rating: playerModeInfo.pve,
+               styles: playerModeInfo.styles
+            },
+            map: mapInfo.map,
+            mode: score.mode,
+            score: {
+               score: score.score.getScore(),
+               mods: score.mods
+            }
          });
 
          // Create a glicko player for this gamemode if it doesn't already exist
@@ -274,20 +250,22 @@ export async function submitPveData(
                pveStats.vol
             );
          }
-         // Create a glicko player for the selected mod if it doesn't already exist
-         if (!(score.mod in mapInfo.ratings)) {
-            const mapStats = mapInfo.map.ratings[score.mod];
-            mapInfo.ratings[score.mod] = calculator.makePlayer(mapStats.rating, mapStats.rd, mapStats.vol);
-         }
 
          // Calculate the score result
-         const scoreResult = matchResultValue(score.score.getScore(), score.mode);
-         calculatorResults.push([playerInfo.playerCalc[score.mode], mapInfo.ratings[score.mod], scoreResult]);
+         const playerModsModifier = score.mods.reduce(
+            (mult, mod) => mult * (playerModeInfo.mods[mod] || 1),
+            1
+         );
+         const mapModsModifier = score.mods.reduce((mult, mod) => mult * (mapInfo.map.mods[mod] || 1), 1);
+         const modAdjustedScore = score.score.getScore() * playerModsModifier * mapModsModifier;
+         const scoreResult = matchResultValue(modAdjustedScore, score.mode);
+         calculatorResults.push([playerInfo.playerCalc[score.mode], mapInfo.mapCalc, scoreResult]);
 
          // To update style weights, get the expected score
+         // Update mod multipliers in the same way
          const expectedResult = predictOutcome(
             playerModeInfo.pve,
-            mapInfo.map.ratings[score.mod],
+            mapInfo.map.rating,
             playerModeInfo.styles,
             mapInfo.map.styles
          );
@@ -296,6 +274,7 @@ export async function submitPveData(
          if (!(score.mode in playerInfo.styleGradients))
             playerInfo.styleGradients[score.mode] = Array(parseInt(process.env.SKILL_CATEGORIES)).fill(0);
 
+         // Update skills gradients
          const nSkills = parseInt(process.env.SKILL_CATEGORIES);
          for (let i = 0; i < nSkills; i++) {
             // Gradient for player skill comes from sum of errors for each map
@@ -328,6 +307,7 @@ export async function submitPveData(
    // Update matches
    console.log(`Update results for ${calculatorResults.length} scores`);
    calculator.updateRatings(calculatorResults);
+   const updatedModRatings = getUpdatedModsFromBatch(modRatingsUpdateObj);
 
    // Save results to database
    // First player practice pools
@@ -366,6 +346,13 @@ export async function submitPveData(
                updateFilter.$set[`${mode}.styles`] = dbplayer[mode].styles.map(
                   (v, i) => v + STYLES_LEARNING_RATE * (styleGradients[mode][i] - STYLES_REGULARIZATION * v)
                );
+               // Update the player mods
+               Object.entries(updatedModRatings.players[playerId]?.[mode]).forEach(
+                  ([playedMod, multiplier]: [Mod, number]) => {
+                     updateFilter.$set[`${mode}.mods.${playedMod}`] = multiplier;
+                  }
+               );
+
                const updatedRating = playerCalc[mode].getRating();
                history[mode].ratingDiff = updatedRating - history[mode].prevRating;
                updateFilter.$set[`${mode}.pve.rating`] = updatedRating;
@@ -398,26 +385,28 @@ export async function submitPveData(
       const filteredMaplist = maplist.filter(m => m.mode === mode);
       const modeDbWriteResult = await mapsDb[mode].bulkWrite(
          filteredMaplist
-            .map(({ map, ratings, styleGradients }) => {
+            .map(({ map, mapCalc, styleGradients }) => {
                // Update the map's styles here
                const updateFilter: UpdateFilter<DbBeatmap> = {
                   $set: {
                      styles: map.styles.map(
                         (v, i) =>
                            v + MAP_STYLE_LEARNING_RATE * (styleGradients[i] - STYLES_REGULARIZATION * v)
-                     )
+                     ),
+                     rating: {
+                        rating: mapCalc.getRating(),
+                        rd: mapCalc.getRd(),
+                        vol: mapCalc.getVol()
+                     }
                   }
                };
-               const playedMods = Object.keys(ratings) as SimpleMod[];
-               if (playedMods.length < 1) return;
-               for (const mod of playedMods) {
-                  const modRating = ratings[mod];
-                  updateFilter.$set[`ratings.${mod}`] = {
-                     rating: modRating.getRating(),
-                     rd: modRating.getRd(),
-                     vol: modRating.getVol()
-                  };
-               }
+               // Update the map's mods
+               Object.entries(updatedModRatings.maps[mode]?.[map._id]).forEach(
+                  ([playedMod, multiplier]: [Mod, number]) => {
+                     updateFilter.$set[`mods.${playedMod}`] = multiplier;
+                  }
+               );
+
                return {
                   updateOne: {
                      filter: { _id: map._id },

@@ -1,7 +1,6 @@
 import { mapsDb, playersDb } from "../api/db/connection";
-import { Button, Card, CardBody, CardSubtitle, CardTitle, Col, Row } from "react-bootstrap";
-//import interpolate from "color-interpolate";
-import { buildUrl } from "osu-web.js";
+import { Card, CardBody, CardSubtitle, CardTitle } from "react-bootstrap";
+import { buildUrl, Mod } from "osu-web.js";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { ModPool as ModPoolType, Rating } from "@/types/rating";
 import { auth } from "@/auth";
@@ -11,7 +10,6 @@ import mathplus from "@/mathplus";
 import ButtonRow from "./ButtonRow";
 //import { PracticePool } from "@/types/database.player";
 
-//const palette = interpolate(["#4fc0ff", "#7cff4f", "#f6f05c", "#ff4e6f", "#c645b8", "#6563de", "black"]);
 const MODLIST: ModPoolType[] = ["nm", "hd", "hr", "dt", "fm"];
 
 export default async function Mappool({ searchParams }) {
@@ -59,8 +57,7 @@ export default async function Mappool({ searchParams }) {
                   <div key={mod} className="d-flex flex-column gap-1 mb-2">
                      <h2>{mod.toUpperCase()}</h2>
                      {modMaps.map((beatmap: DbBeatmap & { scores: number[] }) => {
-                        const ratingMod = mod === "fm" ? "nm" : mod;
-                        const mapRating = beatmap.ratings[ratingMod];
+                        const modMult = beatmap.mods[mod.toUpperCase() as Mod] || 1;
                         const { sum, weightedSum, weightedCount } = beatmap.scores
                            .sort((a, b) => b - a)
                            .reduce(
@@ -73,11 +70,12 @@ export default async function Mappool({ searchParams }) {
                               },
                               { sum: 0, weightedSum: 0, weightedCount: 0 }
                            );
-                        const target = scoreFromResult(
-                           predictOutcome(playerRating, mapRating),
-                           stringParams.m || mode,
-                           false
-                        );
+                        const target =
+                           scoreFromResult(
+                              predictOutcome(playerRating, beatmap.rating),
+                              stringParams.m || mode,
+                              false
+                           ) / modMult;
                         const combinedSd = mathplus.stdev(target, ...beatmap.scores);
                         const avg = sum / beatmap.scores.length;
                         const wavg = weightedSum / weightedCount;
@@ -102,10 +100,10 @@ export default async function Mappool({ searchParams }) {
                                        <CardSubtitle>{beatmap.artist}</CardSubtitle>
                                     </div>
                                     <div className="ms-auto">
-                                       <div className="d-flex gap-3">
+                                       <div className="d-flex gap-3 flex-wrap flex-lg-nowrap">
                                           <div>
                                              <div>Rating</div>
-                                             <div>{mapRating.rating.toFixed()}</div>
+                                             <div>{(beatmap.rating.rating * modMult).toFixed()}</div>
                                           </div>
                                           <div>
                                              <div>Target</div>
@@ -113,7 +111,7 @@ export default async function Mappool({ searchParams }) {
                                           </div>
                                           <div>
                                              <div>Deviation</div>
-                                             <div>{mapRating.rd.toFixed()}</div>
+                                             <div>{beatmap.rating.rd.toFixed()}</div>
                                           </div>
                                           {presetPool && (
                                              <>
