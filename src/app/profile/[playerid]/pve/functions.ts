@@ -79,10 +79,11 @@ export async function parseMpLobby(mp: number, allowIncomplete = false): Promise
                      // If there are at least twice as many misses as good hits, discard the play
                      if (score.countmiss > score.count300 * 2) continue;
                      if (!(score.user_id in scoreAgg)) scoreAgg[score.user_id] = [];
+                     const mods = ignoreSongMods(game.mods, score.enabled_mods);
                      scoreAgg[score.user_id].push({
                         map: game.beatmap_id,
-                        mods: ignoreSongMods(game.mods, score.enabled_mods),
-                        score: new ScoreParser(score, scoreType, game.play_mode),
+                        mods,
+                        score: new ScoreParser(score, scoreType, game.play_mode, mods),
                         mode: game.play_mode
                      });
                   }
@@ -150,7 +151,7 @@ export async function submitPveData(data: PveLobbyResults) {
       player: number;
       mode: GameMode;
       map: number;
-      mod: ModPool;
+      mods: Mod[];
       score: number;
    }[] = [];
    const modRatingsUpdateObj: {
@@ -213,7 +214,7 @@ export async function submitPveData(data: PveLobbyResults) {
             player: playerId,
             mode: score.mode,
             map: score.map,
-            mod: parseModpool(score.mods, score.mode) || "fm",
+            mods: score.mods,
             score: score.score.getScore()
          });
          // Add to the mods updates list
@@ -304,6 +305,7 @@ export async function submitPveData(data: PveLobbyResults) {
    // First player practice pools
    const practicePoolDbResult = await playersDb.bulkWrite(
       practicePoolUpdates.map(ppu => {
+         const nomod = ppu.mods.length < 1;
          return {
             updateOne: {
                filter: { _id: ppu.player },
@@ -314,7 +316,21 @@ export async function submitPveData(data: PveLobbyResults) {
                },
                arrayFilters: [
                   { "pool.maps.id": ppu.map },
-                  { "map.id": ppu.map, "map.mod": { $in: ["fm", ppu.mod] } }
+                  {
+                     "map.id": ppu.map,
+                     $or: [
+                        { "map.mods": null },
+                        { "map.mods": { $exists: false } },
+                        nomod
+                           ? { "map.mods": { $size: 0 } }
+                           : {
+                                $and: [
+                                   { "map.mods": { $all: ppu.mods } },
+                                   { "map.mods": { $size: ppu.mods.length } }
+                                ]
+                             }
+                     ]
+                  }
                ]
             }
          };

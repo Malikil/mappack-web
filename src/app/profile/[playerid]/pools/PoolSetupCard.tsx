@@ -22,7 +22,7 @@ export default async function PoolSetupCard({
       const mapinfo = p.maps.map(m => {
          const map = maplist.find(dbbm => dbbm._id === m.id);
          return {
-            mod: m.mod,
+            mods: m.mods,
             map
          };
       });

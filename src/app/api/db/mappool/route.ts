@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getMappool } from "./functions";
 import { GameMode } from "osu-web.js";
 import { ModPool } from "@/types/rating";
-import { DbBeatmap } from "@/types/database.beatmap";
 import { combineRatingsById } from "@/helpers/server/ratings";
 
 export const GET = async (req: NextRequest) => {
@@ -27,19 +26,9 @@ export const GET = async (req: NextRequest) => {
       maps.fm = maps.nm;
       maps.nm = [];
    }
-   // Rename _id to id for api response
+   // API response should be a list of ids for each mod
    const result = Object.fromEntries(
-      Object.keys(maps).map((k: ModPool) => [
-         k,
-         maps[k].map(bm => {
-            const idMap = {
-               ...bm,
-               id: bm._id
-            };
-            delete idMap._id;
-            return idMap;
-         })
-      ])
-   ) as Partial<Record<ModPool, (Omit<DbBeatmap, "_id"> & { id: number })[]>>;
+      Object.keys(maps).map((k: ModPool) => [k, maps[k].map(bm => bm._id)])
+   ) as Partial<Record<ModPool, number[]>>;
    return NextResponse.json(result);
 };

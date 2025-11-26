@@ -5,7 +5,7 @@ import { getMaplist } from "@/helpers/server/currentPack";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { ModPool } from "@/types/rating";
 import { revalidatePath } from "next/cache";
-import { GameMode } from "osu-web.js";
+import { GameMode, Mod } from "osu-web.js";
 
 export async function addPool(osuid: number, mode: GameMode) {
    const result = await playersDb.updateOne(
@@ -39,7 +39,7 @@ export async function savePool(
    mode: GameMode,
    oldName: string,
    newName: string,
-   maps: { map: DbBeatmap; mod: ModPool }[]
+   maps: { map: DbBeatmap; mods?: Mod[] }[]
 ) {
    if (oldName !== newName) {
       const nameConflict = await playersDb.findOne({ osuid, [`${mode}.pools.name`]: newName });
@@ -54,7 +54,7 @@ export async function savePool(
       name: newName,
       maps: maplist.map(m => ({
          map: m,
-         mod: maps.find(mapMod => mapMod.map._id === m._id).mod,
+         mods: maps.find(mapMod => mapMod.map._id === m._id).mods,
          scores: oldPool.maps.find(om => om.id === m._id)?.scores || []
       }))
    };
@@ -65,7 +65,7 @@ export async function savePool(
          $set: {
             [`${mode}.pools.$`]: {
                name: newName,
-               maps: updatedPool.maps.map(m => ({ id: m.map._id, mod: m.mod, scores: m.scores }))
+               maps: updatedPool.maps.map(m => ({ id: m.map._id, mod: m.mods, scores: m.scores }))
             }
          }
       }

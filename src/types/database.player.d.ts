@@ -47,7 +47,7 @@ export interface PracticePool {
    name: string;
    maps: {
       id: number;
-      mod: ModPool;
+      mods?: Mod[];
       scores: number[];
    }[];
 }

@@ -5,11 +5,10 @@ import { ModPool } from "@/types/rating";
 import { useEffect, useState } from "react";
 import { Button, Card, CardBody, CardImg, CardSubtitle, Form, FormControl, Spinner } from "react-bootstrap";
 import { fetchMapFromDb, removePool, savePool } from "./actions";
-import { buildUrl, GameMode } from "osu-web.js";
+import { buildUrl, GameMode, Mod } from "osu-web.js";
 import Link from "next/link";
 import { toast } from "react-toastify";
-
-const mods = ["nm", "hd", "hr", "dt", "fm"];
+import { parseShortMods } from "@/helpers/mods";
 
 export default function PoolRow({
    osuid,
@@ -18,7 +17,7 @@ export default function PoolRow({
    revalidate
 }: {
    osuid: number;
-   data: { name: string; maps: { map: DbBeatmap; mod: ModPool }[] };
+   data: { name: string; maps: { map: DbBeatmap; mods?: Mod[] }[] };
    mode: GameMode;
    revalidate?: () => void;
 }) {
@@ -42,18 +41,20 @@ export default function PoolRow({
       const params = new URLSearchParams();
       params.append("m", mode);
       if (data.name) params.append("p", data.name);
-      mods.forEach(mod => {
-         const list = data.maps.filter(m => m.mod === mod);
-         const idlist = list.map(m => m.map._id).join(",");
-         if (idlist) params.append(mod, idlist);
+      const modsData: { [mod: string]: number[] } = {};
+      maps.forEach(({ map, mods }) => {
+         const modStr = !mods ? "FM" : mods.join("") || "NM";
+         if (!(modStr in modsData)) modsData[modStr] = [];
+         modsData[modStr].push(map._id);
       });
+      Object.entries(modsData).forEach(([mod, maps]) => params.append(mod, maps.join(",")));
       setLinkParams(params);
    }, [data]);
 
    const addMap = async () => {
       if (addMapId.trim().length < 5) return;
       setAddingMap(true);
-      const [id, mod] = addMapId.split("+").map(s => s.trim().toLowerCase());
+      const [id, mod] = addMapId.split("+").map(s => s.trim());
       const intId = parseInt(id);
       const map = await fetchMapFromDb(intId, mode);
       // Incomplete type should be accepted below
@@ -62,8 +63,8 @@ export default function PoolRow({
          ({
             _id: intId
          } as DbBeatmap);
-      const modinfo = (mods.includes(mod) ? mod : "nm") as ModPool;
-      setMaps(arr => [...arr, { map: mapinfo, mod: modinfo }]);
+      const modinfo = parseShortMods(mod);
+      setMaps(arr => [...arr, { map: mapinfo, mods: modinfo }]);
       setAddMapId("");
       setAddingMap(false);
    };
@@ -149,8 +150,7 @@ export default function PoolRow({
          </div>
          <div className="d-flex gap-1 mt-2 flex-wrap">
             {maps.map((m, i) => {
-               const mod = m.mod.toUpperCase();
-               const modMult = m.map.mods[mod] || 1;
+               const modsMult = m.mods?.reduce((mult, mod) => mult * (m.map.mods[mod] || 1), 1) || 1;
                return (
                   <Card key={i} className="flex-shrink-0 flex-grow-1" style={{ flexBasis: "140px" }}>
                      <Link href={buildUrl.beatmap(m.map._id)} target="_blank" rel="noopener noreferrer">
@@ -185,9 +185,9 @@ export default function PoolRow({
                            )}
                         </div>
                         <div className="d-flex mt-auto">
-                           <span>{mod}</span>
+                           <span>{!m.mods ? "FM" : m.mods.join("") || "NM"}</span>
                            {"rating" in m.map && (
-                              <span className="ms-auto">{(m.map.rating.rating * modMult).toFixed()}</span>
+                              <span className="ms-auto">{(m.map.rating.rating * modsMult).toFixed()}</span>
                            )}
                         </div>
                      </CardBody>

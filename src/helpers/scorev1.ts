@@ -1,5 +1,15 @@
 import { DbBeatmap } from "@/types/database.beatmap";
-import { GameMode, LegacyMatchScore, ScoringType } from "osu-web.js";
+import { GameMode, LegacyMatchScore, Mod, ScoringType } from "osu-web.js";
+
+const difficultyMods = {
+   osu: {},
+   fruits: {
+      EZ: 0.5,
+      HT: 0.3
+   },
+   taiko: {},
+   mania: {}
+};
 
 export class ScoreParser {
    static parseV1Score(score: LegacyMatchScore, mode: GameMode, map: DbBeatmap) {
@@ -13,14 +23,15 @@ export class ScoreParser {
    #scoreMode: ScoringType;
    #map: DbBeatmap;
    #mode: GameMode;
+   #modMult: number;
 
-   constructor(score: LegacyMatchScore, scoreType: ScoringType, mode: GameMode) {
+   constructor(score: LegacyMatchScore, scoreType: ScoringType, mode: GameMode, mods: Mod[] = []) {
       this.#score = score;
       this.#scoreMode = scoreType;
       this.#mode = mode;
+      this.#modMult = mods?.reduce((mult, mod) => mult * (difficultyMods[mode][mod] || 1), 1) || 1;
    }
 
-   //setScore(score: LegacyMatchScore, scoreType: ScoringType) { this.#score = score; this.#scoreMode = scoreType }
    setMap(map: DbBeatmap) {
       this.#map = map;
       this.#scoreCache = 0;
@@ -28,7 +39,7 @@ export class ScoreParser {
    getScore() {
       if (this.#scoreCache) return this.#scoreCache;
 
-      if (this.#scoreMode === "Score V2") return this.#score.score;
+      if (this.#scoreMode === "Score V2") return this.#score.score / this.#modMult;
       else if (!this.#map) return;
 
       // Some values depend on the gamemode
@@ -134,6 +145,6 @@ export class ScoreParser {
       const accScore = accCalc(this.#score);
       const comboScore = comboCalc(this.#score, this.#map.maxCombo);
       const missScore = missComponent / Math.sqrt(this.#score.countmiss + 1);
-      return parseInt((accScore + comboScore + missScore).toFixed());
+      return parseInt(((accScore + comboScore + missScore) / this.#modMult).toFixed());
    }
 }
