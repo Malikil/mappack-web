@@ -8,6 +8,7 @@ import { buildUrl } from "osu-web.js";
 import CreatePvpStats from "./pvp/CreatePvpStats";
 import PvPResultsCard from "./pvp/PvPResultsCard";
 import PoolSetupCard from "./pools/PoolSetupCard";
+import ModSkills from "./ModSkills";
 
 export default async function Profile({ params }) {
    const playerParam = (await params).playerid;
@@ -67,7 +68,12 @@ export default async function Profile({ params }) {
                mode={gamemode}
             />
          )}
-         {user?._id === player._id && <PoolSetupCard data={pools} osuid={player._id} mode={gamemode} />}
+         {user?._id === player._id && (
+            <>
+               <ModSkills mods={player[gamemode].mods} />
+               <PoolSetupCard data={pools} osuid={player._id} mode={gamemode} />
+            </>
+         )}
       </div>
    );
 }

@@ -1,6 +1,6 @@
 import { Card, CardBody, CardHeader, Row } from "react-bootstrap";
 import { PracticePool } from "@/types/database.player";
-import { GameMode } from "osu-web.js";
+import { GameMode, getModsEnum } from "osu-web.js";
 import CreatePoolButton from "./CreatePoolButton";
 import PoolRow from "./PoolRow";
 import { mapsDb } from "@/app/api/db/connection";
@@ -28,7 +28,13 @@ export default async function PoolSetupCard({
       });
       return {
          name: p.name,
-         maps: mapinfo
+         maps: mapinfo.sort((a, b) => {
+            if (!a.mods)
+               if (!b.mods) return 0;
+               else return 1;
+            else if (!b.mods) return -1;
+            return getModsEnum(a.mods) - getModsEnum(b.mods);
+         })
       };
    });
    return (
