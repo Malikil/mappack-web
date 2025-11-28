@@ -1,13 +1,12 @@
 import { mappacksDb, playersDb } from "../api/db/connection";
 import Link from "next/link";
 import { auth } from "@/auth";
-import averageRating from "@/helpers/average-rating";
 import { Card, CardBody, CardImg, CardSubtitle, CardTitle, Col, Row } from "react-bootstrap";
 import MapCardBody from "@/components/mappool/MapCardBody";
 import { anyWithinRange } from "@/helpers/rating-range";
 import { Rating } from "@/types/rating";
 import interpolate from "color-interpolate";
-import { buildUrl, Mod } from "osu-web.js";
+import { buildUrl } from "osu-web.js";
 import { ModeInfo } from "@/types/database.player";
 import { DbBeatmap } from "@/types/database.beatmap";
 
