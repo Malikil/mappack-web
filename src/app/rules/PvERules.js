@@ -54,7 +54,7 @@ export default function PvERules() {
                            &apos;osu&apos; is assumed. Specifying &apos;mania&apos; will not restrict key
                            count
                            <br />
-                           Mode can be any of the following: osu, ctb, fruits, taiko, mania, 4k, 7k
+                           Mode can be any of the following: osu, ctb, fruits, taiko, mania
                            <br />
                            Include <pre className="d-inline">shuffle</pre> at the beginning or end of the maps
                            list to pick maps in a random order
@@ -66,6 +66,8 @@ export default function PvERules() {
                               !quali osu nm 5188789 4956990 5210676 hd 5353008 4756048 hr 5248344 5288370 dt
                               5192352 4916977 fm 5349133 5045601 shuffle
                            </pre>
+                           <br />
+                           Multiple mods is supported, include them without spaces. Eg: HDHR
                         </li>
                      </ul>
                   </li>

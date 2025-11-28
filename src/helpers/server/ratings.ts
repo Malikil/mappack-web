@@ -95,39 +95,24 @@ export function getUpdatedModsFromBatch(
          }
       >
    > = {};
-   // const mapUpdateCounts: Partial<
-   //    Record<
-   //       GameMode,
-   //       {
-   //          [id: number]: Partial<Record<Mod, number>>;
-   //       }
-   //    >
-   // > = {};
-   // const playerUpdateCounts: {
-   //    [id: number]: Partial<Record<GameMode, Partial<Record<Mod, number>>>>;
-   // } = {};
 
    for (const { mode, map, player, score } of results) {
       // Make sure the approprate gradients are available
       if (!(player._id in playerGradientsByPlayerId)) {
          playerGradientsByPlayerId[player._id] = {};
          originalPlayerMultipliers[player._id] = {};
-         // playerUpdateCounts[player._id] = {};
       }
       if (!(mode in playerGradientsByPlayerId[player._id])) {
          playerGradientsByPlayerId[player._id][mode] = {};
          originalPlayerMultipliers[player._id][mode] = player.mods;
-         // playerUpdateCounts[player._id][mode] = {};
       }
       if (!(mode in mapGradientsByMode)) {
          mapGradientsByMode[mode] = {};
          originalMapMultipliers[mode] = {};
-         // mapUpdateCounts[mode] = {};
       }
       if (!(map._id in mapGradientsByMode[mode])) {
          mapGradientsByMode[mode][map._id] = {};
          originalMapMultipliers[mode][map._id] = map.mods;
-         // mapUpdateCounts[mode][map._id] = {};
       }
 
       // Calculate the adjusted score
@@ -148,10 +133,8 @@ export function getUpdatedModsFromBatch(
          // Error will be a value between -1 and 1. Add to the gradient a percentage of that error
          mapGradientsByMode[mode][map._id][mod] =
             (mapGradientsByMode[mode][map._id][mod] || 0) - error * MODS_LEARNING_RATE;
-         // mapUpdateCounts[mode][map._id][mod] = (mapUpdateCounts[mode][map._id][mod] || 0) + 1;
          playerGradientsByPlayerId[player._id][mode][mod] =
             (playerGradientsByPlayerId[player._id][mode][mod] || 0) - error * MODS_LEARNING_RATE;
-         // playerUpdateCounts[player._id][mode][mod] = (playerUpdateCounts[player._id][mode][mod] || 0) + 1;
       });
    }
 
@@ -175,7 +158,7 @@ export function getUpdatedModsFromBatch(
             if (!(mode in playerModsUpdated[id])) playerModsUpdated[id][mode] = {};
             Object.entries(gradients).forEach(([mod, adjustment]: [Mod, number]) => {
                // First just add the gradient to the previous mod value
-               const naiveUpdatedMod = (originalPlayerMultipliers[id][mode][mod] || 1) + adjustment; // / playerUpdateCounts[id][mode][mod];
+               const naiveUpdatedMod = (originalPlayerMultipliers[id][mode][mod] || 1) + adjustment;
                // Nudge the value towards 1, for safety and control
                const nudgeDifference = (naiveUpdatedMod - 1) * MODS_REGULARIZATION;
                const finalModifier = naiveUpdatedMod - nudgeDifference;
@@ -199,7 +182,7 @@ export function getUpdatedModsFromBatch(
             if (!(id in mapModsUpdated[mode])) mapModsUpdated[mode][id] = {};
             Object.entries(gradients).forEach(([mod, adjustment]: [Mod, number]) => {
                // Add gradient
-               const naiveUpdatedMod = (originalMapMultipliers[mode][id][mod] || 1) + adjustment; // / mapUpdateCounts[mode][id][mod];
+               const naiveUpdatedMod = (originalMapMultipliers[mode][id][mod] || 1) + adjustment;
                // Nudge towards 1
                const nudgeDifference = (naiveUpdatedMod - 1) * MODS_REGULARIZATION;
                const finalModifier = naiveUpdatedMod - nudgeDifference;

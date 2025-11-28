@@ -6,22 +6,21 @@ const skillColor = interpolate(['red', 'green']);
 const bgColor = (value: number) => {
    const baseColor = skillColor(value);
    const rgbMatch = baseColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-   if (!rgbMatch)
-      return baseColor;
+   if (!rgbMatch) return baseColor;
    const [, r, g, b] = rgbMatch;
    // Calculate alpha
    let alpha = 1;
-   if (value < 0.5)
-      alpha = Math.sqrt(1 - value * 2);
-   else alpha = Math.sqrt(value * 2 - 1);
+   const transparent = 0.6;
+   if (value < transparent) alpha = Math.sqrt(1 - value / transparent);
+   else alpha = Math.sqrt((value - transparent) / (1 - transparent));
    alpha = Math.max(0, Math.min(1, alpha));
    return `rgba(${r},${g},${b},${alpha})`;
-}
+};
 
 function SkillCard({ mod, value }: { mod: Mod; value: number }) {
-   const skill = Math.max(0, Math.min((20 / value) - 15, 10));
+   const skill = Math.max(0, Math.min(130 / value - 125, 10));
    return (
-      <Card style={{ backgroundColor: bgColor(skill / 10) }}>
+      <Card style={{ backgroundColor: bgColor(Math.min(skill / 8, 1)) }}>
          <CardBody>
             <div>{mod}</div>
             <div>{skill.toFixed(2)}</div>

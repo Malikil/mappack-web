@@ -2,13 +2,22 @@ import { DbBeatmap } from "@/types/database.beatmap";
 import { GameMode, LegacyMatchScore, Mod, ScoringType } from "osu-web.js";
 
 const difficultyMods = {
-   osu: {},
+   osu: {
+      EZ: 0.5,
+      HT: 0.3
+   },
    fruits: {
       EZ: 0.5,
       HT: 0.3
    },
-   taiko: {},
-   mania: {}
+   taiko: {
+      EZ: 0.5,
+      HT: 0.3
+   },
+   mania: {
+      EZ: 0.5,
+      HT: 0.5
+   }
 };
 
 export class ScoreParser {
@@ -39,7 +48,7 @@ export class ScoreParser {
    getScore() {
       if (this.#scoreCache) return this.#scoreCache;
 
-      if (this.#scoreMode === "Score V2") return this.#score.score / this.#modMult;
+      if (this.#scoreMode === "Score V2") return Math.round(this.#score.score / this.#modMult);
       else if (!this.#map) return;
 
       // Some values depend on the gamemode
