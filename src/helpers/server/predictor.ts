@@ -211,11 +211,11 @@ export function prepBeatmapData(
       },
       rating,
       styles: Array.from({ length: parseInt(process.env.SKILL_CATEGORIES) }, () => Math.random() / 100),
-      mods: { DT }
+      mods: { DT: DT || 1 }
    };
    if (osuBeatmap.mode !== "mania") {
-      mapData.mods.HD = HD;
-      mapData.mods.HR = HR;
+      mapData.mods.HD = HD || 1;
+      mapData.mods.HR = HR || 1;
    }
    // If the map is unranked, include dates to re-query later
    if (osuBeatmap.ranked < 1) {
