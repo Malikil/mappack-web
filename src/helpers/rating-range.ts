@@ -1,4 +1,4 @@
-import { DbBeatmap, ModRatings } from "@/types/database.beatmap";
+import { DbBeatmap } from "@/types/database.beatmap";
 import { Rating } from "@/types/rating";
 import { GameMode, Mod } from "osu-web.js";
 
@@ -40,9 +40,9 @@ export function matchResultValue(
    return (score - min) / (max - min);
 }
 
-export function scoreFromResult(result: number, gamemode: GameMode, capped: boolean = true) {
+export function scoreFromResult(result: number, gamemode: GameMode) {
    const min: number = MIN_TARGETS[gamemode] - 100000;
-   const max: number = (!capped ? 1000000 : MAX_TARGETS[gamemode]) + (gamemode === "mania" ? 0 : 100000);
+   const max: number = 1000000;
    return Math.max(0, Math.min(result * (max - min) + min, 1000000));
 }
 

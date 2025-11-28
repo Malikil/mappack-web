@@ -45,15 +45,15 @@ export async function fetchScatterData(type: "scaling" | "recent") {
    const chartData = [];
    for await (const map of maps) {
       if (map.mods.HD) {
-         modRatios.hd += map.mods.HD || 0;
+         modRatios.hd += map.mods.HD;
          modCounts.hd++;
       }
       if (map.mods.HR) {
-         modRatios.hr += map.mods.HR || 0;
+         modRatios.hr += map.mods.HR;
          modCounts.hr++;
       }
       if (map.mods.DT) {
-         modRatios.dt += map.mods.DT || 0;
+         modRatios.dt += map.mods.DT;
          modCounts.dt++;
       }
       chartData.push({

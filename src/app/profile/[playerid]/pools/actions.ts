@@ -3,7 +3,6 @@
 import { mapsDb, playersDb } from "@/app/api/db/connection";
 import { getMaplist } from "@/helpers/server/currentPack";
 import { DbBeatmap } from "@/types/database.beatmap";
-import { ModPool } from "@/types/rating";
 import { revalidatePath } from "next/cache";
 import { GameMode, Mod } from "osu-web.js";
 
@@ -65,7 +64,7 @@ export async function savePool(
          $set: {
             [`${mode}.pools.$`]: {
                name: newName,
-               maps: updatedPool.maps.map(m => ({ id: m.map._id, mod: m.mods, scores: m.scores }))
+               maps: updatedPool.maps.map(m => ({ id: m.map._id, mods: m.mods, scores: m.scores }))
             }
          }
       }

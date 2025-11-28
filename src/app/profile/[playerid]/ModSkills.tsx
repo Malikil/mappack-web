@@ -2,7 +2,9 @@ import interpolate from "color-interpolate";
 import { Mod } from "osu-web.js";
 import { Card, CardBody, CardHeader } from "react-bootstrap";
 
-const skillColor = interpolate(['red', 'green']);
+const WORST_MULT = 1.023141655468098;
+
+const skillColor = interpolate(["red", "green"]);
 const bgColor = (value: number) => {
    const baseColor = skillColor(value);
    const rgbMatch = baseColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
@@ -18,7 +20,9 @@ const bgColor = (value: number) => {
 };
 
 function SkillCard({ mod, value }: { mod: Mod; value: number }) {
-   const skill = Math.max(0, Math.min(130 / value - 125, 10));
+   const zeroTarget = 2 * WORST_MULT - 1;
+   const scale = (5 * zeroTarget) / (zeroTarget - 1);
+   const skill = Math.max(0, Math.min(scale / value - scale + 5, 10));
    return (
       <Card style={{ backgroundColor: bgColor(Math.min(skill / 8, 1)) }}>
          <CardBody>

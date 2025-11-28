@@ -139,7 +139,9 @@ export async function getPreviousMapScalings(mode: GameMode) {
       //    xData.push(+map.convert);
       // }
       datasets.x.push(createPredictorInput(map, mode));
-      datasets.y.push([map.rating.rating, map.mods.DT]);
+      const yData = [map.rating.rating, map.mods.DT];
+      if (mode !== "mania") yData.push(map.mods.HD, map.mods.HR);
+      datasets.y.push(yData);
    }
    const polyReg: PolynomialRegressor & { meta?: { max: number } } = new PolynomialRegressor(2, false, true);
    polyReg.fit(datasets.x, datasets.y);
@@ -170,7 +172,7 @@ export function prepBeatmapData(
    //    predictData.push(osuBeatmap.ar);
    //    predictData.push(+osuBeatmap.convert);
    // }
-   const [[ratingRaw, DT]] = predictor.predict([
+   const [[ratingRaw, DT, HD, HR]] = predictor.predict([
       createPredictorInput(
          {
             bpm: osuBeatmap.bpm,
@@ -211,6 +213,10 @@ export function prepBeatmapData(
       styles: Array.from({ length: parseInt(process.env.SKILL_CATEGORIES) }, () => Math.random() / 100),
       mods: { DT }
    };
+   if (osuBeatmap.mode !== "mania") {
+      mapData.mods.HD = HD;
+      mapData.mods.HR = HR;
+   }
    // If the map is unranked, include dates to re-query later
    if (osuBeatmap.ranked < 1) {
       mapData.lastQuery = new Date();

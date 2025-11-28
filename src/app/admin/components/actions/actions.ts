@@ -5,6 +5,7 @@ import db, {
    fruitsDb,
    historyDb,
    maniaDb,
+   mappacksDb,
    mapsDb,
    mpLinksDb,
    osuDb,
@@ -13,24 +14,33 @@ import db, {
 } from "@/app/api/db/connection";
 import { batchCursor } from "@/helpers/list-splitter";
 import { getOsuToken } from "@/helpers/osuToken";
-import { Client } from "osu-web.js";
+import { Client, GameMode } from "osu-web.js";
 import { DbPlayer } from "@/types/database.player";
-import { predictOutcome } from "@/helpers/server/ratings";
+import { getPreviousMapScalings } from "@/helpers/server/predictor";
+import { DbBeatmap } from "@/types/database.beatmap";
+
+function recentPackData(mode: GameMode) {
+   return mappacksDb.aggregate<DbBeatmap>([
+      { $match: { mode, active: "fresh" } },
+      {
+         $lookup: {
+            from: mode,
+            localField: "maps",
+            foreignField: "_id",
+            as: "maps"
+         }
+      },
+      {
+         $project: {
+            _id: 0,
+            maps: 1
+         }
+      },
+      { $unwind: "$maps" },
+      { $replaceRoot: { newRoot: "$maps" } }
+   ]);
+}
 
 export async function debug() {
-   // const result = await maniaDb.updateMany({ rating: { $exists: false } }, [
-   //    {
-   //       $set: {
-   //          rating: "$ratings.nm",
-   //          mods: {
-   //             //HD: { $divide: ["$ratings.hd.rating", "$ratings.nm.rating"] },
-   //             //HR: { $divide: ["$ratings.hr.rating", "$ratings.nm.rating"] },
-   //             DT: { $divide: ["$ratings.dt.rating", "$ratings.nm.rating"] }
-   //          }
-   //       }
-   //    }
-   // ]);
-   // console.log(result);
-   const result = predictOutcome({ rating: 3000, rd: 50, vol: 0.06 }, { rating: 1000, rd: 50, vol: 0.06 });
-   console.log(result);
+   const predictor = await getPreviousMapScalings("fruits");
 }

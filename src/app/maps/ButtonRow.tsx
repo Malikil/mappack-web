@@ -1,17 +1,23 @@
 'use client';
 
 import { parseShortMods } from "@/helpers/mods";
+import { serverActionToast } from "@/toaster";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { GameMode, getModsEnum } from "osu-web.js";
 import { Button } from "react-bootstrap";
 import { toast } from "react-toastify";
+import { saveToOwnPools } from "./actions";
 
 export default function ButtonRow({
    maplist,
-   mode
+   mode,
+   name,
+   user
 }: {
    maplist: { [pool: string]: DbBeatmap[] };
    mode: GameMode;
+   name: string;
+   user?: number;
 }) {
    const poolsSorted = Object.keys(maplist).sort((a, b) => {
       const alist = parseShortMods(a);
@@ -23,7 +29,7 @@ export default function ButtonRow({
       return getModsEnum(alist) - getModsEnum(blist);
    });
    return (
-      <div>
+      <div className="d-flex gap-2">
          <Button
             onClick={() => {
                const command = `!quali ${mode} ${poolsSorted
@@ -34,6 +40,18 @@ export default function ButtonRow({
             }}
          >
             Copy !quali command
+         </Button>
+         <Button
+            onClick={() => {
+               if (!user) return toast.warn("Not logged in");
+               serverActionToast(saveToOwnPools(user, maplist, mode, name), {
+                  pending: "Creating pool",
+                  success: "Saved!",
+                  error: "Pool with that name already exists"
+               });
+            }}
+         >
+            Save pool
          </Button>
       </div>
    );

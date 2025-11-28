@@ -14,7 +14,7 @@ import { parseShortMods } from "@/helpers/mods";
 export default async function Mappool({ searchParams }) {
    const session = await auth();
    const player = session && (await playersDb.findOne({ osuid: session.user.id }));
-   const playerRating: Rating = player && player[player.gamemode].pve;
+   const playerRating: Rating = player ? player[player.gamemode].pve : { rating: 1500, rd: 350, vol: 0.06 };
 
    const stringParams: { [key: string]: string } = await searchParams;
    const { m: modeArg, p: poolName, ...pools } = stringParams;
@@ -65,7 +65,7 @@ export default async function Mappool({ searchParams }) {
 
    return (
       <div>
-         <ButtonRow maplist={maplist} mode={mode} />
+         <ButtonRow maplist={maplist} mode={mode} name={poolName} user={player?._id} />
          {sortedPools.map(mods => {
             const modMaps = maplist[mods];
             const modsArr = parseShortMods(mods);
@@ -87,7 +87,7 @@ export default async function Mappool({ searchParams }) {
                            { sum: 0, weightedSum: 0, weightedCount: 0 }
                         );
                      const target =
-                        scoreFromResult(predictOutcome(playerRating, beatmap.rating), mode, false) / modMult;
+                        scoreFromResult(predictOutcome(playerRating, beatmap.rating), mode) / modMult;
                      const combinedSd = mathplus.stdev(target, ...beatmap.scores);
                      const avg = sum / beatmap.scores.length;
                      const wavg = weightedSum / weightedCount;
