@@ -176,13 +176,17 @@ export function prepBeatmapData(
       createPredictorInput(
          {
             bpm: osuBeatmap.bpm,
-            stars: osuBeatmap.difficulty_rating,
             length: osuBeatmap.total_length,
+            stars: osuBeatmap.difficulty_rating,
             noteCount: {
                circles: osuBeatmap.count_circles,
                sliders: osuBeatmap.count_sliders
             },
-            maxCombo: osuBeatmap.max_combo
+            maxCombo: osuBeatmap.max_combo,
+            od: osuBeatmap.accuracy,
+            ar: osuBeatmap.ar,
+            cs: osuBeatmap.cs,
+            convert: osuBeatmap.convert
          },
          osuBeatmap.mode
       )
@@ -211,11 +215,11 @@ export function prepBeatmapData(
       },
       rating,
       styles: Array.from({ length: parseInt(process.env.SKILL_CATEGORIES) }, () => Math.random() / 100),
-      mods: { DT: DT || 1 }
+      mods: { DT }
    };
    if (osuBeatmap.mode !== "mania") {
-      mapData.mods.HD = HD || 1;
-      mapData.mods.HR = HR || 1;
+      mapData.mods.HD = HD;
+      mapData.mods.HR = HR;
    }
    // If the map is unranked, include dates to re-query later
    if (osuBeatmap.ranked < 1) {
