@@ -63,13 +63,11 @@ export function getUpdatedModsFromBatch(
          rating: Rating;
          _id: number;
          mods: Partial<Record<Mod, number>>;
-         styles: number[];
       };
       map: {
          _id: number;
          rating: Rating;
          mods: Partial<Record<Mod, number>>;
-         styles: number[];
       };
    }[]
 ) {
@@ -122,7 +120,7 @@ export function getUpdatedModsFromBatch(
       const outcome = matchResultValue(modAdjustedScore, mode);
 
       // Calculate the expected result
-      const expectedResult = predictOutcome(player.rating, map.rating, player.styles, map.styles);
+      const expectedResult = predictOutcome(player.rating, map.rating);
       const error = outcome - expectedResult;
       // Update mods gradients
       // Applying the same adjustment for multiple mods like this will cause multi-mod plays to create a larger adjustment

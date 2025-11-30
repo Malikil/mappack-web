@@ -150,7 +150,7 @@ export default function PoolRow({
          </div>
          <div className="d-flex gap-1 mt-2 flex-wrap">
             {maps.map((m, i) => {
-               const modsMult = m.mods?.reduce((mult, mod) => mult * (m.map.mods[mod] || 1), 1) || 1;
+               const modsMult = m.mods?.reduce((mult, mod) => mult * (m.map.mods?.[mod] || 1), 1) || 1;
                return (
                   <Card key={i} className="flex-shrink-0 flex-grow-1" style={{ flexBasis: "140px" }}>
                      <Link href={buildUrl.beatmap(m.map._id)} target="_blank" rel="noopener noreferrer">

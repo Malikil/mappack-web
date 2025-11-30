@@ -104,7 +104,7 @@ export default async function Mappool({ searchParams }) {
                            }}
                         >
                            <CardBody className="text-outline">
-                              <div className="d-flex gap-3">
+                              <div className="d-flex gap-3 flex-column flex-md-row">
                                  <div>
                                     <CardTitle>
                                        {beatmap.title} [{beatmap.version}]
