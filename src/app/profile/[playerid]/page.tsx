@@ -9,6 +9,7 @@ import CreatePvpStats from "./pvp/CreatePvpStats";
 import PvPResultsCard from "./pvp/PvPResultsCard";
 import PoolSetupCard from "./pools/PoolSetupCard";
 import ModSkills from "./ModSkills";
+import TeamsCard from "./Teams";
 
 export default async function Profile({ params }) {
    const playerParam = (await params).playerid;
@@ -72,6 +73,7 @@ export default async function Profile({ params }) {
             <>
                <ModSkills mods={player[gamemode].mods} />
                <PoolSetupCard data={pools} osuid={player._id} mode={gamemode} />
+               <TeamsCard osuid={player._id} />
             </>
          )}
       </div>

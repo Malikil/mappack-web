@@ -2,6 +2,7 @@ import { DbBeatmap } from "@/types/database.beatmap";
 import { DbHistory } from "@/types/database.history";
 import { DbMappack } from "@/types/database.mappack";
 import { DbPlayer } from "@/types/database.player";
+import { DbTeam } from "@/types/database.team";
 import { MongoClient, ServerApiVersion } from "mongodb";
 
 console.log("Create mongo connection");
@@ -27,5 +28,6 @@ export const mapsDb = {
 export const playersDb = db.collection<DbPlayer>("players");
 export const historyDb = db.collection<DbHistory>("history");
 export const mpLinksDb = db.collection<{ _id: number }>("mpLinks");
+export const teamsDb = db.collection<DbTeam>("teams");
 
 export default db;
