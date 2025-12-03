@@ -193,9 +193,9 @@ export function prepBeatmapData(
    ]);
    const rating =
       ratingRaw > max
-         ? { rating: max, rd: ratingRaw - max + INIT_MAP_RD, vol: INIT_MAP_VOL }
+         ? { rating: max, rd: Math.sqrt(ratingRaw - max) + INIT_MAP_RD, vol: INIT_MAP_VOL }
          : ratingRaw < RATING_MIN
-         ? { rating: RATING_MIN, rd: RATING_MIN - ratingRaw + INIT_MAP_RD, vol: INIT_MAP_VOL }
+         ? { rating: RATING_MIN, rd: Math.sqrt(RATING_MIN - ratingRaw) + INIT_MAP_RD, vol: INIT_MAP_VOL }
          : { rating: ratingRaw, rd: INIT_MAP_RD, vol: INIT_MAP_VOL };
 
    const mapData: DbBeatmap = {

@@ -121,10 +121,6 @@ export default async function Mappool({ searchParams }) {
                                           <div>Target</div>
                                           <div>{target.toFixed()}</div>
                                        </div>
-                                       <div>
-                                          <div>Deviation</div>
-                                          <div>{beatmap.rating.rd.toFixed()}</div>
-                                       </div>
                                        {presetPool && (
                                           <>
                                              <div>
@@ -138,6 +134,10 @@ export default async function Mappool({ searchParams }) {
                                              <div>
                                                 <div className="text-nowrap">Weighted Avg</div>
                                                 <div>{wavg.toFixed()}</div>
+                                             </div>
+                                             <div>
+                                                <div>Deviation</div>
+                                                <div>{combinedSd.toFixed()}</div>
                                              </div>
                                              <div>
                                                 <div>Performance</div>
