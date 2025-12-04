@@ -92,5 +92,5 @@ export function parseShortMods(input: string | string[]): Mod[] {
       if (shortMod && MODS.includes(shortMod)) mods.push(shortMod as Mod);
       else if (shortMod === 'FM') return null;
    }
-   return mods;
+   return mods.sort((a, b) => (a > b ? 1 : a < b ? -1 : 0));
 }

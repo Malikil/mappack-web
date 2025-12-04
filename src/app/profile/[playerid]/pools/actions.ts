@@ -53,7 +53,9 @@ export async function savePool(
       name: newName,
       maps: maplist.map(m => ({
          map: m,
-         mods: maps.find(mapMod => mapMod.map._id === m._id).mods,
+         mods: maps
+            .find(mapMod => mapMod.map._id === m._id)
+            .mods?.sort((a, b) => (a > b ? 1 : a < b ? -1 : 0)),
          scores: oldPool.maps.find(om => om.id === m._id)?.scores || []
       }))
    };
