@@ -1,3 +1,4 @@
+import { ObjectId } from "mongodb";
 import { Mod } from "osu-web.js";
 
 export interface DbTeam {
@@ -18,3 +19,5 @@ export interface DbTeam {
       }[];
    }[];
 }
+
+export type Team = DbTeam & { _id: string };
