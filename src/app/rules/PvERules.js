@@ -46,7 +46,7 @@ export default function PvERules() {
                         !quali &lt;mode&gt; ...[map|mod|shuffle]
                      </pre>
                      &nbsp;- Create a lobby and invite you to it. If mode is unrecognized, &apos;osu&apos; is
-                     assumed. Specifying &apos;mania&apos; will not restrict key count
+                     assumed
                      <br />
                      Mode can be any of the following: osu, ctb, fruits, taiko, mania
                      <br />
