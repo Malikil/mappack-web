@@ -10,10 +10,16 @@ import Link from "next/link";
 import { combineRatings, scoreFromResult } from "@/helpers/rating-range";
 import { combineRatingsById, predictOutcome } from "@/helpers/server/ratings";
 import mathplus from "@/mathplus";
+import { auth } from "@/auth";
 
 export default async function TeamPoolPage({ params }) {
    const { teamid: teamId, poolname: poolName } = await params;
-   const team = await teamsDb.findOne({ _id: ObjectId.createFromHexString(teamId) });
+   const session = await auth();
+   if (!teamId || !session?.user.id) return redirect("/teams");
+   const team = await teamsDb.findOne({
+      _id: ObjectId.createFromHexString(teamId),
+      "players.id": session.user.id
+   });
    if (!team) return redirect("/teams");
    const pool = team.pools.find(pool => pool.name === poolName);
    if (!pool) return redirect(`/teams/${teamId}`);
@@ -30,14 +36,18 @@ export default async function TeamPoolPage({ params }) {
       team.mode,
       pool.maps.map(m => m.id)
    );
-   const combinedPlayerRatings = await combineRatingsById(team.mode, ...playerList.map(p => p.id))
+   const combinedPlayerRatings = await combineRatingsById(team.mode, ...playerList.map(p => p.id));
 
    return (
       <div>
          <div className="d-flex justify-content-between align-items-center">
             <h1 className="d-flex gap-3">
-               <Link href={`/teams/${teamId}`} className="text-reset d-flex align-items-center fs-2"><ChevronLeft /></Link>
-               <span>{team.name} - {poolName}</span>
+               <Link href={`/teams/${teamId}`} className="text-reset d-flex align-items-center fs-2">
+                  <ChevronLeft />
+               </Link>
+               <span>
+                  {team.name} - {poolName}
+               </span>
             </h1>
             <QualiButton mode={team.mode} maps={pool.maps} />
          </div>
@@ -57,17 +67,25 @@ export default async function TeamPoolPage({ params }) {
                {pool.maps.map(map => {
                   const dbmap = maplist.find(dbm => dbm._id === map.id);
                   const modMult = map.mods?.reduce((mult, mod) => mult * (dbmap.mods[mod] || 1), 1) || 1;
-                  const target = scoreFromResult(predictOutcome(combinedPlayerRatings.targetRating, dbmap.rating), team.mode) / modMult;
+                  const target =
+                     scoreFromResult(
+                        predictOutcome(combinedPlayerRatings.targetRating, dbmap.rating),
+                        team.mode
+                     ) / modMult;
                   const allScores = Object.values(map.scores).flatMap(s => s);
                   const combinedSd = mathplus.stdev(target, ...allScores);
-                  const { wsum, wcount } = allScores.sort((a, b) => b - a).reduce((agg, score, i) => {
-                              const weight = Math.sqrt(i + 1);
-                              agg.wsum += score / weight;
-                              agg.wcount += 1 / weight;
-                              return agg;
-                           },
-                           { wsum: 0, wcount: 0 });
-                           const wavg = wsum / wcount;
+                  const { wsum, wcount } = allScores
+                     .sort((a, b) => b - a)
+                     .reduce(
+                        (agg, score, i) => {
+                           const weight = Math.sqrt(i + 1);
+                           agg.wsum += score / weight;
+                           agg.wcount += 1 / weight;
+                           return agg;
+                        },
+                        { wsum: 0, wcount: 0 }
+                     );
+                  const wavg = wsum / wcount;
                   return (
                      <tr
                         key={map.id}

@@ -7,10 +7,16 @@ import InvitePlayer from "./InvitePlayer";
 import TeamName from "./TeamName";
 import PoolSetupCard from "./pools/PoolSetupCard";
 import LeaveTeam from "./LeaveTeam";
+import { auth } from "@/auth";
 
 export default async function TeamPage({ params }) {
    const teamId = (await params).teamid;
-   const team = await teamsDb.findOne({ _id: ObjectId.createFromHexString(teamId) });
+   const session = await auth();
+   if (!teamId || !session?.user.id) return redirect("/teams");
+   const team = await teamsDb.findOne({
+      _id: ObjectId.createFromHexString(teamId),
+      "players.id": session.user.id
+   });
    if (!team) return redirect("/teams");
 
    return (
