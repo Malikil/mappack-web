@@ -1,23 +1,25 @@
-import { ObjectId } from "mongodb";
-import { Mod } from "osu-web.js";
+import { GameMode, Mod } from "osu-web.js";
+
+export interface PracticePool {
+   name: string;
+   maps: {
+      id: number;
+      mods?: Mod[];
+      scores: {
+         [playerid: number]: number[];
+      };
+   }[];
+}
 
 export interface DbTeam {
    name: string;
+   mode: GameMode;
    players: {
       id: number;
       osuname: string;
       pending: boolean;
    }[];
-   pools: {
-      name: string;
-      maps: {
-         id: number;
-         mods?: Mod[];
-         scores: {
-            [playerid: number]: number[];
-         };
-      }[];
-   }[];
+   pools: PracticePool[];
 }
 
 export type Team = DbTeam & { _id: string };

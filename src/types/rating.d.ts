@@ -1,7 +1,7 @@
 export interface Rating {
    rating: number;
    rd: number;
-   vol: number;
+   vol?: number;
 };
 
 export type ManiaMod = "nm" | "dt";

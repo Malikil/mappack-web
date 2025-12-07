@@ -1,4 +1,4 @@
-import { mapsDb, playersDb } from "@/app/api/db/connection";
+import { mapsDb, playersDb, teamsDb } from "@/app/api/db/connection";
 import { getMaplist } from "@/helpers/server/currentPack";
 import { matchResultValue } from "@/helpers/rating-range";
 import { ScoreParser } from "@/helpers/scorev1";
@@ -302,16 +302,24 @@ export async function submitPveData(data: PveLobbyResults) {
    const updatedModRatings = getUpdatedModsFromBatch(modRatingsUpdateObj);
 
    // Save results to database
-   // First player practice pools
-   const practicePoolDbResult = await playersDb.bulkWrite(
+   // First practice pools
+   const practicePoolDbResult = await teamsDb.bulkWrite(
       practicePoolUpdates.map(ppu => {
          const nomod = ppu.mods.length < 1;
          return {
-            updateOne: {
-               filter: { _id: ppu.player },
+            updateMany: {
+               filter: {
+                  players: {
+                     $elemMatch: {
+                        id: ppu.player,
+                        $or: [{ pending: false }, { pending: { $exists: false } }]
+                     }
+                  },
+                  "pools.maps.id": ppu.map
+               },
                update: {
                   $push: {
-                     [`${ppu.mode}.pools.$[pool].maps.$[map].scores`]: ppu.score
+                     [`pools.$[pool].maps.$[map].scores.${ppu.player}`]: ppu.score
                   }
                },
                arrayFilters: [
@@ -354,7 +362,7 @@ export async function submitPveData(data: PveLobbyResults) {
                   (v, i) => v + STYLES_LEARNING_RATE * (styleGradients[mode][i] - STYLES_REGULARIZATION * v)
                );
                // Update the player mods
-               Object.entries(updatedModRatings.players[playerId]?.[mode]).forEach(
+               Object.entries(updatedModRatings.players[playerId]?.[mode] || {}).forEach(
                   ([playedMod, multiplier]: [Mod, number]) => {
                      updateFilter.$set[`${mode}.mods.${playedMod}`] = multiplier;
                   }
