@@ -6,6 +6,7 @@ import PlayerCard from "../components/PlayerCard";
 import InvitePlayer from "./InvitePlayer";
 import TeamName from "./TeamName";
 import PoolSetupCard from "./pools/PoolSetupCard";
+import LeaveTeam from "./LeaveTeam";
 
 export default async function TeamPage({ params }) {
    const teamId = (await params).teamid;
@@ -20,7 +21,10 @@ export default async function TeamPage({ params }) {
          <Card className="mb-2">
             <CardHeader className="d-flex justify-content-between align-items-center">
                <span>Players</span>
-               <InvitePlayer teamId={teamId} />
+               <div className="d-flex gap-2">
+                  <InvitePlayer teamId={teamId} />
+                  <LeaveTeam teamId={teamId} />
+               </div>
             </CardHeader>
             <CardBody className="d-flex flex-wrap gap-1">
                {team.players.map(p => (

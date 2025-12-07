@@ -1,8 +1,11 @@
 "use server";
 
 import { playersDb, teamsDb } from "@/app/api/db/connection";
+import { auth } from "@/auth";
 import { ObjectId } from "mongodb";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { removePlayer } from "../functions";
 
 export async function updateTeamName(teamName: string, teamId: string) {
    console.log("Update team name");
@@ -34,4 +37,15 @@ export async function invitePlayer(formData: FormData, teamId: string) {
    console.log(result);
 
    revalidatePath(`/teams/${teamId}`);
+}
+
+export async function leaveTeam(teamId: string) {
+   const session = await auth();
+   if (!session?.user.id) throw new Error("401");
+   console.log("Leave team", session.user.id, teamId);
+
+   await removePlayer(session.user.id, teamId);
+
+   revalidatePath("/teams");
+   redirect("/teams");
 }

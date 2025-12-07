@@ -1,9 +1,8 @@
 "use server";
 
-import { mapsDb, playersDb, teamsDb } from "@/app/api/db/connection";
+import { mapsDb, teamsDb } from "@/app/api/db/connection";
 import { auth } from "@/auth";
 import { getMaplist } from "@/helpers/server/currentPack";
-import { DbBeatmap } from "@/types/database.beatmap";
 import { ObjectId } from "mongodb";
 import { revalidatePath } from "next/cache";
 import { GameMode, Mod } from "osu-web.js";

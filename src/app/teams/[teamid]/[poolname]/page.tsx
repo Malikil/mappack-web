@@ -70,6 +70,7 @@ export default async function TeamPoolPage({ params }) {
                            const wavg = wsum / wcount;
                   return (
                      <tr
+                        key={map.id}
                         className="text-outline"
                         style={{
                            backgroundImage: `url(${buildUrl.beatmapsetCover(dbmap.setid)})`,

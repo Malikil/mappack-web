@@ -147,7 +147,7 @@ export default function PoolRow({
                      <CardBody className="d-flex flex-column">
                         <div className="d-flex justify-content-between">
                            <div>
-                              <CardSubtitle>
+                              <CardSubtitle className="text-break">
                                  {m.map.artist || m.map._id} - {m.map.title}
                               </CardSubtitle>
                               <div className="d-flex justify-content-between align-items-center">

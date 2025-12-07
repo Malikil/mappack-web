@@ -79,7 +79,15 @@ export default async function Profile({ params }) {
          {user?._id === player._id && (
             <>
                <ModSkills mods={player[gamemode].mods} />
-               <PoolSetupCard data={pools} osuid={player._id} mode={gamemode} />
+               {/* <PoolSetupCard data={pools} osuid={player._id} mode={gamemode} /> */}
+               <Card>
+                  <CardHeader>Tournament Practice</CardHeader>
+                  <CardBody>
+                     Practice pools moved to <Link href="/teams">teams</Link>
+                     <br />
+                     Also available from user menu
+                  </CardBody>
+               </Card>
             </>
          )}
       </div>
