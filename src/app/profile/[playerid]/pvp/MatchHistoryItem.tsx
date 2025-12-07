@@ -115,7 +115,7 @@ export default async function MatchHistoryItem({ match, mode }: { match: PvPMatc
                               </CardSubtitle>
                               <div>{map.version}</div>
                               <div className="d-flex mt-auto">
-                                 <span>{mods.join("") || "NM"}</span>
+                                 <span>{m.mods === null ? "-" : mods.join("") || "NM"}</span>
                                  {"rating" in map && (
                                     <span className="ms-auto">
                                        {(map.rating.rating * modsMult).toFixed()}

@@ -10,7 +10,6 @@ export interface MatchHistoryMap {
 export interface MatchHistorySong {
    map: MatchHistoryMap;
    mods: number;
-   modpool?: ModPool;
    score: number;
    opponentScore?: number;
 }

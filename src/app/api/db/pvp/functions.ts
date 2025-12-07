@@ -1,9 +1,9 @@
 import { Glicko2, Player } from "glicko2";
 import { GameMode, getModsEnum, LegacyClient, LegacyMultiplayerLobby, Mod } from "osu-web.js";
 import { mapsDb, playersDb } from "../connection";
-import { FreemodSelection, MpLobbyResults, SongResultMap, TeamMpLobbyResults } from "@/types/multiplayer";
+import { MpLobbyResults, SongResultMap, TeamMpLobbyResults } from "@/types/multiplayer";
 import { DbBeatmap } from "@/types/database.beatmap";
-import { ModPool, Rating, SimpleMod } from "@/types/rating";
+import { ModPool, Rating } from "@/types/rating";
 import { UpdateOneModel } from "mongodb";
 import { getMaplist } from "@/helpers/server/currentPack";
 import { matchResultValue } from "@/helpers/rating-range";
@@ -82,7 +82,7 @@ function parseTeamsLobby(lobby: LegacyMultiplayerLobby, warmups: number): TeamMp
 
          // Find the map/modpool
          const map = game.beatmap_id;
-         const allMods = game.mods;
+         const allMods = [...game.mods];
 
          const matchScore = {
             Red: 0,
@@ -181,7 +181,6 @@ export async function addTeamsData({
       map: maplist.find(m => m._id === item.map),
       modpool: item.modpool
    }));
-   console.log(playedMaps);
 
    // Create the rating calculator
    const calculator = new Glicko2();
@@ -254,8 +253,7 @@ export async function addTeamsData({
                                        setid: m.map.setid,
                                        version: m.map.version
                                     },
-                                    modpool: m.modpool,
-                                    mods: getModsEnum(score.mods, true),
+                                    mods: score ? getModsEnum(score.mods, true) : null,
                                     score: playerScores[i].score,
                                     opponentScore: opponentScores[i].score
                                  };
@@ -572,7 +570,6 @@ export async function addMatchData({
                                  version: m.map.version
                               },
                               mods: getModsEnum(winnerScores[i].mods, true),
-                              modpool: m.modpool,
                               score: loserScores[i].score,
                               opponentScore: winnerScores[i].score
                            })),

@@ -9,6 +9,7 @@ import CreatePvpStats from "./pvp/CreatePvpStats";
 import PvPResultsCard from "./pvp/PvPResultsCard";
 import PoolSetupCard from "./pools/PoolSetupCard";
 import ModSkills from "./ModSkills";
+import Link from "next/link";
 
 export default async function Profile({ params }) {
    const playerParam = (await params).playerid;
@@ -32,14 +33,21 @@ export default async function Profile({ params }) {
       <div className="d-flex flex-column gap-2">
          <div className="d-flex justify-content-between align-items-center px-2">
             <h1>
-               <Image
-                  alt="avatar"
-                  src={buildUrl.userAvatar(player._id)}
-                  height={64}
-                  width={64}
-                  className="rounded"
-               />{" "}
-               {player.osuname}
+               <Link
+                  href={buildUrl.user(player._id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-reset text-decoration-none"
+               >
+                  <Image
+                     alt="avatar"
+                     src={buildUrl.userAvatar(player._id)}
+                     height={64}
+                     width={64}
+                     className="rounded"
+                  />{" "}
+                  {player.osuname}
+               </Link>
             </h1>
             <Image alt="Mode" src={`/mode-${gamemode}.png`} height={48} width={48} />
          </div>

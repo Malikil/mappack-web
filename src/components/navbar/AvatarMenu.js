@@ -22,56 +22,69 @@ export default async function AvatarMenu() {
             </Link>
          </li>
          {player && (
-            <li>
-               <a className="dropdown-item d-flex justify-content-between" href="#">
-                  <span>Game mode </span>
-                  <span>&raquo;</span>
-               </a>
-               <ul className="dropdown-menu dropdown-submenu">
-                  <li className="d-flex align-items-center">
-                     <GamemodeButton className="dropdown-item" mode="osu" text="osu!" />
-                     {player.gamemode === "osu" && (
-                        <Image src="/mode-osu.png" alt="osu active" height={24} width={24} className="me-2" />
-                     )}
-                  </li>
-                  <li className="d-flex align-items-center">
-                     <GamemodeButton className="dropdown-item" mode="fruits" text="Catch" />
-                     {player.gamemode === "fruits" && (
-                        <Image
-                           src="/mode-fruits.png"
-                           alt="ctb active"
-                           height={24}
-                           width={24}
-                           className="me-2"
-                        />
-                     )}
-                  </li>
-                  <li className="d-flex align-items-center">
-                     <GamemodeButton className="dropdown-item" mode="taiko" text="Taiko" />
-                     {player.gamemode === "taiko" && (
-                        <Image
-                           src="/mode-taiko.png"
-                           alt="taiko active"
-                           height={24}
-                           width={24}
-                           className="me-2"
-                        />
-                     )}
-                  </li>
-                  <li className="d-flex align-items-center">
-                     <GamemodeButton className="dropdown-item" mode="mania" text="Mania" />
-                     {player.gamemode === "mania" && (
-                        <Image
-                           src="/mode-mania.png"
-                           alt="mania active"
-                           height={24}
-                           width={24}
-                           className="me-2"
-                        />
-                     )}
-                  </li>
-               </ul>
-            </li>
+            <>
+               <li>
+                  <Link className="dropdown-item" href="/teams">
+                     Teams
+                  </Link>
+               </li>
+               <li>
+                  <a className="dropdown-item d-flex justify-content-between" href="#">
+                     <span>Game mode </span>
+                     <span>&raquo;</span>
+                  </a>
+                  <ul className="dropdown-menu dropdown-submenu">
+                     <li className="d-flex align-items-center">
+                        <GamemodeButton className="dropdown-item" mode="osu" text="osu!" />
+                        {player.gamemode === "osu" && (
+                           <Image
+                              src="/mode-osu.png"
+                              alt="osu active"
+                              height={24}
+                              width={24}
+                              className="me-2"
+                           />
+                        )}
+                     </li>
+                     <li className="d-flex align-items-center">
+                        <GamemodeButton className="dropdown-item" mode="fruits" text="Catch" />
+                        {player.gamemode === "fruits" && (
+                           <Image
+                              src="/mode-fruits.png"
+                              alt="ctb active"
+                              height={24}
+                              width={24}
+                              className="me-2"
+                           />
+                        )}
+                     </li>
+                     <li className="d-flex align-items-center">
+                        <GamemodeButton className="dropdown-item" mode="taiko" text="Taiko" />
+                        {player.gamemode === "taiko" && (
+                           <Image
+                              src="/mode-taiko.png"
+                              alt="taiko active"
+                              height={24}
+                              width={24}
+                              className="me-2"
+                           />
+                        )}
+                     </li>
+                     <li className="d-flex align-items-center">
+                        <GamemodeButton className="dropdown-item" mode="mania" text="Mania" />
+                        {player.gamemode === "mania" && (
+                           <Image
+                              src="/mode-mania.png"
+                              alt="mania active"
+                              height={24}
+                              width={24}
+                              className="me-2"
+                           />
+                        )}
+                     </li>
+                  </ul>
+               </li>
+            </>
          )}
          <li>
             <hr className="dropdown-divider" />
