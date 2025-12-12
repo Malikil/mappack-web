@@ -22,7 +22,7 @@ export default async function TeamPage({ params }) {
    return (
       <div>
          <h1>
-            <TeamName teamId={teamId} name={team.name} />
+            <TeamName teamId={teamId} data={{ name: team.name, mode: team.mode }} />
          </h1>
          <Card className="mb-2">
             <CardHeader className="d-flex justify-content-between align-items-center">

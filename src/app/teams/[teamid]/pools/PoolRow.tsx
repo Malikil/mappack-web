@@ -7,7 +7,7 @@ import { fetchMapFromDb, removePool, savePool } from "./actions";
 import { buildUrl, GameMode, Mod } from "osu-web.js";
 import Link from "next/link";
 import { toast } from "react-toastify";
-import { parseShortMods } from "@/helpers/mods";
+import { parseShortMods, ignoreSongMods } from "@/helpers/mods";
 
 export default function PoolRow({
    teamid,
@@ -47,7 +47,7 @@ export default function PoolRow({
          ({
             _id: intId
          } as DbBeatmap);
-      const modinfo = parseShortMods(mod);
+      const modinfo = ignoreSongMods(parseShortMods(mod));
       setMaps(arr => [...arr, { map: mapinfo, mods: modinfo }]);
       setAddMapId("");
       setAddingMap(false);
@@ -98,14 +98,11 @@ export default function PoolRow({
                      disabled={!changed}
                      onClick={async () => {
                         if (!changed) return;
-                        const properMaplist = await toast.promise(
-                           savePool(teamid, data.name, name, maps),
-                           {
-                              pending: "Saving pool",
-                              success: "Pool saved",
-                              error: "That name already exists"
-                           }
-                        );
+                        const properMaplist = await toast.promise(savePool(teamid, data.name, name, maps), {
+                           pending: "Saving pool",
+                           success: "Pool saved",
+                           error: "That name already exists"
+                        });
                         setMaps(properMaplist.maps);
                         setEditing(false);
                         revalidate && revalidate();

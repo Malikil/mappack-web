@@ -41,6 +41,7 @@ export function parseModpool(mods: Mod[], mode: GameMode): ModPool {
             return "dt";
       }
 }
+/** @deprecated Use function from helpers instead */
 export function ignoreSongMods(lobbyMods: Mod[], scoreMods: Mod[] = []): Mod[] {
    // When freemod is set on DT, DT will be in both arrays
    // Just take unique mods in general

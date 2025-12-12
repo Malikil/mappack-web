@@ -94,3 +94,9 @@ export function parseShortMods(input: string | string[]): Mod[] {
    }
    return mods.sort((a, b) => (a > b ? 1 : a < b ? -1 : 0));
 }
+
+export function ignoreSongMods(mods: Mod[]): Mod[] {
+   const ignore: Mod[] = ["NF", "MR", "SD", "PF"];
+   const filteredMods = [...new Set(mods.filter(m => !ignore.includes(m)))];
+   return filteredMods;
+}

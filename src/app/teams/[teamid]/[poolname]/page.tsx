@@ -7,7 +7,7 @@ import { Table } from "react-bootstrap";
 import QualiButton from "./QualiButton";
 import { ChevronLeft } from "react-bootstrap-icons";
 import Link from "next/link";
-import { combineRatings, scoreFromResult } from "@/helpers/rating-range";
+import { scoreFromResult } from "@/helpers/rating-range";
 import { combineRatingsById, predictOutcome } from "@/helpers/server/ratings";
 import mathplus from "@/mathplus";
 import { auth } from "@/auth";
