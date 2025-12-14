@@ -1,6 +1,5 @@
 import { mapsDb } from "@/app/api/db/connection";
 import { DbBeatmap } from "@/types/database.beatmap";
-//import { Rating } from "@/types/rating";
 import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
 import { Beatmap, Beatmapset, GameMode } from "osu-web.js";
 
@@ -15,69 +14,6 @@ export function getMaplistForPredictor(mode: GameMode) {
       // Discard maps with 0 stars. I expect this will really only happen during SR reworks
       { $match: { stars: { $gt: 0 }, "rating.rd": { $lt: 100 } } },
       { $sort: { "rating.rd": 1 } },
-      // {
-      //    $addFields: {
-      //       rdSum: { $add: adding }
-      //    }
-      // },
-      // Get 100 from each mod
-      // {
-      //    $facet: {
-      //       nmMaps: [
-      //          { $match: { "ratings.nm.rd": { $lt: 100 } } },
-      //          { $sort: { "ratings.nm.rd": 1 } },
-      //          { $limit: 100 }
-      //       ],
-      //       dtMaps: [
-      //          { $match: { "ratings.dt.rd": { $lt: 100 } } },
-      //          { $sort: { "ratings.dt.rd": 1 } },
-      //          { $limit: 100 }
-      //       ],
-      //       ...(mode === "mania"
-      //          ? {}
-      //          : {
-      //               hdMaps: [
-      //                  { $match: { "ratings.hd.rd": { $lt: 100 } } },
-      //                  { $sort: { "ratings.hd.rd": 1 } },
-      //                  { $limit: 100 }
-      //               ],
-      //               hrMaps: [
-      //                  { $match: { "ratings.hr.rd": { $lt: 100 } } },
-      //                  { $sort: { "ratings.hr.rd": 1 } },
-      //                  { $limit: 100 }
-      //               ]
-      //            }),
-      //       combinedMaps: [
-      //          { $match: { rdSum: { $lt: mode === "mania" ? 270 : 400 } } },
-      //          { $sort: { rdSum: 1 } },
-      //          { $limit: 1400 }
-      //       ]
-      //    }
-      // },
-      // Combine results
-      // {
-      //    $project: {
-      //       allMaps: {
-      //          $concatArrays: [
-      //             "$nmMaps",
-      //             { $ifNull: ["$hdMaps", []] },
-      //             { $ifNull: ["$hrMaps", []] },
-      //             "$dtMaps",
-      //             "$combinedMaps"
-      //          ]
-      //       }
-      //    }
-      // },
-      // { $unwind: "$allMaps" },
-      // { $replaceRoot: { newRoot: "$allMaps" } },
-      // Get unique maps
-      // {
-      //    $group: {
-      //       _id: "$_id",
-      //       doc: { $first: "$$ROOT" }
-      //    }
-      // },
-      // { $replaceRoot: { newRoot: "$doc" } },
       { $limit: 1000 }
    ]);
 }
@@ -112,32 +48,11 @@ function createPredictorInput(
 
 export async function getPreviousMapScalings(mode: GameMode) {
    console.log("Get previous map scalings");
-   // const adding = ["$ratings.nm.rd", "$ratings.dt.rd"];
-   // if (mode !== "mania") adding.push("$ratings.hd.rd", "$ratings.hr.rd");
    const maplist = getMaplistForPredictor(mode);
    const datasets = { x: [] as number[][], y: [] as number[][] };
    const meta = { max: 1500 };
    for await (const map of maplist) {
-      //const { nm, hd, hr, dt } = map.ratings;
-      // Update the max and min
-      //for (const rating of Object.values<Rating>(map.ratings)) {
       meta.max = Math.max(meta.max, map.rating.rating + map.rating.rd * 2);
-      //}
-      // const xData = [
-      //    map.stars,
-      //    map.length,
-      //    map.bpm,
-      //    map.noteCount.circles,
-      //    map.noteCount.sliders,
-      //    map.maxCombo
-      // ];
-      // if (mode !== "fruits") xData.push(map.od);
-      // if (mode !== "taiko") xData.push(map.cs);
-      // if (mode === "osu") xData.push(map.ar);
-      // else if (mode === "fruits") {
-      //    xData.push(map.ar);
-      //    xData.push(+map.convert);
-      // }
       datasets.x.push(createPredictorInput(map, mode));
       const yData = [map.rating.rating, map.mods.DT];
       if (mode !== "mania") yData.push(map.mods.HD, map.mods.HR);
@@ -157,21 +72,6 @@ export function prepBeatmapData(
    predictor: PolynomialRegressor & { meta?: { max: number } }
 ): DbBeatmap {
    const { max } = predictor.meta;
-   // const predictData = [
-   //    osuBeatmap.difficulty_rating,
-   //    osuBeatmap.total_length,
-   //    osuBeatmap.bpm,
-   //    osuBeatmap.count_circles,
-   //    osuBeatmap.count_sliders,
-   //    osuBeatmap.max_combo
-   // ];
-   // if (osuBeatmap.mode !== "fruits") predictData.push(osuBeatmap.accuracy);
-   // if (osuBeatmap.mode !== "taiko") predictData.push(osuBeatmap.cs);
-   // if (osuBeatmap.mode === "osu") predictData.push(osuBeatmap.ar);
-   // else if (osuBeatmap.mode === "fruits") {
-   //    predictData.push(osuBeatmap.ar);
-   //    predictData.push(+osuBeatmap.convert);
-   // }
    const [[ratingRaw, DT, HD, HR]] = predictor.predict([
       createPredictorInput(
          {

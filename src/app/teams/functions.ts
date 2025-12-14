@@ -14,7 +14,7 @@ export async function removePlayer(playerId: number, teamId: string) {
       },
       { returnDocument: "after" }
    );
-   if (team.players.length < 1) {
+   if (team.players.filter(p => !p.pending).length < 1) {
       const result = await teamsDb.deleteOne({ _id });
       console.log(result);
    }

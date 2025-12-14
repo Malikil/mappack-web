@@ -37,6 +37,7 @@ export default async function Teams() {
                      await teamsDb.insertOne({
                         name: "New Team",
                         mode: player.gamemode,
+                        teamSize: 1,
                         players: [
                            {
                               id: player._id,

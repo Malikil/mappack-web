@@ -11,12 +11,12 @@ import { GameMode } from "osu-web.js";
 
 export async function updateTeam(
    teamId: string,
-   { teamName, gameMode }: { teamName: string; gameMode: GameMode }
+   { teamName, gameMode, teamSize }: { teamName: string; gameMode: GameMode; teamSize: number }
 ) {
    console.log("Update team name");
    const result = await teamsDb.updateOne(
       { _id: ObjectId.createFromHexString(teamId) },
-      { $set: { name: teamName, mode: gameMode } }
+      { $set: { name: teamName, mode: gameMode, teamSize } }
    );
    console.log(result);
 }

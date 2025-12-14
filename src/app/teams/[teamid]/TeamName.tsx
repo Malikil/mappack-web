@@ -12,11 +12,12 @@ export default function TeamName({
    data
 }: {
    teamId: string;
-   data: { name: string; mode: GameMode };
+   data: { name: string; mode: GameMode; teamSize: number };
 }) {
    const [editing, setEditing] = useState(false);
    const [teamName, setTeamName] = useState(data.name);
    const [mode, setMode] = useState(data.mode);
+   const [teamSize, setTeamSize] = useState(data.teamSize);
 
    return editing ? (
       <div className="d-flex">
@@ -28,8 +29,8 @@ export default function TeamName({
                   size={20}
                   role="button"
                   onClick={() =>
-                     serverActionToast(updateTeam(teamId, { teamName, gameMode: mode }), {}).then(() =>
-                        setEditing(false)
+                     serverActionToast(updateTeam(teamId, { teamName, gameMode: mode, teamSize }), {}).then(
+                        () => setEditing(false)
                      )
                   }
                />
@@ -43,13 +44,19 @@ export default function TeamName({
                   }}
                />
             </div>
-            <div className="d-flex gap-2">
+            <div className="d-flex gap-2 align-items-center">
                <FormSelect value={mode} onChange={e => setMode(e.target.value as GameMode)}>
                   <option value={"osu" as GameMode}>osu!</option>
                   <option value={"fruits" as GameMode}>Catch</option>
                   <option value={"taiko" as GameMode}>Taiko</option>
                   <option value={"mania" as GameMode}>Mania</option>
                </FormSelect>
+               <span className="fs-6">Size:</span>
+               <FormControl
+                  value={teamSize}
+                  onChange={e => setTeamSize(parseInt(e.target.value))}
+                  type="number"
+               />
             </div>
          </Form>
       </div>

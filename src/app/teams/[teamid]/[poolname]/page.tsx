@@ -60,7 +60,8 @@ export default async function TeamPoolPage({ params }) {
                   {playerList.map(p => (
                      <td key={p.id}>{p.osuname}</td>
                   ))}
-                  <td>Performance</td>
+                  <td>Perf.</td>
+                  <td>Team Avg</td>
                </tr>
             </thead>
             <tbody>
@@ -72,18 +73,32 @@ export default async function TeamPoolPage({ params }) {
                         predictOutcome(combinedPlayerRatings.targetRating, dbmap.rating),
                         team.mode
                      ) / modMult;
-                  const allScores = Object.values(map.scores).flatMap(s => s);
+                  const scoresWithAvg = Object.keys(map.scores)
+                     .map(pid => {
+                        const player = parseInt(pid);
+                        const sum = map.scores[player].reduce((p, c) => p + c);
+                        return {
+                           player,
+                           scores: map.scores[player],
+                           avg: sum / map.scores[player].length
+                        };
+                     })
+                     .filter(s => s.avg)
+                     .sort((a, b) => b.avg - a.avg)
+                     .slice(0, team.teamSize);
+                  const allScores = scoresWithAvg.flatMap(s => s.scores);
                   const combinedSd = mathplus.stdev(target, ...allScores);
                   const { wsum, wcount } = allScores
                      .sort((a, b) => b - a)
                      .reduce(
                         (agg, score, i) => {
+                           agg.sum += score;
                            const weight = Math.sqrt(i + 1);
                            agg.wsum += score / weight;
                            agg.wcount += 1 / weight;
                            return agg;
                         },
-                        { wsum: 0, wcount: 0 }
+                        { sum: 0, wsum: 0, wcount: 0 }
                      );
                   const wavg = wsum / wcount;
                   return (
@@ -110,11 +125,19 @@ export default async function TeamPoolPage({ params }) {
                            const sum = map.scores[p.id]?.reduce((s, c) => s + c);
                            return (
                               <td key={p.id} className="bg-transparent">
-                                 {(sum / map.scores[p.id]?.length).toLocaleString()}
+                                 {Math.round(sum / map.scores[p.id]?.length).toLocaleString()}
                               </td>
                            );
                         })}
                         <td className="bg-transparent">{((wavg - target) / combinedSd).toFixed(2)}</td>
+                        <td className="bg-transparent">
+                           {(
+                              scoresWithAvg.reduce((p, c) => p + c.avg, 0) /
+                              scoresWithAvg.length /
+                              1000
+                           ).toFixed()}
+                           k
+                        </td>
                      </tr>
                   );
                })}

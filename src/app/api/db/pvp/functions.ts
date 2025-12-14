@@ -158,7 +158,6 @@ function parseTeamsLobby(lobby: LegacyMultiplayerLobby, warmups: number): TeamMp
 export async function addTeamsData({
    mp,
    mode,
-   warmups,
    maps,
    blueTeam,
    redTeam,
@@ -257,8 +256,7 @@ export async function addTeamsData({
                                     score: playerScores[i].score,
                                     opponentScore: opponentScores[i].score
                                  };
-                              }),
-                              warmups
+                              })
                            }
                         ],
                         $position: 0,

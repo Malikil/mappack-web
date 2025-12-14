@@ -14,6 +14,7 @@ export interface PracticePool {
 export interface DbTeam {
    name: string;
    mode: GameMode;
+   teamSize: number;
    players: {
       id: number;
       osuname: string;
