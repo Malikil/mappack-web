@@ -76,7 +76,9 @@ export default async function Profile({ params }) {
                mode={gamemode}
             />
          )}
-         {user?._id === player._id && <ModSkills mods={player[gamemode].mods} />}
+         {user?._id === player._id && (
+            <ModSkills mods={player[gamemode].mods} skills={player[gamemode].styles} />
+         )}
       </div>
    );
 }

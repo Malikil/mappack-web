@@ -82,7 +82,10 @@ export async function getPlayerList(playerIds: number[], mode: GameMode = "osu",
                games: 0,
                songs: 0
             },
-            styles: Array.from({ length: parseInt(process.env.SKILL_CATEGORIES) }, () => Math.random() / 100),
+            styles: Array.from(
+               { length: parseInt(process.env.SKILL_CATEGORIES) },
+               () => Math.random() * 0.02 - 0.01
+            ),
             pools: [],
             mods: {}
          };

@@ -3,6 +3,7 @@ import { GameMode, Mod } from "osu-web.js";
 import { combineRatings, matchResultValue } from "../rating-range";
 import { Rating } from "@/types/rating";
 import { Glicko2 } from "glicko2";
+import { logit, sigmoid } from "@/mathplus";
 
 const MAP_STYLE_LEARNING_RATE = 0.001;
 const STYLES_LEARNING_RATE = 0.01;
@@ -49,7 +50,8 @@ export function predictOutcome(
    const simplePredict = calculator.predict(playerCalc, mapCalc);
    let residual = 0;
    for (let i = 0; i < playerSkills.length; i++) residual += playerSkills[i] * mapSkills[i];
-   return simplePredict + residual;
+
+   return sigmoid(logit(simplePredict) + residual);
 }
 
 export function getUpdatedModsFromBatch(

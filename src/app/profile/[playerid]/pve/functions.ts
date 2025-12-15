@@ -273,7 +273,7 @@ export async function submitPveData(data: PveLobbyResults) {
             // Gradient for player skill comes from sum of errors for each map
             playerInfo.styleGradients[score.mode][i] += error * mapInfo.map.styles[i];
             // Thus, gradient for map requirements should come from errors for each player
-            mapInfo.styleGradients[i] -= error * playerModeInfo.styles[i];
+            mapInfo.styleGradients[i] += error * playerModeInfo.styles[i];
          }
       });
       let min = 10;

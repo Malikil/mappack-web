@@ -1,6 +1,7 @@
 import interpolate from "color-interpolate";
 import { Mod } from "osu-web.js";
 import { Card, CardBody, CardHeader } from "react-bootstrap";
+import StylesSkillsChart from "./StylesSkillsChart";
 
 const WORST_MULT = 1.053;
 
@@ -33,16 +34,30 @@ function SkillCard({ mod, value }: { mod: Mod; value: number }) {
    );
 }
 
-export default function ModSkills({ mods }: { mods: Partial<Record<Mod, number>> }) {
+export default function ModSkills({
+   mods,
+   skills
+}: {
+   mods: Partial<Record<Mod, number>>;
+   skills: number[];
+}) {
    return (
       <Card>
-         <CardHeader>Mod Skills</CardHeader>
-         <CardBody className="d-flex flex-wrap gap-2">
-            {Object.keys(mods)
-               .filter(m => mods[m] || mods[m])
-               .map((mod: Mod, i) => (
-                  <SkillCard key={mod} mod={mod} value={mods[mod]} />
-               ))}
+         <CardHeader>Skills</CardHeader>
+         <CardBody className="d-flex gap-2 justify-content-between">
+            <div className="d-flex flex-wrap gap-2 align-items-start">
+               {Object.keys(mods)
+                  .filter(m => mods[m] || mods[m])
+                  .map((mod: Mod, i) => (
+                     <SkillCard key={mod} mod={mod} value={mods[mod]} />
+                  ))}
+            </div>
+            <div className="d-flex gap-2">
+               <div className="border" />
+               <div>
+                  <StylesSkillsChart skills={skills} />
+               </div>
+            </div>
          </CardBody>
       </Card>
    );

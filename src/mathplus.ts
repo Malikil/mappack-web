@@ -1,3 +1,6 @@
+export const logit = (x: number) => Math.log(x / (1 - x));
+export const sigmoid = (x: number) => 1 / (1 + Math.exp(-x));
+
 export function stdev(...values: number[]) {
    const avg = values.reduce((s, n) => s + n);
    const mean = avg / values.length;
@@ -6,5 +9,7 @@ export function stdev(...values: number[]) {
 }
 
 export default {
+   logit,
+   sigmoid,
    stdev
 };

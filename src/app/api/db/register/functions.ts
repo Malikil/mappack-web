@@ -10,7 +10,10 @@ export async function register(osuid: number, osuname: string) {
       songs: 0,
       matches: []
    };
-   const styles = Array.from({ length: parseInt(process.env.SKILL_CATEGORIES) }, () => Math.random() / 100);
+   const styles = Array.from(
+      { length: parseInt(process.env.SKILL_CATEGORIES) },
+      () => Math.random() * 0.02 - 0.01
+   );
    const player = await playersDb.findOneAndUpdate(
       { _id: osuid },
       {

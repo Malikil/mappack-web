@@ -114,7 +114,10 @@ export function prepBeatmapData(
          sliders: osuBeatmap.count_sliders
       },
       rating,
-      styles: Array.from({ length: parseInt(process.env.SKILL_CATEGORIES) }, () => Math.random() / 100),
+      styles: Array.from(
+         { length: parseInt(process.env.SKILL_CATEGORIES) },
+         () => Math.random() * 0.02 - 0.01
+      ),
       mods: { DT }
    };
    if (osuBeatmap.mode !== "mania") {
