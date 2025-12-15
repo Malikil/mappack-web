@@ -5,8 +5,8 @@ import { Rating } from "@/types/rating";
 import { Glicko2 } from "glicko2";
 import { logit, sigmoid } from "@/mathplus";
 
-const MAP_STYLE_LEARNING_RATE = 0.001;
-const STYLES_LEARNING_RATE = 0.01;
+const MAP_STYLE_LEARNING_RATE = 0.05;
+const PLAYER_STYLES_LEARNING_RATE = 0.01;
 const STYLES_REGULARIZATION = 0.1;
 /**
  * The largest possible update per mod per play
@@ -198,16 +198,18 @@ export function getUpdatedModsFromBatch(
    };
 }
 
-export async function getUpdatedStylesFromBatch(
+export function getUpdatedStylesFromBatch(
    results: {
       mode: GameMode;
       score: number;
-      player: Rating & {
-         id: number;
+      player: {
+         _id: number;
+         rating: Rating;
          styles: number[];
       };
-      map: Rating & {
-         id: number;
+      map: {
+         _id: number;
+         rating: Rating;
          styles: number[];
       };
    }[]
@@ -221,22 +223,22 @@ export async function getUpdatedStylesFromBatch(
    } = {};
    for (const { mode, score, player, map } of results) {
       // Get the appropriate gradients
-      if (!(player.id in playerGradientsList)) playerGradientsList[player.id] = {};
-      const playerGradients = playerGradientsList[player.id];
+      if (!(player._id in playerGradientsList)) playerGradientsList[player._id] = {};
+      const playerGradients = playerGradientsList[player._id];
       if (!(mode in playerGradients)) playerGradients[mode] = Array(nSkills).fill(0);
-      if (!(map.id in mapGradientsList)) mapGradientsList[map.id] = {};
-      const mapGradients = mapGradientsList[map.id];
+      if (!(map._id in mapGradientsList)) mapGradientsList[map._id] = {};
+      const mapGradients = mapGradientsList[map._id];
       if (!(mode in mapGradients)) mapGradients[mode] = Array(nSkills).fill(0);
 
       // To update style weights, get the expected score
       const scoreResult = matchResultValue(score, mode);
-      const expectedResult = predictOutcome(player, map, player.styles, map.styles);
+      const expectedResult = predictOutcome(player.rating, map.rating, player.styles, map.styles);
       const error = scoreResult - expectedResult;
       for (let i = 0; i < nSkills; i++) {
          // Gradient for player skill comes from sum of errors for each map
          playerGradients[mode][i] += error * map.styles[i];
          // Thus, gradient for map requirements should come from errors for each player
-         mapGradients[mode][i] -= error * player.styles[i];
+         mapGradients[mode][i] += error * player.styles[i];
       }
    }
    return {
@@ -247,17 +249,14 @@ export async function getUpdatedStylesFromBatch(
                Object.fromEntries(
                   Object.entries(modeGradients).map(([mode, gradients]) => {
                      const playerOldStyles = results.find(
-                        r => r.player.id === parseInt(idStr) && r.mode === mode
+                        r => r.player._id === parseInt(idStr) && r.mode === mode
+                     ).player.styles;
+                     const playerNewStyles = gradients.map(
+                        (v, i) =>
+                           v + PLAYER_STYLES_LEARNING_RATE * (playerOldStyles[i] - STYLES_REGULARIZATION * v)
                      );
-                     return [
-                        mode,
-                        gradients.map(
-                           (v, i) =>
-                              v +
-                              STYLES_LEARNING_RATE *
-                                 (playerOldStyles.player.styles[i] - STYLES_REGULARIZATION * v)
-                        )
-                     ];
+                     console.log("Player", idStr, "Old:", playerOldStyles, "New:", playerNewStyles);
+                     return [mode, playerNewStyles];
                   })
                )
             ];
@@ -269,16 +268,13 @@ export async function getUpdatedStylesFromBatch(
                idStr,
                Object.fromEntries(
                   Object.entries(modeGradients).map(([mode, gradients]) => {
-                     const mapOldStyles = results.find(r => r.map.id === parseInt(idStr) && r.mode === mode);
-                     return [
-                        mode,
-                        gradients.map(
-                           (v, i) =>
-                              v +
-                              MAP_STYLE_LEARNING_RATE *
-                                 (mapOldStyles.map.styles[i] - STYLES_REGULARIZATION * v)
-                        )
-                     ];
+                     const mapOldStyles = results.find(r => r.map._id === parseInt(idStr) && r.mode === mode)
+                        .map.styles;
+                     const mapNewStyles = gradients.map(
+                        (v, i) => v + MAP_STYLE_LEARNING_RATE * (mapOldStyles[i] - STYLES_REGULARIZATION * v)
+                     );
+                     console.log("Map", idStr, "Old:", mapOldStyles, "New:", mapNewStyles);
+                     return [mode, mapNewStyles];
                   })
                )
             ];

@@ -9,12 +9,8 @@ import { ModPool, Rating } from "@/types/rating";
 import { Glicko2, Player } from "glicko2";
 import { UpdateFilter } from "mongodb";
 import { GameMode, getModsEnum, LegacyClient, Mod } from "osu-web.js";
-import { getUpdatedModsFromBatch, predictOutcome } from "@/helpers/server/ratings";
+import { getUpdatedModsFromBatch, getUpdatedStylesFromBatch } from "@/helpers/server/ratings";
 import { getPlayerList } from "@/helpers/server/players";
-
-const MAP_STYLE_LEARNING_RATE = 0.001;
-const STYLES_LEARNING_RATE = 0.01;
-const STYLES_REGULARIZATION = 0.1;
 
 export function parseModpool(mods: Mod[], mode: GameMode): ModPool {
    mods = ignoreSongMods(mods);
@@ -124,13 +120,11 @@ export async function submitPveData(data: PveLobbyResults) {
    const playerCalculatorPairs = playerList.map(dbp => {
       const playerCalc: Partial<Record<GameMode, Player>> = {};
       const history: Partial<Record<GameMode, MatchHistory>> = {};
-      const styleGradients: Partial<Record<GameMode, number[]>> = {};
       return {
          playerId: dbp._id,
          dbplayer: dbp,
          playerCalc,
-         history,
-         styleGradients
+         history
       };
    });
    const maplist = await Promise.all(
@@ -140,8 +134,7 @@ export async function submitPveData(data: PveLobbyResults) {
          ).map(map => ({
             map,
             mode,
-            mapCalc: calculator.makePlayer(map.rating.rating, map.rating.rd, map.rating.vol),
-            styleGradients: Array(parseInt(process.env.SKILL_CATEGORIES)).fill(0) as number[]
+            mapCalc: calculator.makePlayer(map.rating.rating, map.rating.rd, map.rating.vol)
          }))
       )
    ).then(modeArr => modeArr.flat());
@@ -253,54 +246,16 @@ export async function submitPveData(data: PveLobbyResults) {
          const modAdjustedScore = score.score.getScore() * playerModsModifier * mapModsModifier;
          const scoreResult = matchResultValue(modAdjustedScore, score.mode);
          calculatorResults.push([playerInfo.playerCalc[score.mode], mapInfo.mapCalc, scoreResult]);
-
-         // To update style weights, get the expected score
-         // Update mod multipliers in the same way
-         const expectedResult = predictOutcome(
-            playerModeInfo.pve,
-            mapInfo.map.rating,
-            playerModeInfo.styles,
-            mapInfo.map.styles
-         );
-         const error = scoreResult - expectedResult;
-         // Make sure the gradients array is available
-         if (!(score.mode in playerInfo.styleGradients))
-            playerInfo.styleGradients[score.mode] = Array(parseInt(process.env.SKILL_CATEGORIES)).fill(0);
-
-         // Update skills gradients
-         const nSkills = parseInt(process.env.SKILL_CATEGORIES);
-         for (let i = 0; i < nSkills; i++) {
-            // Gradient for player skill comes from sum of errors for each map
-            playerInfo.styleGradients[score.mode][i] += error * mapInfo.map.styles[i];
-            // Thus, gradient for map requirements should come from errors for each player
-            mapInfo.styleGradients[i] += error * playerModeInfo.styles[i];
-         }
       });
-      let min = 10;
-      let max = -10;
-      console.log(
-         `${playerInfo.dbplayer.osuname} - Average error: ${
-            (Object.values(playerInfo.styleGradients).reduce(
-               (p, v) =>
-                  p +
-                  v.reduce((a, b) => {
-                     min = Math.min(min, b);
-                     max = Math.max(max, b);
-                     return a + b;
-                  }),
-               0
-            ) /
-               Object.keys(playerInfo.styleGradients).length) *
-            parseInt(process.env.SKILL_CATEGORIES)
-         }`
-      );
-      console.log(`Min gradient: ${min}, Max gradient: ${max}`);
    });
 
    // Update matches
    console.log(`Update results for ${calculatorResults.length} scores`);
    calculator.updateRatings(calculatorResults);
    const updatedModRatings = getUpdatedModsFromBatch(modRatingsUpdateObj);
+   const updatedSkillRatings = getUpdatedStylesFromBatch(
+      modRatingsUpdateObj.map(score => ({ ...score, score: score.score.score }))
+   );
 
    // Save results to database
    // First practice pools
@@ -349,7 +304,7 @@ export async function submitPveData(data: PveLobbyResults) {
    // Then remaining player info
    const playersDbWriteResult = await playersDb.bulkWrite(
       playerCalculatorPairs
-         .map(({ playerId, dbplayer, playerCalc, history, styleGradients }) => {
+         .map(({ playerId, playerCalc, history }) => {
             const updateFilter: UpdateFilter<DbPlayer> = {
                $set: {},
                $inc: {},
@@ -359,9 +314,8 @@ export async function submitPveData(data: PveLobbyResults) {
             if (playedModes.length < 1) return;
             for (const mode of playedModes) {
                // Update the player skills here for this game mode
-               updateFilter.$set[`${mode}.styles`] = dbplayer[mode].styles.map(
-                  (v, i) => v + STYLES_LEARNING_RATE * (styleGradients[mode][i] - STYLES_REGULARIZATION * v)
-               );
+               const updatedSkills = updatedSkillRatings.players[playerId]?.[mode];
+               if (updatedSkills) updateFilter.$set[`${mode}.styles`] = updatedSkills;
                // Update the player mods
                Object.entries(updatedModRatings.players[playerId]?.[mode] || {}).forEach(
                   ([playedMod, multiplier]: [Mod, number]) => {
@@ -401,14 +355,12 @@ export async function submitPveData(data: PveLobbyResults) {
       const filteredMaplist = maplist.filter(m => m.mode === mode);
       const modeDbWriteResult = await mapsDb[mode].bulkWrite(
          filteredMaplist
-            .map(({ map, mapCalc, styleGradients }) => {
+            .map(({ map, mapCalc }) => {
                // Update the map's styles here
+               const updatedSkills = updatedSkillRatings.maps[map._id]?.[mode];
                const updateFilter: UpdateFilter<DbBeatmap> = {
                   $set: {
-                     styles: map.styles.map(
-                        (v, i) =>
-                           v + MAP_STYLE_LEARNING_RATE * (styleGradients[i] - STYLES_REGULARIZATION * v)
-                     ),
+                     styles: updatedSkills || map.styles,
                      rating: {
                         rating: mapCalc.getRating(),
                         rd: mapCalc.getRd(),

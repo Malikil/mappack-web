@@ -10,7 +10,7 @@ import { matchResultValue } from "@/helpers/rating-range";
 import { ignoreSongMods, parseModpool } from "@/app/profile/[playerid]/pve/functions";
 import { ScoreParser } from "@/helpers/scorev1";
 import { getPlayerList } from "@/helpers/server/players";
-import { getUpdatedModsFromBatch } from "@/helpers/server/ratings";
+import { getUpdatedModsFromBatch, getUpdatedStylesFromBatch } from "@/helpers/server/ratings";
 import { DbPlayer } from "@/types/database.player";
 
 const MATCH_HISTORY_SIZE = 10;
@@ -327,6 +327,9 @@ export async function addTeamsData({
    }
    calculator.updateRatings(mapCalculatorResults);
    const modRatingUpdates = getUpdatedModsFromBatch(modUpdatesObj);
+   const styleRatingUpdates = getUpdatedStylesFromBatch(
+      modUpdatesObj.map(score => ({ ...score, score: score.score.score }))
+   );
 
    // Update song ratings in database
    const mapsResult = await mapsDb[mode].bulkWrite(
@@ -344,7 +347,8 @@ export async function addTeamsData({
                      Object.entries(modRatingUpdates.maps[mode][pMap.map._id]).map(
                         ([mod, multiplier]: [Mod, number]) => [`mods.${mod}`, multiplier]
                      )
-                  )
+                  ),
+                  styles: styleRatingUpdates.maps[pMap.map._id]?.[mode] || pMap.map.styles
                }
             }
          } as UpdateOneModel<DbBeatmap>
@@ -362,7 +366,9 @@ export async function addTeamsData({
                      Object.entries(modRatingUpdates.players[p.player._id][mode]).map(
                         ([mod, multiplier]: [Mod, number]) => [`${mode}.mods.${mod}`, multiplier]
                      )
-                  )
+                  ),
+                  [`${mode}.styles`]:
+                     styleRatingUpdates.players[p.player._id]?.[mode] || p.player[mode].styles
                }
             }
          }
@@ -647,12 +653,25 @@ export async function addMatchData({
          }
       }))
    );
+   const updatedSkillRatings = getUpdatedStylesFromBatch(
+      mapResultsForCalc.map(result => ({
+         map: result.map.map,
+         player: {
+            _id: result.player.player._id,
+            rating: result.player.player[mode].pvp,
+            styles: result.player.player[mode].styles
+         },
+         mode,
+         score: result.score
+      }))
+   );
 
    // Update song ratings in database
    const mapsResult = await mapsDb[mode].bulkWrite(
-      Object.keys(updatedModsValues.maps).map(mapidstr => {
+      Object.keys(updatedModsValues.maps[mode]).map(mapidstr => {
          const mapid = parseInt(mapidstr);
-         const mapRating = mapResultsForCalc.find(res => res.map.map._id === mapid).map.calc;
+         const mapInfo = mapResultsForCalc.find(res => res.map.map._id === mapid).map;
+         const mapRating = mapInfo.calc;
          return {
             updateOne: {
                filter: { _id: mapid },
@@ -664,10 +683,11 @@ export async function addMatchData({
                         vol: mapRating.getVol()
                      },
                      ...Object.fromEntries(
-                        Object.entries(updatedModsValues.maps[mapid]).map(
+                        Object.entries(updatedModsValues.maps[mode][mapid]).map(
                            ([mod, multiplier]: [Mod, number]) => [`mods.${mod}`, multiplier]
                         )
-                     )
+                     ),
+                     styles: updatedSkillRatings.maps[mapid]?.[mode] || mapInfo.map.styles
                   }
                }
             } as UpdateOneModel<DbBeatmap>
@@ -680,6 +700,9 @@ export async function addMatchData({
    const playerModsResults = await playersDb.bulkWrite(
       Object.keys(updatedModsValues.players).map(pidstr => {
          const playerid = parseInt(pidstr);
+         const playerInfo = mapResultsForCalc.find(res => res.player.player._id === playerid).player.player[
+            mode
+         ];
          return {
             updateOne: {
                filter: { _id: playerid },
@@ -689,7 +712,8 @@ export async function addMatchData({
                         Object.entries(updatedModsValues.players[playerid][mode]).map(
                            ([mod, multiplier]: [Mod, number]) => [`${mode}.mods.${mod}`, multiplier]
                         )
-                     )
+                     ),
+                     [`${mode}.styles`]: updatedSkillRatings.players[playerid]?.[mode] || playerInfo.styles
                   }
                }
             }
