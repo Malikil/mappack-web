@@ -40,33 +40,49 @@ export default async function MapProfile({ params }) {
             >
                <CardBody className="d-flex gap-2 justify-content-between">
                   <div className="d-flex flex-column align-items-start">
-                        <Link
-                           href={buildUrl.beatmap(map._id)}
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           className="text-reset text-decoration-none"
-                        >
-                     <CardTitle>
-                           {map.version}
-                     </CardTitle>
-                        </Link>
+                     <Link
+                        href={buildUrl.beatmap(map._id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-reset text-decoration-none"
+                     >
+                        <CardTitle>{map.version}</CardTitle>
+                     </Link>
                      <table className="mt-3 mb-auto">
                         <tbody>
                            <tr>
                               <td>Stars</td>
-                              <td className="ps-1">{map.stars.toFixed(2)}</td>
+                              <td>{map.stars.toFixed(2)}</td>
                               <td className="text-center">★</td>
                            </tr>
                            <tr>
-                              <td>Length</td>
-                              <td className="ps-1">{convertTime(map.length)}</td>
+                              <td className="pe-1">Length</td>
+                              <td>{convertTime(map.length)}</td>
                               <td className="text-center">⧗</td>
                            </tr>
                            <tr>
-                              <td>BPM</td>
-                              <td className="ps-1">{map.bpm.toFixed()}</td>
-                              <td className="text-center">♪</td>
+                              <td className="pb-2">BPM</td>
+                              <td className="pb-2">{map.bpm.toFixed()}</td>
+                              <td className="text-center pb-2">♪</td>
                            </tr>
+                           {"ar" in map && (
+                              <tr>
+                                 <td>AR</td>
+                                 <td>{map.ar}</td>
+                              </tr>
+                           )}
+                           {"cs" in map && (
+                              <tr>
+                                 <td>CS</td>
+                                 <td>{map.cs}</td>
+                              </tr>
+                           )}
+                           {"od" in map && (
+                              <tr>
+                                 <td>OD</td>
+                                 <td>{map.od}</td>
+                              </tr>
+                           )}
                         </tbody>
                      </table>
                      <div className="d-flex flex-wrap gap-2 mt-3">
@@ -79,17 +95,18 @@ export default async function MapProfile({ params }) {
                         </Card>
                         {Object.keys(map.mods)
                            .sort((a, b) => map.mods[a] - map.mods[b])
-                           .map((mod: Mod) => (
-                              <Card key={mod}>
-                                 <CardBody>
-                                    <CardTitle>{mod}</CardTitle>
-                                    <CardSubtitle>{map.mods[mod].toFixed(2)}x</CardSubtitle>
-                                    <CardSubtitle>
-                                       {(map.rating.rating * map.mods[mod]).toFixed()}
-                                    </CardSubtitle>
-                                 </CardBody>
-                              </Card>
-                           ))}
+                           .map((mod: Mod) => {
+                              const modmult = map.mods[mod];
+                              return (
+                                 <Card key={mod}>
+                                    <CardBody>
+                                       <CardTitle>{mod}</CardTitle>
+                                       <CardSubtitle>{modmult.toFixed(2)}x</CardSubtitle>
+                                       <CardSubtitle>{(map.rating.rating * modmult).toFixed()}</CardSubtitle>
+                                    </CardBody>
+                                 </Card>
+                              );
+                           })}
                      </div>
                   </div>
                   <Card>
