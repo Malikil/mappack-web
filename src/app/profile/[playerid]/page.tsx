@@ -7,7 +7,6 @@ import Image from "next/image";
 import { buildUrl } from "osu-web.js";
 import CreatePvpStats from "./pvp/CreatePvpStats";
 import PvPResultsCard from "./pvp/PvPResultsCard";
-import PoolSetupCard from "./pools/PoolSetupCard";
 import ModSkills from "./ModSkills";
 import Link from "next/link";
 

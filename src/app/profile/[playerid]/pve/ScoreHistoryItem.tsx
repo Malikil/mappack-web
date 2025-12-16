@@ -4,6 +4,7 @@ import { buildUrl, GameMode, getEnumMods } from "osu-web.js";
 import { ArrowDownRightCircle, ArrowUpRightCircle, DashCircle, PlusCircle } from "react-bootstrap-icons";
 import { MatchHistory } from "@/types/database.player";
 import { mapsDb } from "@/app/api/db/connection";
+import PvEMap from "@/components/maps/PvEMap";
 
 export default async function ScoreHistoryItem({ match, mode }: { match: MatchHistory; mode: GameMode }) {
    const maplist = await mapsDb[mode].find({ _id: { $in: match.songs.map(map => map.map.id) } }).toArray();
@@ -62,27 +63,16 @@ export default async function ScoreHistoryItem({ match, mode }: { match: MatchHi
                      const modsMult = mods.reduce((mult, mod) => mult * (m.map.mods[mod] || 1), 1);
                      const map = m.map || { ...m.mapSimple, _id: m.mapSimple.id };
                      return (
-                        <Card key={i} className="flex-shrink-0 flex-grow-1" style={{ flexBasis: "140px" }}>
-                           <Link href={buildUrl.beatmap(map._id)} target="_blank" rel="noopener noreferrer">
-                              <CardImg
-                                 src={buildUrl.beatmapsetCover(map.setid)}
-                                 alt="Cover"
-                                 style={{ objectFit: "cover" }}
-                              />
-                           </Link>
-                           <CardBody className="d-flex flex-column">
-                              <CardSubtitle>{m.score.toLocaleString()}</CardSubtitle>
-                              <div>{map.version}</div>
-                              <div className="d-flex mt-auto">
-                                 <span>{mods.join("") || "NM"}</span>
-                                 {"rating" in map && (
-                                    <span className="ms-auto">
-                                       {(map.rating.rating * modsMult).toFixed()}
-                                    </span>
-                                 )}
-                              </div>
-                           </CardBody>
-                        </Card>
+                        <PvEMap
+                           key={i}
+                           id={map._id}
+                           mods={mods}
+                           mode={mode}
+                           score={m.score}
+                           setid={map.setid}
+                           version={map.version}
+                           rating={m.map?.rating.rating * modsMult}
+                        />
                      );
                   })}
                </div>

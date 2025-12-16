@@ -7,11 +7,12 @@ import { ModPool, Rating } from "@/types/rating";
 import { UpdateOneModel } from "mongodb";
 import { getMaplist } from "@/helpers/server/currentPack";
 import { matchResultValue } from "@/helpers/rating-range";
-import { ignoreSongMods, parseModpool } from "@/app/profile/[playerid]/pve/functions";
+import { parseModpool } from "@/app/profile/[playerid]/pve/functions";
 import { ScoreParser } from "@/helpers/scorev1";
 import { getPlayerList } from "@/helpers/server/players";
 import { getUpdatedModsFromBatch, getUpdatedStylesFromBatch } from "@/helpers/server/ratings";
 import { DbPlayer } from "@/types/database.player";
+import { ignoreSongMods } from "@/helpers/mods";
 
 const MATCH_HISTORY_SIZE = 10;
 
@@ -99,7 +100,7 @@ function parseTeamsLobby(lobby: LegacyMultiplayerLobby, warmups: number): TeamMp
             }
             // Add to team's total score
             matchScore[score.team] += score.score;
-            const playerMods = ignoreSongMods(game.mods, score.enabled_mods);
+            const playerMods = ignoreSongMods(game.mods.concat(score.enabled_mods));
             allMods.push(...playerMods);
 
             // Add the individual score
@@ -377,7 +378,7 @@ export async function addTeamsData({
    console.log("Player mods", playerModResults);
 }
 
-function parse1v1Lobby(lobby: LegacyMultiplayerLobby, warmups: number): MpLobbyResults {
+export function parse1v1Lobby(lobby: LegacyMultiplayerLobby, warmups: number): MpLobbyResults {
    const mode = lobby.games[warmups]?.play_mode;
    // Is end time an indicator of aborted matches?
    const result = lobby.games
@@ -393,10 +394,9 @@ function parse1v1Lobby(lobby: LegacyMultiplayerLobby, warmups: number): MpLobbyR
             const filteredMods = game.mods.filter(mod => !ignoreMods.includes(mod));
             const mod = filteredMods.length > 1 ? null : (filteredMods[0] || "nm").toLowerCase();
             if (!mod || !["nm", "hd", "hr", "dt"].includes(mod)) return agg;
-            const allMods = game.mods;
+            const allMods = [...game.mods];
             game.scores.forEach(score => {
-               // Will HD always be first?
-               const scoreMods = ignoreSongMods(game.mods, score.enabled_mods);
+               const scoreMods = ignoreSongMods(game.mods.concat(score.enabled_mods));
                allMods.push(...scoreMods);
                if (!(score.user_id in agg.scores)) agg.scores[score.user_id] = [];
                agg.scores[score.user_id].push({
@@ -404,6 +404,20 @@ function parse1v1Lobby(lobby: LegacyMultiplayerLobby, warmups: number): MpLobbyR
                   mods: scoreMods
                });
             });
+            // Handle disconnects by the second player here
+            if (game.scores.length === 1) {
+               const missingPlayer = parseInt(
+                  Object.keys(agg.scores).find(p => {
+                     const pid = parseInt(p);
+                     return !game.scores.find(s => s.user_id === pid);
+                  })
+               );
+               if (!missingPlayer) throw new Error("Missing 1v1 player");
+               agg.scores[missingPlayer].push({
+                  score: 0,
+                  mods: [...new Set(allMods)]
+               });
+            }
             const modpool = parseModpool(allMods, mode);
             console.log(`${lobby.match.match_id} - ${game.beatmap_id} +${modpool}`);
             agg.maps.push({
@@ -414,8 +428,10 @@ function parse1v1Lobby(lobby: LegacyMultiplayerLobby, warmups: number): MpLobbyR
                // Find the song winner
                const winner = game.scores.sort((a, b) => b.score - a.score)[0].user_id;
                agg.resultScore[winner] = (agg.resultScore[winner] || 0) + 1;
-               // Make sure the loser is still counted
-               agg.resultScore[game.scores[1].user_id] = agg.resultScore[game.scores[1].user_id] || 0;
+               // Make sure the loser is still counted, safely ignore cases where the loser dc'd
+               // They will still be accounted for on other songs, presumably
+               if (game.scores.length > 1)
+                  agg.resultScore[game.scores[1].user_id] = agg.resultScore[game.scores[1].user_id] || 0;
             }
             return agg;
          },
@@ -573,7 +589,7 @@ export async function addMatchData({
                                  setid: m.map.setid,
                                  version: m.map.version
                               },
-                              mods: getModsEnum(winnerScores[i].mods, true),
+                              mods: getModsEnum(loserScores[i].mods, true),
                               score: loserScores[i].score,
                               opponentScore: winnerScores[i].score
                            })),

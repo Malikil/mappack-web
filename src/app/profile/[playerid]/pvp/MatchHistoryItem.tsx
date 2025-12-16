@@ -87,7 +87,7 @@ export default async function MatchHistoryItem({ match, mode }: { match: PvPMatc
                            key={i}
                            style={{ flexBasis: "140px" }}
                         >
-                           <Link href={buildUrl.beatmap(map._id)} target="_blank" rel="noopener noreferrer">
+                           <Link href={`/maps/${mode}/${map._id}`}>
                               <CardImg
                                  src={`https://assets.ppy.sh/beatmaps/${map.setid}/covers/cover.jpg`}
                                  alt="Cover"

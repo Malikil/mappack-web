@@ -1,22 +1,13 @@
 "use server";
 
-import { fruitsDb, maniaDb, osuDb, playersDb, taikoDb } from "@/app/api/db/connection";
+import { parse1v1Lobby } from "@/app/api/db/pvp/functions";
+import { LegacyClient } from "osu-web.js";
+import util from "util";
 
 export async function debug() {
-   const result = await fruitsDb.updateMany({}, [
-      {
-         $set: {
-            styles: {
-               $map: {
-                  input: { $range: [0, 6] },
-                  as: "i",
-                  in: {
-                     $subtract: [{ $multiply: [{ $rand: {} }, 0.02] }, 0.01]
-                  }
-               }
-            }
-         }
-      }
-   ]);
-   console.log(result);
+   const mpId = 120088962;
+   const client = new LegacyClient(process.env.OSU_LEGACY_KEY);
+   const lobby = await client.getMultiplayerLobby({ mp: mpId });
+   const lobbyResults = parse1v1Lobby(lobby, 0);
+   console.log(util.inspect(lobbyResults, { depth: 4, colors: true }));
 }
