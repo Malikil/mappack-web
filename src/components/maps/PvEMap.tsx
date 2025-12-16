@@ -21,7 +21,7 @@ export default function PvEMap({
 }) {
    return (
       <Card className="flex-shrink-0 flex-grow-1" style={{ flexBasis: "140px" }}>
-         <Link href={`/maps/${mode}/${id}`}>
+         <Link href={`/maps/${mode}/${setid}`}>
             <CardImg src={buildUrl.beatmapsetCover(setid)} alt="Cover" style={{ objectFit: "cover" }} />
          </Link>
          <CardBody className="d-flex flex-column">

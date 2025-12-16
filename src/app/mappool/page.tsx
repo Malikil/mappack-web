@@ -98,19 +98,6 @@ export default async function Mappool() {
          title: string;
          mapper: string;
          versions: DbBeatmap[];
-         // {
-         //    id: number;
-         //    version: string;
-         //    length: number;
-         //    bpm: number;
-         //    cs: number;
-         //    ar: number;
-         //    od: number;
-         //    stars: number;
-         //    rating: Rating;
-         //    mods: Partial<Record<Mod, number>>,
-         //    maxCombo: number;
-         // }[];
       }[];
    }[];
    console.log(pools);
@@ -198,13 +185,16 @@ export default async function Mappool() {
                                        </Row>
                                        <div className="collapse" id={`collapse${mapset.setid}`}>
                                           <div className="my-2">
-                                             <CardSubtitle>
+                                             <CardSubtitle className="d-flex gap-3">
                                                 <Link
                                                    href={buildUrl.beatmapset(mapset.setid)}
                                                    target="_blank"
                                                    rel="noopener noreferrer"
                                                 >
                                                    Beatmap Listing
+                                                </Link>
+                                                <Link href={`/maps/${mode}/${mapset.setid}`}>
+                                                   Mapset Stats
                                                 </Link>
                                              </CardSubtitle>
                                           </div>
