@@ -11,6 +11,7 @@ import { UpdateFilter } from "mongodb";
 import { GameMode, getModsEnum, LegacyClient, Mod } from "osu-web.js";
 import { getUpdatedModsFromBatch, getUpdatedStylesFromBatch } from "@/helpers/server/ratings";
 import { getPlayerList } from "@/helpers/server/players";
+import { updateTeamScoreHistory } from "@/app/api/db/team/functions";
 
 export function parseModpool(mods: Mod[], mode: GameMode): ModPool {
    mods = ignoreSongMods(mods);
@@ -259,48 +260,49 @@ export async function submitPveData(data: PveLobbyResults) {
 
    // Save results to database
    // First practice pools
-   const practicePoolDbResult = await teamsDb.bulkWrite(
-      practicePoolUpdates.map(ppu => {
-         const nomod = ppu.mods.length < 1;
-         return {
-            updateMany: {
-               filter: {
-                  players: {
-                     $elemMatch: {
-                        id: ppu.player,
-                        $or: [{ pending: false }, { pending: { $exists: false } }]
-                     }
-                  },
-                  "pools.maps.id": ppu.map
-               },
-               update: {
-                  $push: {
-                     [`pools.$[pool].maps.$[map].scores.${ppu.player}`]: ppu.score
-                  }
-               },
-               arrayFilters: [
-                  { "pool.maps.id": ppu.map },
-                  {
-                     "map.id": ppu.map,
-                     $or: [
-                        { "map.mods": null },
-                        { "map.mods": { $exists: false } },
-                        nomod
-                           ? { "map.mods": { $size: 0 } }
-                           : {
-                                $and: [
-                                   { "map.mods": { $all: ppu.mods } },
-                                   { "map.mods": { $size: ppu.mods.length } }
-                                ]
-                             }
-                     ]
-                  }
-               ]
-            }
-         };
-      })
-   );
-   console.log("Practice pool results", practicePoolDbResult);
+   await updateTeamScoreHistory(practicePoolUpdates);
+   // const practicePoolDbResult = await teamsDb.bulkWrite(
+   //    practicePoolUpdates.map(ppu => {
+   //       const nomod = ppu.mods.length < 1;
+   //       return {
+   //          updateMany: {
+   //             filter: {
+   //                players: {
+   //                   $elemMatch: {
+   //                      id: ppu.player,
+   //                      $or: [{ pending: false }, { pending: { $exists: false } }]
+   //                   }
+   //                },
+   //                "pools.maps.id": ppu.map
+   //             },
+   //             update: {
+   //                $push: {
+   //                   [`pools.$[pool].maps.$[map].scores.${ppu.player}`]: ppu.score
+   //                }
+   //             },
+   //             arrayFilters: [
+   //                { "pool.maps.id": ppu.map },
+   //                {
+   //                   "map.id": ppu.map,
+   //                   $or: [
+   //                      { "map.mods": null },
+   //                      { "map.mods": { $exists: false } },
+   //                      nomod
+   //                         ? { "map.mods": { $size: 0 } }
+   //                         : {
+   //                              $and: [
+   //                                 { "map.mods": { $all: ppu.mods } },
+   //                                 { "map.mods": { $size: ppu.mods.length } }
+   //                              ]
+   //                           }
+   //                   ]
+   //                }
+   //             ]
+   //          }
+   //       };
+   //    })
+   // );
+   // console.log("Practice pool results", practicePoolDbResult);
    // Then remaining player info
    const playersDbWriteResult = await playersDb.bulkWrite(
       playerCalculatorPairs

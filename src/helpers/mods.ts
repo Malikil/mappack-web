@@ -96,6 +96,7 @@ export function parseShortMods(input: string | string[]): Mod[] {
 }
 
 export function ignoreSongMods(mods: Mod[]): Mod[] {
+   if (!mods) return mods;
    const ignore: Mod[] = ["NF", "MR", "SD", "PF"];
    const filteredMods = [...new Set(mods.filter(m => !ignore.includes(m)))];
    return filteredMods;

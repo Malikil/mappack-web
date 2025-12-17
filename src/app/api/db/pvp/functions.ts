@@ -13,6 +13,7 @@ import { getPlayerList } from "@/helpers/server/players";
 import { getUpdatedModsFromBatch, getUpdatedStylesFromBatch } from "@/helpers/server/ratings";
 import { DbPlayer } from "@/types/database.player";
 import { ignoreSongMods } from "@/helpers/mods";
+import { updateTeamScoreHistory } from "../team/functions";
 
 const MATCH_HISTORY_SIZE = 10;
 
@@ -376,6 +377,16 @@ export async function addTeamsData({
       }))
    );
    console.log("Player mods", playerModResults);
+   // Add practice pool scores
+   await updateTeamScoreHistory(
+      individualScores.map(is => ({
+         map: is.map,
+         mode,
+         mods: is.mods,
+         player: is.player,
+         score: is.score.getScore()
+      }))
+   );
 }
 
 export function parse1v1Lobby(lobby: LegacyMultiplayerLobby, warmups: number): MpLobbyResults {
@@ -737,4 +748,15 @@ export async function addMatchData({
       })
    );
    console.log("Player mods", playerModsResults);
+
+   // Update team practice pools
+   await updateTeamScoreHistory(
+      mapResultsForCalc.map(mrc => ({
+         map: mrc.map.map._id,
+         mode,
+         mods: mrc.mods,
+         player: mrc.player.player._id,
+         score: mrc.score
+      }))
+   );
 }

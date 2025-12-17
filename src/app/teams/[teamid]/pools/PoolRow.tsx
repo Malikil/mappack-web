@@ -20,6 +20,7 @@ export default function PoolRow({
    mode: GameMode;
    revalidate?: () => void;
 }) {
+   const collapseId = data.name.replace(/[\. ]/g, "");
    const [name, setName] = useState(data.name);
    const [maps, setMaps] = useState(data.maps);
    const [changed, setChanged] = useState(false);
@@ -55,7 +56,7 @@ export default function PoolRow({
 
    return (
       <Form>
-         <div className="d-flex gap-3">
+         <div className="d-flex gap-3 align-items-center">
             <div>
                <FormControl
                   type="text"
@@ -66,7 +67,7 @@ export default function PoolRow({
                   disabled={!editing}
                />
             </div>
-            {editing && (
+            {editing ? (
                <div className="d-flex gap-1">
                   <FormControl
                      type="text"
@@ -82,6 +83,17 @@ export default function PoolRow({
                   <Button disabled={addingMap} onClick={addMap}>
                      {addingMap ? <Spinner size="sm" /> : "+"}
                   </Button>
+               </div>
+            ) : (
+               <div
+                  id={`collapse-control${collapseId}`}
+                  role="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target={`#collapse${collapseId}`}
+                  aria-expanded="false"
+                  aria-controls={`collapse${collapseId}`}
+               >
+                  <small className="text-decoration-underline">Expand</small>
                </div>
             )}
             <div className="ms-auto">
@@ -126,55 +138,66 @@ export default function PoolRow({
                   </Button>
                </>
             ) : (
-               <Button onClick={() => setEditing(true)}>Edit</Button>
+               <Button
+                  onClick={() => {
+                     const collapseDisplay = document.getElementById(`collapse${collapseId}`);
+                     if (!collapseDisplay.classList.contains("show"))
+                        document.getElementById(`collapse-control${collapseId}`).click();
+                     setEditing(true);
+                  }}
+               >
+                  Edit
+               </Button>
             )}
          </div>
-         <div className="d-flex gap-1 mt-2 flex-wrap">
-            {maps.map((m, i) => {
-               const modsMult = m.mods?.reduce((mult, mod) => mult * (m.map.mods?.[mod] || 1), 1) || 1;
-               return (
-                  <Card key={i} className="flex-shrink-0 flex-grow-1" style={{ flexBasis: "140px" }}>
-                     <Link href={buildUrl.beatmap(m.map._id)} target="_blank" rel="noopener noreferrer">
-                        <CardImg
-                           src={buildUrl.beatmapsetCover(m.map.setid)}
-                           alt="Cover"
-                           style={{ objectFit: "cover" }}
-                        />
-                     </Link>
-                     <CardBody className="d-flex flex-column">
-                        <div className="d-flex justify-content-between">
-                           <div>
-                              <CardSubtitle className="text-break">
-                                 {m.map.artist || m.map._id} - {m.map.title}
-                              </CardSubtitle>
-                              <div className="d-flex justify-content-between align-items-center">
-                                 <span>{m.map.version || "No Info"}</span>
-                              </div>
-                           </div>
-                           {editing && (
+         <div className="collapse" id={`collapse${collapseId}`}>
+            <div className="d-flex gap-1 mt-2 flex-wrap">
+               {maps.map((m, i) => {
+                  const modsMult = m.mods?.reduce((mult, mod) => mult * (m.map.mods?.[mod] || 1), 1) || 1;
+                  return (
+                     <Card key={i} className="flex-shrink-0 flex-grow-1" style={{ flexBasis: "140px" }}>
+                        <Link href={`/maps/${mode}/${m.map.setid}`}>
+                           <CardImg
+                              src={buildUrl.beatmapsetCover(m.map.setid)}
+                              alt="Cover"
+                              style={{ objectFit: "cover" }}
+                           />
+                        </Link>
+                        <CardBody className="d-flex flex-column">
+                           <div className="d-flex justify-content-between">
                               <div>
-                                 <Button
-                                    size="sm"
-                                    variant="danger"
-                                    onClick={() =>
-                                       setMaps(arr => arr.filter(rmMap => rmMap.map._id !== m.map._id))
-                                    }
-                                 >
-                                    x
-                                 </Button>
+                                 <CardSubtitle className="text-break">
+                                    {m.map.artist || m.map._id} - {m.map.title}
+                                 </CardSubtitle>
+                                 <div className="d-flex justify-content-between align-items-center">
+                                    <span>{m.map.version || "No Info"}</span>
+                                 </div>
                               </div>
-                           )}
-                        </div>
-                        <div className="d-flex mt-auto">
-                           <span>{!m.mods ? "FM" : m.mods.join("") || "NM"}</span>
-                           {"rating" in m.map && (
-                              <span className="ms-auto">{(m.map.rating.rating * modsMult).toFixed()}</span>
-                           )}
-                        </div>
-                     </CardBody>
-                  </Card>
-               );
-            })}
+                              {editing && (
+                                 <div>
+                                    <Button
+                                       size="sm"
+                                       variant="danger"
+                                       onClick={() =>
+                                          setMaps(arr => arr.filter(rmMap => rmMap.map._id !== m.map._id))
+                                       }
+                                    >
+                                       x
+                                    </Button>
+                                 </div>
+                              )}
+                           </div>
+                           <div className="d-flex mt-auto">
+                              <span>{!m.mods ? "FM" : m.mods.join("") || "NM"}</span>
+                              {"rating" in m.map && (
+                                 <span className="ms-auto">{(m.map.rating.rating * modsMult).toFixed()}</span>
+                              )}
+                           </div>
+                        </CardBody>
+                     </Card>
+                  );
+               })}
+            </div>
          </div>
       </Form>
    );

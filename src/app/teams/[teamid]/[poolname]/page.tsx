@@ -13,7 +13,7 @@ import mathplus from "@/mathplus";
 import { auth } from "@/auth";
 
 export default async function TeamPoolPage({ params }) {
-   const { teamid: teamId, poolname: poolName } = await params;
+   const { teamid: teamId, poolname } = await params;
    const session = await auth();
    if (!teamId || !session?.user.id) return redirect("/teams");
    const team = await teamsDb.findOne({
@@ -21,6 +21,7 @@ export default async function TeamPoolPage({ params }) {
       "players.id": session.user.id
    });
    if (!team) return redirect("/teams");
+   const poolName = decodeURIComponent(poolname);
    const pool = team.pools.find(pool => pool.name === poolName);
    if (!pool) return redirect(`/teams/${teamId}`);
    const playerList = team.players.filter(p => !p.pending);
@@ -116,9 +117,14 @@ export default async function TeamPoolPage({ params }) {
                      >
                         <td className="bg-transparent">{map.mods ? map.mods.join("") || "NM" : "FM"}</td>
                         <td className="bg-transparent">
-                           {dbmap.artist} - {dbmap.title}
-                           <br />
-                           {dbmap.version}
+                           <Link
+                              href={`/maps/${team.mode}/${dbmap.setid}`}
+                              className="text-reset text-decoration-none"
+                           >
+                              {dbmap.artist} - {dbmap.title}
+                              <br />
+                              {dbmap.version}
+                           </Link>
                         </td>
                         <td className="bg-transparent">{(dbmap.rating.rating * modMult).toFixed()}</td>
                         {playerList.map(p => {
