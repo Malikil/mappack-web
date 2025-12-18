@@ -21,6 +21,7 @@ export default async function PlayerPool({ params, searchParams }) {
          title={`Pool for: ${players.map(p => p.osuname).join(", ")}`}
          target={parseInt(targetRating.rating.toFixed())}
          maplist={maplist}
+         mode={mode}
       />
    );
 }
