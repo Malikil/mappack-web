@@ -2,6 +2,7 @@ import { mapsDb } from "@/app/api/db/connection";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { ModPool as ModPoolType } from "@/types/rating";
 import PoolDisplayByMod from "../PoolDisplayByMod";
+import { GameMode } from "osu-web.js";
 
 const MODLIST: ModPoolType[] = ["nm", "hd", "hr", "dt", "fm"];
 
@@ -11,11 +12,14 @@ export default async function LobbyPool({ searchParams }) {
       Object.keys(stringParams).map(k => [k, (stringParams[k].split(",") || []).map(v => parseInt(v))])
    ) as Partial<Record<ModPoolType, number[]>> & { l?: string };
    parsedParams.l = decodeURIComponent(stringParams.l);
+   const mode: GameMode = ["osu", "fruits", "taiko", "mania"].includes(stringParams.m)
+      ? stringParams.m
+      : "osu";
 
    // Get all maps. If pools are rotated while the match is ongoing, the previous maps will still need
    // to be visible on the lobby's pool page
    const mapIds = MODLIST.flatMap(mod => parsedParams[mod] || []);
-   const maps: DbBeatmap[] = await mapsDb[stringParams.m || "osu"].find({ _id: { $in: mapIds } }).toArray();
+   const maps: DbBeatmap[] = await mapsDb[mode].find({ _id: { $in: mapIds } }).toArray();
    const maplist: Partial<Record<ModPoolType, DbBeatmap[]>> = Object.fromEntries(
       MODLIST.map(mod =>
          parsedParams[mod]
@@ -25,5 +29,5 @@ export default async function LobbyPool({ searchParams }) {
    );
    console.log(maplist);
 
-   return <PoolDisplayByMod title={parsedParams.l} maplist={maplist} />;
+   return <PoolDisplayByMod title={parsedParams.l} maplist={maplist} mode={mode} />;
 }
