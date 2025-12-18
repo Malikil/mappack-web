@@ -5,33 +5,6 @@ import { DbPlayer, ModeInfo } from "@/types/database.player";
 import { batchArray } from "../list-splitter";
 import { delay, seconds } from "@/time";
 
-export async function registerPlayer(osuid: number, osuname: string) {
-   const pve = {
-      rating: 1500,
-      rd: 350,
-      vol: 0.06,
-      games: 0,
-      songs: 0,
-      matches: []
-   };
-   const styles = Array.from({ length: parseInt(process.env.SKILL_CATEGORIES) }, () => Math.random() / 100);
-   const player = await playersDb.findOneAndUpdate(
-      { _id: osuid },
-      {
-         $set: {
-            osuname,
-            osu: { pve, styles, pools: [], mods: {} },
-            fruits: { pve, styles, pools: [], mods: {} },
-            taiko: { pve, styles, pools: [], mods: {} },
-            mania: { pve, styles, pools: [], mods: {} }
-         },
-         $unset: { hideLeaderboard: "" }
-      },
-      { upsert: true, returnDocument: "after" }
-   );
-   return player;
-}
-
 export async function createPvpRegistration(osuid: number, mode: GameMode = "osu") {
    console.log(`Create ${mode} pvp stats for ${osuid}`);
    const player = await playersDb.findOneAndUpdate(
@@ -86,7 +59,6 @@ export async function getPlayerList(playerIds: number[], mode: GameMode = "osu",
                { length: parseInt(process.env.SKILL_CATEGORIES) },
                () => Math.random() * 0.02 - 0.01
             ),
-            pools: [],
             mods: {}
          };
          addingUsers.push(
