@@ -28,6 +28,7 @@ export default async function PlayerPool({ searchParams }) {
             title={`Pool for: ${mode}${keyCount ? keyCount : ""} ${rating} rd${rd}`}
             target={rating}
             maplist={maplist}
+            mode={mode}
          />
       </div>
    );

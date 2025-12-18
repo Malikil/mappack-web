@@ -27,7 +27,6 @@ export default async function Profile({ params }) {
 
    const pvpStats = player[gamemode].pvp;
    const pveStats = player[gamemode].pve;
-   const pools = player[gamemode].pools;
    return (
       <div className="d-flex flex-column gap-2">
          <div className="d-flex justify-content-between align-items-center px-2">

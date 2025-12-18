@@ -1,4 +1,4 @@
-import { calcModStat } from "osu-web.js";
+import { calcModStat, GameMode } from "osu-web.js";
 import MapCard from "./MapCard";
 import { DbBeatmap } from "@/types/database.beatmap";
 
@@ -11,6 +11,7 @@ export default function ModPool(props: {
       action: (map: DbBeatmap) => any;
       condition?: (map: DbBeatmap) => boolean;
    }[];
+   mode: GameMode;
 }) {
    const maps = props.maps.map(m => {
       const result = { ...m };
@@ -35,7 +36,7 @@ export default function ModPool(props: {
                   mapActions={props.mapActions}
                   hideRatings
                   starsPlus={props.modshort === "hr" || props.modshort === "dt"}
-                  //rating={props.rating}
+                  mode={props.mode}
                />
             ))}
          </div>

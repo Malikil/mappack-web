@@ -82,6 +82,10 @@ export default function PvERules() {
                      <br />
                      Mode can be any of the following: osu, ctb, fruits, taiko, mania, 4k, 7k
                   </li>
+                  <li>
+                     <pre className="border rounded p-1 d-inline lh-lg">!request [map]</pre> - Add a map id to
+                     the play queue
+                  </li>
                </ul>
             </li>
          </ul>

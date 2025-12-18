@@ -32,6 +32,7 @@ export async function combineRatingsById(mode: GameMode, ...playerIds: number[])
 /**
  * Gives the outcome (0, 1) the player is expected to get on this map. If an array of skills is
  * provided they are also used in the prediction. Both skills arrays should be equal length.
+ * @deprecated Use function from rating-range
  * @param playerRating
  * @param mapRating
  * @param playerSkills

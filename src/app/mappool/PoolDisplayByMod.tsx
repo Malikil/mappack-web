@@ -1,15 +1,18 @@
 import ModPool from "@/components/mappool/Modpool";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { ModPool as ModPoolType } from "@/types/rating";
+import { GameMode } from "osu-web.js";
 
 export default function PoolDisplayByMod({
    title,
    target,
-   maplist
+   maplist,
+   mode
 }: {
    title: string;
    target?: number;
    maplist: Partial<Record<ModPoolType, DbBeatmap[]>>;
+   mode: GameMode;
 }) {
    return (
       <div>
@@ -38,6 +41,7 @@ export default function PoolDisplayByMod({
                         }[mod]
                      }
                      key={mod}
+                     mode={mode}
                   />
                ))}
          </div>

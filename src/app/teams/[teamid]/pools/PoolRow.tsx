@@ -20,7 +20,7 @@ export default function PoolRow({
    mode: GameMode;
    revalidate?: () => void;
 }) {
-   const collapseId = data.name.replace(/[\. ]/g, "");
+   const collapseId = data.name.replace(/[\. ']/g, "");
    const [name, setName] = useState(data.name);
    const [maps, setMaps] = useState(data.maps);
    const [changed, setChanged] = useState(false);

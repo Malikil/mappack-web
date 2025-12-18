@@ -42,20 +42,10 @@ export interface PvEInfo extends Rating {
    songs: number;
 }
 
-export interface PracticePool {
-   name: string;
-   maps: {
-      id: number;
-      mods?: Mod[];
-      scores: number[];
-   }[];
-}
-
 export interface ModeInfo {
    pvp?: PvPInfo;
    pve: PvEInfo;
    styles: number[];
-   pools: PracticePool[];
    mods: Partial<Record<Mod, number>>;
 }
 

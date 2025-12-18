@@ -16,6 +16,7 @@ import MapCardBody from "./MapCardBody";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { MapAction } from "@/types/mappool";
 import { Rating } from "@/types/rating";
+import { buildUrl, GameMode } from "osu-web.js";
 
 export type MapCardProps = {
    beatmap: DbBeatmap;
@@ -23,6 +24,7 @@ export type MapCardProps = {
    mapActions?: MapAction[];
    rating?: Rating;
    hideRatings?: boolean;
+   mode: GameMode;
 };
 
 export default function MapCard(props: MapCardProps) {
@@ -55,11 +57,19 @@ export default function MapCard(props: MapCardProps) {
                      action: (
                         <CardLink
                            key="Beatmap"
-                           href={`https://osu.ppy.sh/beatmapsets/${props.beatmap.setid}#osu/${props.beatmap._id}`}
+                           href={buildUrl.beatmap(props.beatmap._id)}
                            target="_blank"
                            rel="noopener noreferrer"
                         >
                            Beatmap
+                        </CardLink>
+                     )
+                  },
+                  {
+                     title: "Stats",
+                     action: (
+                        <CardLink key="Stats" href={`/maps/${props.mode}/${props.beatmap.setid}`}>
+                           Stats
                         </CardLink>
                      )
                   }

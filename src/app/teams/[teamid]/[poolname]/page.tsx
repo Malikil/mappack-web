@@ -2,15 +2,13 @@ import { teamsDb } from "@/app/api/db/connection";
 import { getMaplist } from "@/helpers/server/currentPack";
 import { ObjectId } from "mongodb";
 import { redirect } from "next/navigation";
-import { buildUrl, getModsEnum } from "osu-web.js";
-import { Table } from "react-bootstrap";
+import { getModsEnum } from "osu-web.js";
 import QualiButton from "./QualiButton";
 import { ChevronLeft } from "react-bootstrap-icons";
 import Link from "next/link";
-import { scoreFromResult } from "@/helpers/rating-range";
-import { combineRatingsById, predictOutcome } from "@/helpers/server/ratings";
-import mathplus from "@/mathplus";
+import { combineRatingsById } from "@/helpers/server/ratings";
 import { auth } from "@/auth";
+import StatsTable from "./StatsTable";
 
 export default async function TeamPoolPage({ params }) {
    const { teamid: teamId, poolname } = await params;
@@ -52,7 +50,15 @@ export default async function TeamPoolPage({ params }) {
             </h1>
             <QualiButton mode={team.mode} maps={pool.maps} />
          </div>
-         <Table>
+         <StatsTable
+            maplist={maplist}
+            mode={team.mode}
+            players={playerList}
+            pool={pool}
+            targetRating={combinedPlayerRatings.targetRating}
+            teamSize={team.teamSize}
+         />
+         {/* <Table>
             <thead>
                <tr>
                   <td>Mod</td>
@@ -148,7 +154,7 @@ export default async function TeamPoolPage({ params }) {
                   );
                })}
             </tbody>
-         </Table>
+         </Table> */}
       </div>
    );
 }
