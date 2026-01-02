@@ -8,6 +8,7 @@ export interface PracticePool {
       scores: {
          [playerid: number]: number[];
       };
+      sort?: number;
    }[];
 }
 

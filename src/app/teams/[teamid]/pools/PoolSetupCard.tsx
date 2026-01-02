@@ -23,6 +23,7 @@ export default async function PoolSetupCard({
          const map = maplist.find(dbbm => dbbm._id === m.id);
          return {
             mods: m.mods,
+            sort: m.sort,
             map
          };
       });
@@ -30,10 +31,10 @@ export default async function PoolSetupCard({
          name: p.name,
          maps: mapinfo.sort((a, b) => {
             if (!a.mods)
-               if (!b.mods) return 0;
+               if (!b.mods) return (a.sort || 1) - (b.sort || 1);
                else return 1;
             else if (!b.mods) return -1;
-            return getModsEnum(a.mods) - getModsEnum(b.mods);
+            return getModsEnum(a.mods) - getModsEnum(b.mods) || (a.sort || 1) - (b.sort || 1);
          })
       };
    });

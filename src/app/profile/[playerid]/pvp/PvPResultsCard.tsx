@@ -16,7 +16,6 @@ export default function PvPResultsCard({
    mode: GameMode;
    allowSubmit?: boolean;
 }) {
-   const provisional = pvpStats.wins < 3 && pvpStats.losses <= 3;
    return (
       <Card>
          <CardHeader>Vs. Players</CardHeader>
@@ -27,7 +26,7 @@ export default function PvPResultsCard({
                      [
                         "Rating",
                         pvpStats.rating.toFixed(0),
-                        provisional && "Provisional",
+                        pvpStats.rd >= 150 && "Provisional",
                         `(rd: ${pvpStats.rd.toFixed(0)})`
                      ],
                      ["Wins", pvpStats.wins],

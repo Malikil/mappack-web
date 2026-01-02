@@ -9,9 +9,13 @@ import { GameMode, Mod } from "osu-web.js";
 
 export async function addPool(teamid: string) {
    const session = await auth();
-   if (!(session?.user.id)) return { http: { status: 401 } };
+   if (!session?.user.id) return { http: { status: 401 } };
    const result = await teamsDb.updateOne(
-      { _id: ObjectId.createFromHexString(teamid), 'players.id': session.user.id, 'pools.name': { $ne: 'New Pool' } },
+      {
+         _id: ObjectId.createFromHexString(teamid),
+         "players.id": session.user.id,
+         "pools.name": { $ne: "New Pool" }
+      },
       {
          $push: {
             pools: {
@@ -28,10 +32,10 @@ export async function addPool(teamid: string) {
 
 export async function removePool(teamid: string, poolname: string) {
    const session = await auth();
-   if (!(session?.user.id)) return { http: { status: 401 }};
+   if (!session?.user.id) return { http: { status: 401 } };
 
    const result = await teamsDb.updateOne(
-      { _id: ObjectId.createFromHexString(teamid), 'players.id': session.user.id },
+      { _id: ObjectId.createFromHexString(teamid), "players.id": session.user.id },
       { $pull: { pools: { name: poolname } } }
    );
    console.log(result);
@@ -43,14 +47,14 @@ export async function savePool(
    teamid: string,
    oldName: string,
    newName: string,
-   maps: { map: { _id: number }; mods?: Mod[] }[]
+   maps: { map: { _id: number }; mods?: Mod[]; sort?: number }[]
 ) {
    const session = await auth();
-   if (!(session?.user.id)) throw new Error('401');
+   if (!session?.user.id) throw new Error("401");
    console.log(teamid);
    const teamObjectId = ObjectId.createFromHexString(teamid);
-   
-   const team = await teamsDb.findOne({ _id: teamObjectId, 'players.id': session.user.id });
+
+   const team = await teamsDb.findOne({ _id: teamObjectId, "players.id": session.user.id });
 
    if (oldName !== newName) {
       const nameConflict = team.pools.some(p => p.name === newName);
@@ -63,20 +67,28 @@ export async function savePool(
    );
    const updatedPool = {
       name: newName,
-      maps: maplist.map(m => ({
-         map: m,
-         mods: maps.find(mapMod => mapMod.map._id === m._id).mods,
-         scores: oldPool.maps.find(om => om.id === m._id)?.scores || {}
-      }))
+      maps: maplist.map(m => {
+         const poolmap = maps.find(f => f.map._id === m._id);
+         return {
+            ...poolmap,
+            map: m,
+            scores: oldPool.maps.find(om => om.id === m._id)?.scores || {}
+         };
+      })
    };
 
    const result = await teamsDb.updateOne(
-      { _id: teamObjectId, 'pools.name': oldName },
+      { _id: teamObjectId, "pools.name": oldName },
       {
          $set: {
-            'pools.$': {
+            "pools.$": {
                name: newName,
-               maps: updatedPool.maps.map(m => ({ id: m.map._id, mods: m.mods, scores: m.scores }))
+               maps: updatedPool.maps.map(m => ({
+                  id: m.map._id,
+                  mods: m.mods,
+                  scores: m.scores,
+                  ...(m.sort !== undefined ? { sort: m.sort } : {})
+               }))
             }
          }
       }

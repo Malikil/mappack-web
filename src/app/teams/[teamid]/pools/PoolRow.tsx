@@ -16,23 +16,24 @@ export default function PoolRow({
    revalidate
 }: {
    teamid: string;
-   data: { name: string; maps: { map: DbBeatmap; mods?: Mod[] }[] };
+   data: { name: string; maps: { map: DbBeatmap; mods?: Mod[]; sort?: number }[] };
    mode: GameMode;
    revalidate?: () => void;
 }) {
    const collapseId = data.name.replace(/[\. ']/g, "");
    const [name, setName] = useState(data.name);
-   const [maps, setMaps] = useState(data.maps);
+   const [maps, setMaps] = useState([...data.maps]);
    const [changed, setChanged] = useState(false);
    const [addMapId, setAddMapId] = useState("");
    const [addingMap, setAddingMap] = useState(false);
    const [editing, setEditing] = useState(false);
 
    useEffect(() => {
+      console.log(maps);
       setChanged(
          data.name !== name ||
             maps.length !== data.maps.length ||
-            maps.some((m, i) => m.map._id !== data.maps[i]?.map._id)
+            maps.some((m, i) => m.map._id !== data.maps[i]?.map._id || m.sort !== data.maps[i].sort)
       );
    }, [data, name, maps]);
 
@@ -129,7 +130,7 @@ export default function PoolRow({
                      onClick={() => {
                         if (changed) {
                            setName(data.name);
-                           setMaps(data.maps);
+                           setMaps([...data.maps]);
                         }
                         setEditing(false);
                      }}
@@ -187,7 +188,30 @@ export default function PoolRow({
                                  </div>
                               )}
                            </div>
-                           <div className="d-flex mt-auto">
+                           <div className="mt-auto" />
+                           {editing && (
+                              <div>
+                                 <FormControl
+                                    placeholder="Sort"
+                                    value={m.sort || ""}
+                                    onChange={e =>
+                                       setMaps(arr =>
+                                          arr.map((m, idx) =>
+                                             idx === i
+                                                ? e.target.value
+                                                   ? { ...m, sort: parseInt(e.target.value) }
+                                                   : (() => {
+                                                        const { sort, ...rest } = m;
+                                                        return rest;
+                                                     })()
+                                                : m
+                                          )
+                                       )
+                                    }
+                                 />
+                              </div>
+                           )}
+                           <div className="d-flex">
                               <span>{!m.mods ? "FM" : m.mods.join("") || "NM"}</span>
                               {"rating" in m.map && (
                                  <span className="ms-auto">{(m.map.rating.rating * modsMult).toFixed()}</span>

@@ -13,6 +13,7 @@ export default function QualiButton({
 }) {
    return (
       <Button
+         className="text-nowrap"
          onClick={() => {
             let last = "";
             const command = `!quali ${mode} ${maps

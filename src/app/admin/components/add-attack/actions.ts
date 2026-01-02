@@ -20,10 +20,18 @@ export async function adminPvp(formData: FormData) {
             message: "Invalid 1v1 match"
          }
       };
-   await mpLinksDb.insertOne({ _id: matchIdSegment }).catch(err => {
+   try {
+      await mpLinksDb.insertOne({ _id: matchIdSegment });
+   } catch (err) {
       console.warn("Admin pvp add existing mp link");
-      console.warn(err);
-   });
+      console.error(err);
+      return {
+         http: {
+            status: 400,
+            message: "MP link already added"
+         }
+      };
+   }
    if (
       lobbyResults.winnerId === "Red" ||
       lobbyResults.winnerId === "Blue" ||

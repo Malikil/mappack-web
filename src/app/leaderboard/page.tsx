@@ -27,7 +27,7 @@ export default async function Leaderboard() {
       .find(
          {
             hideLeaderboard: { $ne: true },
-            $or: [{ [`${gamemode}.pvp.wins`]: { $gt: 2 } }, { [`${gamemode}.pvp.losses`]: { $gt: 3 } }]
+            [`${gamemode}.pvp.rd`]: { $lt: 150 }
          },
          { sort: [`${gamemode}.pvp.rating`, -1], limit: 100 }
       )

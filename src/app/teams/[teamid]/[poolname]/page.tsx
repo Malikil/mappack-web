@@ -25,10 +25,10 @@ export default async function TeamPoolPage({ params }) {
    const playerList = team.players.filter(p => !p.pending);
    pool.maps.sort((a, b) => {
       if (!a.mods)
-         if (!b.mods) return 0;
+         if (!b.mods) return (a.sort || 1) - (b.sort || 1);
          else return 1;
       else if (!b.mods) return -1;
-      return getModsEnum(a.mods) - getModsEnum(b.mods);
+      return getModsEnum(a.mods) - getModsEnum(b.mods) || (a.sort || 1) - (b.sort || 1);
    });
 
    const maplist = await getMaplist(
