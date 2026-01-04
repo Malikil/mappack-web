@@ -78,7 +78,6 @@ export function matchResultValue(
 
 /**
  * @param result Value (0, 1) the player is expected to get
- * @param gamemode
  * @returns
  */
 export function scoreFromResult(
