@@ -12,6 +12,7 @@ import {
 import { mapsDb } from "@/app/api/db/connection";
 import { PvPMatchHistory } from "@/types/database.player";
 import { DbBeatmap } from "@/types/database.beatmap";
+import { effectiveRating } from "@/helpers/rating-range";
 
 export default async function MatchHistoryItem({ match, mode }: { match: PvPMatchHistory; mode: GameMode }) {
    const maplist: DbBeatmap[] = await mapsDb[mode]
@@ -118,7 +119,10 @@ export default async function MatchHistoryItem({ match, mode }: { match: PvPMatc
                                  <span>{m.mods === null ? "-" : mods.join("") || "NM"}</span>
                                  {"rating" in map && (
                                     <span className="ms-auto">
-                                       {(map.rating.rating * modsMult).toFixed()}
+                                       {(modsMult !== 1
+                                          ? effectiveRating(map.rating, mode, modsMult)
+                                          : map.rating.rating
+                                       ).toFixed()}
                                     </span>
                                  )}
                               </div>

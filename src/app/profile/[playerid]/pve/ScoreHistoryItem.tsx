@@ -5,6 +5,7 @@ import { ArrowDownRightCircle, ArrowUpRightCircle, DashCircle, PlusCircle } from
 import { MatchHistory } from "@/types/database.player";
 import { mapsDb } from "@/app/api/db/connection";
 import PvEMap from "@/components/maps/PvEMap";
+import { effectiveRating } from "@/helpers/rating-range";
 
 export default async function ScoreHistoryItem({ match, mode }: { match: MatchHistory; mode: GameMode }) {
    const maplist = await mapsDb[mode].find({ _id: { $in: match.songs.map(map => map.map.id) } }).toArray();
@@ -71,7 +72,12 @@ export default async function ScoreHistoryItem({ match, mode }: { match: MatchHi
                            score={m.score}
                            setid={map.setid}
                            version={map.version}
-                           rating={m.map?.rating.rating * modsMult}
+                           rating={
+                              m.map &&
+                              (modsMult !== 1
+                                 ? effectiveRating(m.map.rating, mode, modsMult)
+                                 : m.map.rating.rating)
+                           }
                         />
                      );
                   })}

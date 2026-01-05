@@ -1,6 +1,6 @@
 "use client";
 
-import { scoreFromResult, predictOutcome } from "@/helpers/rating-range";
+import { scoreFromResult, predictOutcome, effectiveRating } from "@/helpers/rating-range";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { PracticePool } from "@/types/database.team";
 import { Rating } from "@/types/rating";
@@ -72,6 +72,7 @@ export default function StatsTable({
                   { sum: 0, wsum: 0, wcount: 0 }
                );
             const wavg = wsum / wcount;
+            const effRating = effectiveRating(dbmap.rating, mode, modMult);
             return [
                {
                   sort: map.mods ? getModsEnum(map.mods, true) : 1 / 0,
@@ -88,7 +89,7 @@ export default function StatsTable({
                      </Link>
                   )
                },
-               { display: (dbmap.rating.rating * modMult).toFixed(), sort: dbmap.rating.rating * modMult },
+               { display: effRating.toFixed(), sort: effRating },
                ...players.map(p => {
                   const sum = map.scores[p.id]?.reduce((s, c) => s + c);
                   return {

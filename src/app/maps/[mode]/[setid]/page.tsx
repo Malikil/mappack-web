@@ -6,6 +6,8 @@ import Image from "next/image";
 import { Card, CardBody, CardSubtitle, CardTitle } from "react-bootstrap";
 import { StylesSkillsChart } from "@/components/skills/StylesSkillsChart";
 import { convertTime } from "@/time";
+import { effectiveRating } from "@/helpers/rating-range";
+import { Rating } from "@/types/rating";
 
 export default async function MapProfile({ params }) {
    const stringParams = await params;
@@ -13,7 +15,17 @@ export default async function MapProfile({ params }) {
    const mode = stringParams.mode as GameMode;
    if (!setid || !["osu", "fruits", "taiko", "mania"].includes(mode)) return redirect("/");
 
-   const maps = await mapsDb[mode].find({ setid }, { sort: [["rating.rating", 1], ['stars', 1]] }).toArray();
+   const maps = await mapsDb[mode]
+      .find(
+         { setid },
+         {
+            sort: [
+               ["rating.rating", 1],
+               ["stars", 1]
+            ]
+         }
+      )
+      .toArray();
    if (!maps || maps.length < 1) return <h1>Unknown Beatmap</h1>;
 
    return (
@@ -101,8 +113,10 @@ export default async function MapProfile({ params }) {
                                  <Card key={mod}>
                                     <CardBody>
                                        <CardTitle>{mod}</CardTitle>
+                                       <CardSubtitle>
+                                          {effectiveRating(map.rating, mode, modmult).toFixed()}
+                                       </CardSubtitle>
                                        <CardSubtitle>{modmult.toFixed(2)}x</CardSubtitle>
-                                       <CardSubtitle>{(map.rating.rating * modmult).toFixed()}</CardSubtitle>
                                     </CardBody>
                                  </Card>
                               );

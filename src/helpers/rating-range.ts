@@ -110,6 +110,28 @@ export function scoreFromResult(
    return Math.max(0, Math.min(predictScore / modMult, 1000000));
 }
 
+export function effectiveRating(baseRating: Rating, mode: GameMode, modMult: number) {
+   const baseOutcome = 0.5;
+   const baseScore = scoreFromResult(baseOutcome, mode);
+   const targetScore = baseScore / modMult;
+   const targetOutcome = matchResultValue(targetScore, mode);
+   console.log(`Rating: ${baseRating.rating.toFixed()} Multiplier: ${modMult.toFixed(2)}`);
+   console.log(`Score: ${baseScore.toFixed()} / ${modMult.toFixed(2)} = ${targetScore.toFixed()}`);
+   console.log(`Target outcome: ${targetOutcome.toFixed(4)}`);
+
+   let [lo, hi] = [baseRating.rating, baseRating.rating * modMult].sort((a, b) => a - b);
+   console.log(`Search ratings within ${lo.toFixed()} to ${hi.toFixed()}`);
+   for (let i = 0; i < 25; i++) {
+      const mid = (lo + hi) / 2;
+      const outcome = predictOutcome(baseRating, { ...baseRating, rating: mid });
+      if (outcome > targetOutcome) lo = mid;
+      else hi = mid;
+   }
+   console.log(`Found rating: ${((lo + hi) / 2).toFixed()}`);
+
+   return (lo + hi) / 2;
+}
+
 export function withinRange(...ratings: { rating: number; rd: number }[]) {
    ratings = ratings.filter(r => r);
    if (ratings.length < 2) return false;
