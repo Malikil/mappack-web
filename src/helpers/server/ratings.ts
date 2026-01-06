@@ -199,6 +199,18 @@ export function getUpdatedModsFromBatch(
    };
 }
 
+function ensureStyleLength(styles: number[], n: number) {
+   if (styles.length === n) return styles;
+   const padded = styles.slice();
+   while (padded.length < n) padded.push(((Math.random() - 0.5) * Math.sqrt(n)) / 100);
+   return padded.slice(0, n);
+}
+function normalize(vec: number[], maxNorm = 1) {
+   const norm = Math.hypot(...vec);
+   if (norm <= maxNorm) return vec;
+   return vec.map(v => v * (maxNorm / norm));
+}
+
 export function getUpdatedStylesFromBatch(
    results: {
       mode: GameMode;
@@ -216,13 +228,24 @@ export function getUpdatedStylesFromBatch(
    }[]
 ) {
    const nSkills = parseInt(process.env.SKILL_CATEGORIES);
+   const skillsEnsuredResults = results.map(r => ({
+      ...r,
+      player: {
+         ...r.player,
+         styles: ensureStyleLength(r.player.styles, nSkills)
+      },
+      map: {
+         ...r.map,
+         styles: ensureStyleLength(r.map.styles, nSkills)
+      }
+   }));
    const playerGradientsList: {
       [id: number]: Partial<Record<GameMode, number[]>>;
    } = {};
    const mapGradientsList: {
       [id: number]: Partial<Record<GameMode, number[]>>;
    } = {};
-   for (const { mode, score, player, map } of results) {
+   for (const { mode, score, player, map } of skillsEnsuredResults) {
       // Get the appropriate gradients
       if (!(player._id in playerGradientsList)) playerGradientsList[player._id] = {};
       const playerGradients = playerGradientsList[player._id];
@@ -235,11 +258,12 @@ export function getUpdatedStylesFromBatch(
       const scoreResult = matchResultValue(score, mode);
       const expectedResult = predictOutcome(player.rating, map.rating, player.styles, map.styles);
       const error = scoreResult - expectedResult;
+      const scale = 1 / Math.sqrt(nSkills);
       for (let i = 0; i < nSkills; i++) {
          // Gradient for player skill comes from sum of errors for each map
-         playerGradients[mode][i] += error * map.styles[i];
+         playerGradients[mode][i] += scale * error * map.styles[i];
          // Thus, gradient for map requirements should come from errors for each player
-         mapGradients[mode][i] += error * player.styles[i];
+         mapGradients[mode][i] += scale * error * player.styles[i];
       }
    }
    return {
@@ -249,12 +273,15 @@ export function getUpdatedStylesFromBatch(
                idStr,
                Object.fromEntries(
                   Object.entries(modeGradients).map(([mode, gradients]) => {
-                     const playerOldStyles = results.find(
+                     const playerOldStyles = skillsEnsuredResults.find(
                         r => r.player._id === parseInt(idStr) && r.mode === mode
                      ).player.styles;
-                     const playerNewStyles = gradients.map(
-                        (v, i) =>
-                           v + PLAYER_STYLES_LEARNING_RATE * (playerOldStyles[i] - STYLES_REGULARIZATION * v)
+                     const playerNewStyles = normalize(
+                        gradients.map(
+                           (v, i) =>
+                              playerOldStyles[i] +
+                              PLAYER_STYLES_LEARNING_RATE * (v - STYLES_REGULARIZATION * playerOldStyles[i])
+                        )
                      );
                      console.log("Player", idStr, "Old:", playerOldStyles, "New:", playerNewStyles);
                      return [mode, playerNewStyles];
@@ -269,10 +296,15 @@ export function getUpdatedStylesFromBatch(
                idStr,
                Object.fromEntries(
                   Object.entries(modeGradients).map(([mode, gradients]) => {
-                     const mapOldStyles = results.find(r => r.map._id === parseInt(idStr) && r.mode === mode)
-                        .map.styles;
-                     const mapNewStyles = gradients.map(
-                        (v, i) => v + MAP_STYLE_LEARNING_RATE * (mapOldStyles[i] - STYLES_REGULARIZATION * v)
+                     const mapOldStyles = skillsEnsuredResults.find(
+                        r => r.map._id === parseInt(idStr) && r.mode === mode
+                     ).map.styles;
+                     const mapNewStyles = normalize(
+                        gradients.map(
+                           (v, i) =>
+                              mapOldStyles[i] +
+                              MAP_STYLE_LEARNING_RATE * (v - STYLES_REGULARIZATION * mapOldStyles[i])
+                        )
                      );
                      console.log("Map", idStr, "Old:", mapOldStyles, "New:", mapNewStyles);
                      return [mode, mapNewStyles];
