@@ -72,6 +72,7 @@ export function prepBeatmapData(
    predictor: PolynomialRegressor & { meta?: { max: number } }
 ): DbBeatmap {
    const { max } = predictor.meta;
+   const nSkills = parseInt(process.env.SKILL_CATEGORIES);
    const [[ratingRaw, DT, HD, HR]] = predictor.predict([
       createPredictorInput(
          {
@@ -114,10 +115,7 @@ export function prepBeatmapData(
          sliders: osuBeatmap.count_sliders
       },
       rating,
-      styles: Array.from(
-         { length: parseInt(process.env.SKILL_CATEGORIES) },
-         () => Math.random() * 0.02 - 0.01
-      ),
+      styles: Array.from({ length: nSkills }, () => ((Math.random() - 0.5) * Math.sqrt(nSkills)) / 100),
       mods: { DT }
    };
    if (osuBeatmap.mode !== "mania") {

@@ -5,7 +5,7 @@ import { verify } from "./functions";
 // import AdminNotify from "./components/admin-notify/AdminNotify";
 import DifficultyChart from "./components/difficulty-chart/DifficultyChart";
 import AddAttack from "./components/add-attack/AddAttack";
-//import TournamentSubmit from "./components/bulk-add/TournamentSubmit";
+import TournamentSubmit from "./components/bulk-add/TournamentSubmit";
 
 export default async function Admin() {
    const { session } = await verify();
@@ -16,7 +16,7 @@ export default async function Admin() {
          <div className="d-flex gap-3 flex-wrap">
             <AdminActions />
             <AddAttack />
-            {/* <TournamentSubmit /> */}
+            <TournamentSubmit />
          </div>
          <DifficultyChart chartVersion="scaling" />
          <DifficultyChart chartVersion="recent" />

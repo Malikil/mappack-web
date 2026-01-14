@@ -1,11 +1,7 @@
-import { MAX_TARGETS, MIN_TARGETS } from "@/helpers/rating-range";
+import { MAX_TARGETS, MIN_TARGETS, MIN_ABSOLUTE, MAX_ABSOLUTE } from "@/helpers/rating-range";
 import { Table } from "react-bootstrap";
 
 export default function GeneralInfo() {
-   const osuTarget = (MIN_TARGETS.osu + MAX_TARGETS.osu) / 2000;
-   const fruitsTarget = (MIN_TARGETS.fruits + MAX_TARGETS.fruits) / 2000;
-   const taikoTarget = (MIN_TARGETS.taiko + MAX_TARGETS.taiko) / 2000;
-   const maniaTarget = (MIN_TARGETS.mania + MAX_TARGETS.mania) / 2000;
    return (
       <ul>
          <li>Each map is given a difficulty rating on the system</li>
@@ -18,36 +14,46 @@ export default function GeneralInfo() {
                      <th>Mode</th>
                      <th>Minimum</th>
                      <th>Maximum</th>
-                     <th>Target</th>
+                     <th>Scorable Range</th>
                   </tr>
                </thead>
                <tbody>
                   <tr>
                      <td>osu!</td>
-                     <td>{MIN_TARGETS.osu / 1000}k</td>
-                     <td>{MAX_TARGETS.osu / 1000}k</td>
-                     <td>{osuTarget}k</td>
+                     <td>{(MIN_TARGETS.osu / 1000).toFixed()}k</td>
+                     <td>{(MAX_TARGETS.osu / 1000).toFixed()}k</td>
+                     <td>
+                        {(MIN_ABSOLUTE.osu / 1000).toFixed()}k - {(MAX_ABSOLUTE.osu / 1000).toFixed()}k
+                     </td>
                   </tr>
                   <tr>
                      <td>Catch</td>
-                     <td>{MIN_TARGETS.fruits / 1000}k</td>
-                     <td>{MAX_TARGETS.fruits / 1000}k</td>
-                     <td>{fruitsTarget}k</td>
+                     <td>{(MIN_TARGETS.fruits / 1000).toFixed()}k</td>
+                     <td>{(MAX_TARGETS.fruits / 1000).toFixed()}k</td>
+                     <td>
+                        {(MIN_ABSOLUTE.fruits / 1000).toFixed()}k - {(MAX_ABSOLUTE.fruits / 1000).toFixed()}k
+                     </td>
                   </tr>
                   <tr>
                      <td>Taiko</td>
-                     <td>{MIN_TARGETS.taiko / 1000}k</td>
-                     <td>{MAX_TARGETS.taiko / 1000}k</td>
-                     <td>{taikoTarget}k</td>
+                     <td>{(MIN_TARGETS.taiko / 1000).toFixed()}k</td>
+                     <td>{(MAX_TARGETS.taiko / 1000).toFixed()}k</td>
+                     <td>
+                        {(MIN_ABSOLUTE.taiko / 1000).toFixed()}k - {(MAX_ABSOLUTE.taiko / 1000).toFixed()}k
+                     </td>
                   </tr>
                   <tr>
                      <td>Mania</td>
-                     <td>{MIN_TARGETS.mania / 1000}k</td>
-                     <td>{MAX_TARGETS.mania / 1000}k</td>
-                     <td>{maniaTarget}k</td>
+                     <td>{(MIN_TARGETS.mania / 1000).toFixed()}k</td>
+                     <td>{(MAX_TARGETS.mania / 1000).toFixed()}k</td>
+                     <td>
+                        {(MIN_ABSOLUTE.mania / 1000).toFixed()}k - {(MAX_ABSOLUTE.mania / 1000).toFixed()}k
+                     </td>
                   </tr>
                </tbody>
             </Table>
+            These targets are updated after the qualifier stage of each world cup. By taking an average of the
+            previous target and new qualifier scores.
          </li>
       </ul>
    );

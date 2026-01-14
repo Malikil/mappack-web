@@ -11,7 +11,7 @@ export default function TournamentSubmit() {
             <CardTitle>Multi-Submit MP Links</CardTitle>
             <Form
                className="d-flex flex-column gap-2 flex-fill"
-               action={async (formData) => {
+               action={async formData => {
                   serverActionToast(submitTournamentStage(formData), {
                      pending: "Submitting",
                      success: "Stage submitted"
@@ -19,12 +19,21 @@ export default function TournamentSubmit() {
                }}
             >
                <FormGroup>
-                  <FormLabel>Mapset ID</FormLabel>
-                  <FormControl as="textarea" name="mp" placeholder="osu.ppy.sh/mp/12345" rows={6} />
+                  <FormLabel>Multiplayer ID</FormLabel>
+                  <FormControl
+                     as="textarea"
+                     name="mp"
+                     placeholder={"osu.ppy.sh/mp/12345\n12345\netc..."}
+                     rows={6}
+                  />
                </FormGroup>
                <div className="mt-auto d-flex justify-content-end gap-1">
-                  <Button type="submit" name="submitType" value='pve'>Submit PvE</Button>
-                  <Button type="submit" name="submitType" value='pvp'>Submit PvP</Button>
+                  <Button type="submit" name="submitType" value="pve">
+                     Submit PvE
+                  </Button>
+                  <Button type="submit" name="submitType" value="pvp">
+                     Submit PvP
+                  </Button>
                </div>
             </Form>
          </CardBody>
