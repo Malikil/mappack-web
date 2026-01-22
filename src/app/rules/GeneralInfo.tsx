@@ -1,4 +1,10 @@
-import { MAX_TARGETS, MIN_TARGETS, MIN_ABSOLUTE, MAX_ABSOLUTE } from "@/helpers/rating-range";
+import {
+   MAX_TARGETS,
+   MIN_TARGETS,
+   MIN_ABSOLUTE,
+   MAX_ABSOLUTE,
+   UPDATE_REFERENCE
+} from "@/helpers/rating-range";
 import { Table } from "react-bootstrap";
 
 export default function GeneralInfo() {
@@ -15,6 +21,7 @@ export default function GeneralInfo() {
                      <th>Minimum</th>
                      <th>Maximum</th>
                      <th>Scorable Range</th>
+                     <th>Since</th>
                   </tr>
                </thead>
                <tbody>
@@ -25,6 +32,7 @@ export default function GeneralInfo() {
                      <td>
                         {(MIN_ABSOLUTE.osu / 1000).toFixed()}k - {(MAX_ABSOLUTE.osu / 1000).toFixed()}k
                      </td>
+                     <td>{UPDATE_REFERENCE.osu}</td>
                   </tr>
                   <tr>
                      <td>Catch</td>
@@ -33,6 +41,7 @@ export default function GeneralInfo() {
                      <td>
                         {(MIN_ABSOLUTE.fruits / 1000).toFixed()}k - {(MAX_ABSOLUTE.fruits / 1000).toFixed()}k
                      </td>
+                     <td>{UPDATE_REFERENCE.fruits}</td>
                   </tr>
                   <tr>
                      <td>Taiko</td>
@@ -41,6 +50,7 @@ export default function GeneralInfo() {
                      <td>
                         {(MIN_ABSOLUTE.taiko / 1000).toFixed()}k - {(MAX_ABSOLUTE.taiko / 1000).toFixed()}k
                      </td>
+                     <td>{UPDATE_REFERENCE.taiko}</td>
                   </tr>
                   <tr>
                      <td>Mania</td>
@@ -49,6 +59,7 @@ export default function GeneralInfo() {
                      <td>
                         {(MIN_ABSOLUTE.mania / 1000).toFixed()}k - {(MAX_ABSOLUTE.mania / 1000).toFixed()}k
                      </td>
+                     <td>{UPDATE_REFERENCE.mania}</td>
                   </tr>
                </tbody>
             </Table>

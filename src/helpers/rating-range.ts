@@ -5,7 +5,6 @@ import { Glicko2 } from "glicko2";
 import { GameMode, Mod } from "osu-web.js";
 
 const SIGMOID_WIDTH = 6;
-// Updated: OWC'25 MWC7K'26
 export const MIN_ABSOLUTE = {
    osu: 92099,
    fruits: 500000,
@@ -29,6 +28,12 @@ export const MAX_ABSOLUTE = {
    fruits: 900000,
    taiko: 900000,
    mania: 963416
+};
+export const UPDATE_REFERENCE = {
+   osu: "OWC'25",
+   fruits: "",
+   taiko: "",
+   mania: "MWC7K'26"
 };
 
 /**
@@ -68,23 +73,28 @@ export function matchResultValue(
       map: Partial<Record<Mod, number>>;
    } = null
 ) {
+   //console.log(`Convert ${score.toFixed()} to result`);
    if (mods) {
       const playerMult = mods.mods.reduce((mult, mod) => mult * (mods.player[mod] || 1), 1);
       const mapMult = mods.mods.reduce((mult, mod) => mult * (mods.map[mod] || 1), 1);
       score *= playerMult * mapMult;
+      //console.log(`Mods: x${(playerMult * mapMult).toFixed(2)} = ${score}`);
    }
    const min: number = MIN_TARGETS[gamemode];
    const max: number = MAX_TARGETS[gamemode];
    const absMin = MIN_ABSOLUTE[gamemode];
    const absMax = MAX_ABSOLUTE[gamemode];
 
+   //console.log(`Clamp to [${absMin}, ${absMax}]`);
    if (score < absMin) return 0;
    if (score > absMax) return 1;
 
    const mid = (min + max) / 2;
    const width = max - min;
    const k = SIGMOID_WIDTH / width;
+   //console.log(`k: ${k}`);
    const raw = sigmoid(k * (score - mid));
+   //console.log(`Raw sigmoid score: ${raw}`);
 
    const fMin = sigmoid(k * (absMin - mid));
    const fMax = sigmoid(k * (absMax - mid));
@@ -127,15 +137,15 @@ export function scoreFromResult(
 }
 
 export function effectiveRating(baseRating: Rating, mode: GameMode, modMult: number) {
+   console.log(`Rating: ${baseRating.rating.toFixed()} Multiplier: ${modMult.toFixed(2)}`);
    const baseOutcome = 0.5;
    const baseScore = scoreFromResult(baseOutcome, mode);
    const targetScore = baseScore / modMult;
-   const targetOutcome = matchResultValue(targetScore, mode);
-   console.log(`Rating: ${baseRating.rating.toFixed()} Multiplier: ${modMult.toFixed(2)}`);
    console.log(`Score: ${baseScore.toFixed()} / ${modMult.toFixed(2)} = ${targetScore.toFixed()}`);
-   console.log(`Target outcome: ${targetOutcome.toFixed()}`);
+   const targetOutcome = matchResultValue(targetScore, mode);
+   console.log(`Target outcome: ${targetOutcome.toFixed(4)}`);
 
-   let [lo, hi] = [baseRating.rating, baseRating.rating * modMult * Math.sqrt(modMult)].sort((a, b) => a - b);
+   let [lo, hi] = [baseRating.rating, baseRating.rating * modMult * modMult].sort((a, b) => a - b);
    console.log(`Search ratings within ${lo.toFixed()} to ${hi.toFixed()}`);
    let outcome = 0.5;
    for (let i = 0; i < 25; i++) {

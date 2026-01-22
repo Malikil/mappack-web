@@ -39,18 +39,21 @@ export async function submitTournamentStage(formData: FormData) {
             console.warn(mp, "Invalid match");
             continue;
          }
+         await delay(seconds(0.5));
          if (
             lobbyResult.winnerId === "Red" ||
             lobbyResult.winnerId === "Blue" ||
             lobbyResult.loserId === "Red" ||
             lobbyResult.loserId === "Blue"
          ) {
+            console.log(mp, "Add teams data");
             await addTeamsData(lobbyResult);
             await mpLinksDb.insertOne({ _id: mp });
             continue;
          }
          // This point is only reached if lobbyResults is a 1v1
          // Verify registrations for both players
+         console.log(mp, "Prep players for 1v1");
          const osuClient = new LegacyClient(process.env.OSU_LEGACY_KEY);
          const players = await playersDb
             .find({ $or: [{ _id: lobbyResult.winnerId }, { _id: lobbyResult.loserId }] })
@@ -69,6 +72,7 @@ export async function submitTournamentStage(formData: FormData) {
                await createPvpRegistration(player._id, lobbyResult.mode);
             }
          // Add the match results
+         console.log(mp, "Add 1v1 data");
          await add1v1Match(lobbyResult as MpLobbyResults);
          await mpLinksDb.insertOne({ _id: mp });
       }

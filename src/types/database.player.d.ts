@@ -1,5 +1,5 @@
 import { GameMode } from "osu-web.js";
-import { ModPool, Rating, SimpleMod } from "./rating";
+import { Rating } from "./rating";
 
 export interface MatchHistoryMap {
    id: number;

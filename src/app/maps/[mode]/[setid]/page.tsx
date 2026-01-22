@@ -7,7 +7,6 @@ import { Card, CardBody, CardSubtitle, CardTitle } from "react-bootstrap";
 import { StylesSkillsChart } from "@/components/skills/StylesSkillsChart";
 import { convertTime } from "@/time";
 import { effectiveRating } from "@/helpers/rating-range";
-import { Rating } from "@/types/rating";
 
 export default async function MapProfile({ params }) {
    const stringParams = await params;
