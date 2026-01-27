@@ -18,7 +18,19 @@ export default async function PlayerPool({ searchParams }) {
    }
    const rating: number = parseInt(stringParams.r) || 1500;
    const rd: number = parseInt(stringParams.d) || 125;
-   const { maps: maplist } = await getMappool({ rating, rd }, mode, keyCount);
+   const nmCount = parseInt(stringParams.nm || 4);
+   const hdCount = parseInt(stringParams.hd || 3);
+   const hrCount = parseInt(stringParams.hr || 3);
+   const dtCount = parseInt(stringParams.dt || 3);
+   const fmCount = parseInt(stringParams.fm || 3);
+   const { maps: maplist } = await getMappool({ rating, rd }, mode, {
+      keyCount,
+      nmCount,
+      hdCount,
+      hrCount,
+      dtCount,
+      fmCount
+   });
 
    return (
       <div>

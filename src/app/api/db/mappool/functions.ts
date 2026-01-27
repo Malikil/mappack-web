@@ -12,7 +12,27 @@ type ExpectedScores = {
 };
 type MapWithScores = DbBeatmap & { expectedScores: ExpectedScores };
 
-export async function getMappool(targetRating: Rating, mode: GameMode, keyCount = 0) {
+export async function getMappool(
+   targetRating: Rating,
+   mode: GameMode,
+   options: {
+      keyCount?: number;
+      nmCount?: number;
+      hdCount?: number;
+      hrCount?: number;
+      dtCount?: number;
+      fmCount?: number;
+   } = {}
+) {
+   const opts = {
+      keyCount: 0,
+      nmCount: 4,
+      hdCount: 3,
+      hrCount: 3,
+      dtCount: 3,
+      fmCount: 3,
+      ...options
+   };
    console.log("Get mappool for target:", targetRating);
    const loggingMap = (m: MapWithScores) => ({
       artist: m.artist,
@@ -25,18 +45,18 @@ export async function getMappool(targetRating: Rating, mode: GameMode, keyCount 
    const { nmCount, hdCount, hrCount, dtCount, fmCount } =
       mode === "mania"
          ? {
-              nmCount: 12,
+              nmCount: opts.hdCount + opts.hrCount + opts.dtCount + opts.fmCount,
               hdCount: 0,
               hrCount: 0,
               dtCount: 0,
               fmCount: 0
            }
          : {
-              nmCount: 4,
-              hdCount: 3,
-              hrCount: 3,
-              dtCount: 3,
-              fmCount: 3
+              nmCount: opts.nmCount,
+              hdCount: opts.hdCount,
+              hrCount: opts.hrCount,
+              dtCount: opts.dtCount,
+              fmCount: opts.fmCount
            };
    const usedSets = new Set<number>();
    const pick = (
@@ -60,7 +80,7 @@ export async function getMappool(targetRating: Rating, mode: GameMode, keyCount 
          return adiff - bdiff;
       };
 
-   const currentPack = await getCurrentPack(mode, keyCount);
+   const currentPack = await getCurrentPack(mode, opts.keyCount);
    const maplist = currentPack.map(m => {
       const outcome = predictOutcome(targetRating, m.rating);
       return {

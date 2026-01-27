@@ -20,7 +20,7 @@ export const GET = async (req: NextRequest) => {
 
    // Get ratings
    const { targetRating } = await combineRatingsById(mode, ...playerIds);
-   const { maps } = await getMappool(targetRating, mode, keyCount);
+   const { maps } = await getMappool(targetRating, mode, { keyCount });
    // Move NM to FM for mania
    if (mode === "mania") {
       maps.fm = maps.nm;
