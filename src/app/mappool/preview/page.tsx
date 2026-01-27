@@ -34,10 +34,20 @@ export default async function PlayerPool({ searchParams }) {
 
    return (
       <div>
-         <TargetSelector initRating={rating} initMode={modeParam} />
+         <TargetSelector
+            initRating={rating}
+            initMode={modeParam}
+            counts={{
+               nm: nmCount,
+               hd: hdCount,
+               hr: hrCount,
+               dt: dtCount,
+               fm: fmCount
+            }}
+         />
          <hr />
          <PoolDisplayByMod
-            title={`Pool for: ${mode}${keyCount ? keyCount : ""} ${rating} rd${rd}`}
+            title={`Pool for: ${mode}${keyCount ? keyCount : ""} ${rating}`}
             target={rating}
             maplist={maplist}
             mode={mode}

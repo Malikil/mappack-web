@@ -107,7 +107,7 @@ function updatePlayerRating(
       mods: Mod[];
    }[]
 ) {
-   console.log(workingPlayer._id, 'Update player rating from', scores.length, 'scores');
+   console.log(workingPlayer._id, "Update player rating from", scores.length, "scores");
    const calculator = new Glicko2();
    const workingPve = workingPlayer[gamemode].pve;
    const playerCalc = calculator.makePlayer(workingPve.rating, workingPve.rd, workingPve.vol);
@@ -151,8 +151,10 @@ function updatePlayerRating(
    workingPve.rating = playerCalc.getRating();
    workingPve.rd = playerCalc.getRd();
    workingPve.vol = playerCalc.getVol();
-   workingPlayer[gamemode].mods =
-      modUpdates.players[workingPlayer._id][gamemode] || workingPlayer[gamemode].mods;
+   workingPlayer[gamemode].mods = {
+      ...workingPlayer[gamemode].mods,
+      ...(modUpdates.players[workingPlayer._id][gamemode] || {})
+   };
    workingPlayer[gamemode].styles =
       styleUpdates.players[workingPlayer._id][gamemode] || workingPlayer[gamemode].styles;
 }
@@ -166,7 +168,7 @@ function updateMapRating(
       mods: Mod[];
    }[]
 ) {
-   console.log(workingMap._id, 'Update map rating from', scores.length, 'scores');
+   console.log(workingMap._id, "Update map rating from", scores.length, "scores");
    const calculator = new Glicko2();
    const mapCalc = calculator.makePlayer(
       workingMap.rating.rating,
@@ -219,7 +221,10 @@ function updateMapRating(
    workingMap.rating.rating = mapCalc.getRating();
    workingMap.rating.rd = mapCalc.getRd();
    workingMap.rating.vol = mapCalc.getVol();
-   workingMap.mods = modUpdates.maps[gamemode][workingMap._id] || workingMap.mods;
+   workingMap.mods = {
+      ...workingMap.mods,
+      ...(modUpdates.maps[gamemode][workingMap._id] || {})
+   };
    workingMap.styles = styleUpdates.maps[workingMap._id][gamemode] || workingMap.styles;
 }
 
