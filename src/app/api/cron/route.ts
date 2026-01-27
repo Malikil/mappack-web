@@ -59,88 +59,97 @@ export async function GET(req: NextRequest) {
    if (req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`)
       return new NextResponse("Unauthorized", { status: 401 });
 
-   // Get recent beatmap packs
-   const accessToken = await getOsuToken();
-   const client = new Client(accessToken);
-   const packs = await client.getUndocumented<UndocumentedBeatmappackResponse>("beatmaps/packs");
-   console.log(packs.beatmap_packs.slice(0, 3), `+ ${packs.beatmap_packs.length - 3} more`);
-   // Give up with std converts. Just always fetch a ctb pool.
-   const modesToFetch: GameMode[] = ["osu", "taiko", "fruits", "mania"];
+   try {
+      // Get recent beatmap packs
+      const accessToken = await getOsuToken();
+      const client = new Client(accessToken);
+      const packs = await client.getUndocumented<UndocumentedBeatmappackResponse>("beatmaps/packs");
+      console.log(packs.beatmap_packs.slice(0, 3), `+ ${packs.beatmap_packs.length - 3} more`);
+      // Give up with std converts. Just always fetch a ctb pool.
+      const modesToFetch: GameMode[] = ["osu", "taiko", "fruits", "mania"];
 
-   await modesToFetch.reduce(
-      (wait, mode) =>
-         wait.then(async () => {
-            const mappackTag = await findMappackTag(packs.beatmap_packs, mode);
-            console.log(`Found mappack ${mappackTag}`);
-            const mappack = await client.getUndocumented<UndocumentedBeatmappack>(
-               `beatmaps/packs/${mappackTag}`
-            );
-            console.log(`Add mappack ${mappack.tag}`);
-            await createMappool(
-               accessToken,
-               mappack.name,
-               mappack.url,
-               mappack.beatmapsets.map(bms => bms.id),
-               mode
-            );
-         }),
-      Promise.resolve()
-   );
+      await modesToFetch.reduce(
+         (wait, mode) =>
+            wait.then(async () => {
+               const mappackTag = await findMappackTag(packs.beatmap_packs, mode);
+               console.log(`Found mappack ${mappackTag}`);
+               const mappack = await client.getUndocumented<UndocumentedBeatmappack>(
+                  `beatmaps/packs/${mappackTag}`
+               );
+               console.log(`Add mappack ${mappack.tag}`);
+               await createMappool(
+                  accessToken,
+                  mappack.name,
+                  mappack.url,
+                  mappack.beatmapsets.map(bms => bms.id),
+                  mode
+               );
+            }),
+         Promise.resolve()
+      );
 
-   return cyclePools().then(
-      () => inflateRd().then(() => new NextResponse("OK")),
-      err => {
-         console.error(err);
-         return new NextResponse("Error", { status: 500 });
-      }
-   );
+      await cyclePools();
+      await inflateRd();
+      return new NextResponse("OK");
+   } catch (err) {
+      console.error(err);
+      return new NextResponse("Error", { status: 500 });
+   }
 }
 
 async function inflateRd() {
    const modes: GameMode[] = ["osu", "fruits", "taiko", "mania"];
    const inflateResult = await playersDb.updateMany(
-      { $or: modes.map(m => ({ [`${m}.pve.rd`]: { $lt: 350 } })) },
+      {
+         $or: modes
+            .map(m => ({ [`${m}.pve.rd`]: { $lt: 350 } }))
+            .concat(modes.map(m => ({ [`${m}.pvp.rd`]: { $lt: 350 } })))
+      },
       [
          {
             $set: {
                ...Object.fromEntries(
-                  modes.map(mode => [
-                     `${mode}.pve.rd`,
-                     {
-                        $let: {
-                           vars: {
-                              t: {
-                                 $cond: [
-                                    { $ifNull: [`$${mode}.pve.lastPlayed`, false] },
-                                    {
-                                       $dateDiff: {
-                                          startDate: `$${mode}.pve.lastPlayed`,
-                                          endDate: "$$NOW",
-                                          unit: "week"
-                                       }
-                                    },
-                                    0
+                  modes.flatMap(mode => {
+                     const build = (q: "pve" | "pvp") => [
+                        `${mode}.${q}.rd`,
+                        {
+                           $cond: [
+                              {
+                                 $and: [
+                                    { $eq: [{ $type: `$${mode}.${q}` }, "object"] },
+                                    { $ne: [`$${mode}.${q}.lastPlayed`, null] }
                                  ]
-                              }
-                           },
-                           in: {
-                              $min: [
-                                 350,
-                                 {
-                                    $sqrt: {
-                                       $add: [
-                                          { $multiply: [`$${mode}.pve.rd`, `$${mode}.pve.rd`] },
-                                          {
-                                             $multiply: [`$${mode}.pve.vol`, `$${mode}.pve.vol`, "$$t"]
-                                          }
-                                       ]
+                              },
+                              {
+                                 $min: [
+                                    350,
+                                    {
+                                       $sqrt: {
+                                          $add: [
+                                             { $pow: [`$${mode}.${q}.rd`, 2] },
+                                             {
+                                                $multiply: [
+                                                   { $pow: [`$${mode}.${q}.vol`, 2] },
+                                                   {
+                                                      $dateDiff: {
+                                                         startDate: `$${mode}.${q}.lastPlayed`,
+                                                         endDate: "$$NOW",
+                                                         unit: "week"
+                                                      }
+                                                   }
+                                                ]
+                                             }
+                                          ]
+                                       }
                                     }
-                                 }
-                              ]
-                           }
+                                 ]
+                              },
+                              `$${mode}.${q}.rd`
+                           ]
                         }
-                     }
-                  ])
+                     ];
+                     return [build("pve"), build("pvp")];
+                  })
                )
             }
          }

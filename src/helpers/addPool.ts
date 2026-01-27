@@ -112,7 +112,7 @@ export async function createMappool(
       name: packName,
       download,
       maps: maplist.map(m => m._id),
-      active: "pending",
+      order: 0,
       mode: gamemode
    };
 
@@ -139,7 +139,8 @@ export async function createMappool(
 }
 
 export async function cyclePools() {
-   if (!(await mappacksDb.findOne({ active: "pending" })))
+   const ACTIVE_MAPPACKS = parseInt(process.env.ACTIVE_MAPPACKS);
+   if (!(await mappacksDb.findOne({ order: 0 })))
       return {
          http: {
             status: 400,
@@ -150,25 +151,14 @@ export async function cyclePools() {
    const result = await mappacksDb.bulkWrite([
       {
          deleteMany: {
-            filter: { active: "completed" }
+            // Keep packs for one week after they rotate out
+            filter: { order: { $gt: ACTIVE_MAPPACKS } }
          }
       },
       {
          updateMany: {
-            filter: { active: "stale" },
-            update: { $set: { active: "completed" } }
-         }
-      },
-      {
-         updateMany: {
-            filter: { active: "fresh" },
-            update: { $set: { active: "stale" } }
-         }
-      },
-      {
-         updateMany: {
-            filter: { active: "pending" },
-            update: { $set: { active: "fresh" } }
+            filter: {},
+            update: { $inc: { order: 1 } }
          }
       }
    ]);

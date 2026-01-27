@@ -11,13 +11,14 @@ import { ModeInfo } from "@/types/database.player";
 import { DbBeatmap } from "@/types/database.beatmap";
 
 const palette = interpolate(["#4fc0ff", "#7cff4f", "#f6f05c", "#ff4e6f", "#c645b8", "#6563de", "black"]);
+const ACTIVE_MAPPACKS = parseInt(process.env.ACTIVE_MAPPACKS);
 
 function getTargetRating(modeInfo: ModeInfo): Rating {
    if (!modeInfo) return;
-   // Players are provisional until they hit 3 wins or 4 losses
+   // Players are provisional while above 150 RD
    if (modeInfo.pvp) {
       const pvp = modeInfo.pvp;
-      if (pvp.wins > 2 || pvp.losses > 3) return pvp;
+      if (pvp.rd < 150) return pvp;
    }
    return modeInfo.pve;
 }
@@ -33,7 +34,10 @@ export default async function Mappool() {
          {
             $match: {
                mode,
-               $or: [{ active: "fresh" }, { active: "stale" }]
+               order: {
+                  $gt: 0,
+                  $lte: ACTIVE_MAPPACKS
+               }
             }
          },
          {
@@ -51,25 +55,10 @@ export default async function Mappool() {
                artist: { $first: "$maps.artist" },
                title: { $first: "$maps.title" },
                mapper: { $first: "$maps.mapper" },
-               maps: {
-                  $push: "$maps"
-                  // {
-                  //    id: "$maps._id",
-                  //    version: "$maps.version",
-                  //    length: "$maps.length",
-                  //    bpm: "$maps.bpm",
-                  //    cs: "$maps.cs",
-                  //    ar: "$maps.ar",
-                  //    od: "$maps.od",
-                  //    stars: "$maps.stars",
-                  //    rating: "$maps.rating",
-                  //    mods: '$maps.mods',
-                  //    maxCombo: '$maps.maxCombo'
-                  // }
-               },
+               maps: { $push: "$maps" },
                name: { $first: "$name" },
                download: { $first: "$download" },
-               order: { $first: "$active" }
+               order: { $first: "$order" }
             }
          },
          {
@@ -91,7 +80,7 @@ export default async function Mappool() {
       .toArray()) as {
       _id: string;
       download: string;
-      order: "fresh" | "stale";
+      order: number;
       maps: {
          setid: number;
          artist: string;
@@ -105,7 +94,7 @@ export default async function Mappool() {
    return (
       <div className="d-flex flex-column gap-1">
          {pools
-            .sort((a, b) => (a.order < b.order ? -1 : 1))
+            .sort((a, b) => a.order - b.order)
             .map(pool => (
                <Card key={pool._id}>
                   <CardBody>

@@ -5,6 +5,8 @@ import { GameMode } from "osu-web.js";
 import { addMapsToDatabase } from "../addPool";
 import { getOsuToken } from "../osuToken";
 
+const ACTIVE_MAPPACKS = parseInt(process.env.ACTIVE_MAPPACKS);
+
 export async function getMaplist(mode: GameMode, maps: number[]) {
    console.log(`Fetch ${maps.length} maps`);
    const maplist: DbBeatmap[] = await mapsDb[mode].find({ _id: { $in: maps } }).toArray();
@@ -15,10 +17,18 @@ export async function getMaplist(mode: GameMode, maps: number[]) {
    return maplist;
 }
 
-export async function getCurrentPack<M extends GameMode>(mode: M, keyCount = 0) {
+export async function getCurrentPack(mode: GameMode, keyCount = 0) {
    const pools = await mappacksDb
       .aggregate<Omit<DbMappack, "maps"> & { maps: DbBeatmap[] }>([
-         { $match: { mode, $or: [{ active: "fresh" }, { active: "stale" }] } },
+         {
+            $match: {
+               mode,
+               order: {
+                  $gt: 0,
+                  $lte: ACTIVE_MAPPACKS
+               }
+            }
+         },
          {
             $lookup: {
                from: mode,
@@ -37,7 +47,7 @@ export async function getCurrentPack<M extends GameMode>(mode: M, keyCount = 0) 
 export async function getPreviousPack(mode: GameMode) {
    const pools = await mappacksDb
       .aggregate<Omit<DbMappack, "maps"> & { maps: DbBeatmap[] }>([
-         { $match: { mode, active: "completed" } },
+         { $match: { mode, order: ACTIVE_MAPPACKS + 1 } },
          {
             $lookup: {
                from: mode,
