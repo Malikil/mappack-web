@@ -2,9 +2,7 @@
 
 import { convertTime } from "@/time";
 import { CardLink, CardSubtitle, Col, Container, Row } from "react-bootstrap";
-import { withinRange } from "@/helpers/rating-range";
 import { BeatmapVersion } from "@/types/mappool";
-import { Rating } from "@/types/rating";
 import { MapAction } from "@/types/mappool";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { GameMode } from "osu-web.js";
@@ -14,15 +12,11 @@ export type MapCardBodyProps = {
    beatmap: DbBeatmap;
    starsPlus?: boolean;
    mapActions?: MapAction[];
-   rating?: Rating;
    hideRatings?: boolean;
    mode?: GameMode;
 };
 
 export default function MapCardBody(props: MapCardBodyProps) {
-   const withinRangeClass = (rating: Rating) => {
-      if (props.rating && withinRange(props.rating, rating)) return "border border-2 border-success rounded";
-   };
    return (
       <div className={`d-flex flex-column ${props.className || ""}`}>
          <Container className="mb-auto">
@@ -63,36 +57,13 @@ export default function MapCardBody(props: MapCardBodyProps) {
                <CardSubtitle>Rating:</CardSubtitle>
                <Container>
                   <Row>
-                     <Col className={withinRangeClass(props.beatmap.rating)}>
-                        NM {props.beatmap.rating.rating.toFixed(0)}
-                     </Col>
-                     <Col
-                        className={withinRangeClass({
-                           ...props.beatmap.rating,
-                           rating: props.beatmap.rating.rating * (props.beatmap.mods.DT || 1)
-                        })}
-                     >
-                        DT x{(props.beatmap.mods.DT || 1).toFixed(2)}
-                     </Col>
+                     <Col>NM {props.beatmap.rating.rating.toFixed(0)}</Col>
+                     <Col>DT x{(props.beatmap.mods.DT || 1).toFixed(2)}</Col>
                   </Row>
                   {props.mode !== "mania" && (
                      <Row>
-                        <Col
-                           className={withinRangeClass({
-                              ...props.beatmap.rating,
-                              rating: props.beatmap.rating.rating * (props.beatmap.mods.HD || 1)
-                           })}
-                        >
-                           HD x{(props.beatmap.mods.HD || 1).toFixed(2)}
-                        </Col>
-                        <Col
-                           className={withinRangeClass({
-                              ...props.beatmap.rating,
-                              rating: props.beatmap.rating.rating * (props.beatmap.mods.HR || 1)
-                           })}
-                        >
-                           HR x{(props.beatmap.mods.HR || 1).toFixed(2)}
-                        </Col>
+                        <Col>HD x{(props.beatmap.mods.HD || 1).toFixed(2)}</Col>
+                        <Col>HR x{(props.beatmap.mods.HR || 1).toFixed(2)}</Col>
                      </Row>
                   )}
                </Container>

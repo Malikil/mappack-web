@@ -3,30 +3,16 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { Card, CardBody, CardImg, CardSubtitle, CardTitle, Col, Row } from "react-bootstrap";
 import MapCardBody from "@/components/mappool/MapCardBody";
-import { anyWithinRange } from "@/helpers/rating-range";
-import { Rating } from "@/types/rating";
 import interpolate from "color-interpolate";
 import { buildUrl } from "osu-web.js";
-import { ModeInfo } from "@/types/database.player";
 import { DbBeatmap } from "@/types/database.beatmap";
 
 const palette = interpolate(["#4fc0ff", "#7cff4f", "#f6f05c", "#ff4e6f", "#c645b8", "#6563de", "black"]);
 const ACTIVE_MAPPACKS = parseInt(process.env.ACTIVE_MAPPACKS);
 
-function getTargetRating(modeInfo: ModeInfo): Rating {
-   if (!modeInfo) return;
-   // Players are provisional while above 150 RD
-   if (modeInfo.pvp) {
-      const pvp = modeInfo.pvp;
-      if (pvp.rd < 150) return pvp;
-   }
-   return modeInfo.pve;
-}
-
 export default async function Mappool() {
    const session = await auth();
    const player = session && (await playersDb.findOne({ _id: session.user.id }));
-   const playerRating: Rating = player && getTargetRating(player[player.gamemode]);
    const mode = player?.gamemode || "osu";
 
    const pools = (await mappacksDb
@@ -98,124 +84,114 @@ export default async function Mappool() {
             .map(pool => (
                <Card key={pool._id}>
                   <CardBody>
-                     <div className="d-flex justify-content-between flex-wrap gap-2 align-items-end">
+                     <div
+                        className="d-flex justify-content-between flex-wrap gap-2 align-items-end"
+                        role="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target={`#collapse${pool.order}`}
+                        aria-expanded="false"
+                        aria-controls={`collapse${pool.order}`}
+                     >
                         <div>
                            <CardTitle as="h1">{pool._id}</CardTitle>
-                           <CardSubtitle className="d-flex justify-content-between">
-                              <Link href={pool.download}>Download</Link>
+                           <CardSubtitle>
+                              {pool.maps.reduce((p, c) => p + c.versions.length, 0)} difficulties in{" "}
+                              {pool.maps.length} mapsets
                            </CardSubtitle>
                         </div>
-                        {playerRating && (
-                           <small>
-                              Highlighted maps are within your individual rating range.
-                              <br />
-                              During matches the average rating for both players is used
-                           </small>
-                        )}
                      </div>
-                     <div className="d-flex flex-column gap-1 mt-2">
-                        {pool.maps
-                           .sort((a, b) => a.setid - b.setid)
-                           .map(mapset => {
-                              mapset.versions.sort((a, b) => a.rating.rating - b.rating.rating);
-                              return (
-                                 <Card key={mapset.setid}>
-                                    <CardBody className="d-flex flex-column gap-2">
-                                       <Row
-                                          role="button"
-                                          data-bs-toggle="collapse"
-                                          data-bs-target={`#collapse${mapset.setid}`}
-                                          aria-expanded="false"
-                                          aria-controls={`collapse${mapset.setid}`}
-                                       >
-                                          <Col>
-                                             <CardImg
-                                                src={`https://assets.ppy.sh/beatmaps/${mapset.setid}/covers/cover.jpg`}
-                                                alt="Cover"
-                                                style={{ minHeight: "100px", objectFit: "cover" }}
-                                             />
-                                          </Col>
-                                          <Col className="d-flex flex-column justify-content-center">
-                                             <div>
-                                                <CardTitle>{mapset.title}</CardTitle>
-                                                <CardSubtitle>{mapset.artist}</CardSubtitle>
-                                                <CardSubtitle className="d-flex gap-1 mt-1">
-                                                   {mapset.versions.map(bm => {
-                                                      const valid = anyWithinRange(bm, playerRating);
-                                                      return (
+                     <div className="collapse" id={`collapse${pool.order}`}>
+                        <CardSubtitle className="d-flex justify-content-between mt-1">
+                           <Link href={pool.download}>Download</Link>
+                        </CardSubtitle>
+                        <div className="d-flex flex-column gap-1 mt-2">
+                           {pool.maps
+                              .sort((a, b) => a.setid - b.setid)
+                              .map(mapset => {
+                                 mapset.versions.sort((a, b) => a.rating.rating - b.rating.rating);
+                                 return (
+                                    <Card key={mapset.setid}>
+                                       <CardBody className="d-flex flex-column gap-2">
+                                          <Row
+                                             role="button"
+                                             data-bs-toggle="collapse"
+                                             data-bs-target={`#collapse${mapset.setid}`}
+                                             aria-expanded="false"
+                                             aria-controls={`collapse${mapset.setid}`}
+                                          >
+                                             <Col>
+                                                <CardImg
+                                                   src={`https://assets.ppy.sh/beatmaps/${mapset.setid}/covers/cover.jpg`}
+                                                   alt="Cover"
+                                                   style={{ minHeight: "100px", objectFit: "cover" }}
+                                                />
+                                             </Col>
+                                             <Col className="d-flex flex-column justify-content-center">
+                                                <div>
+                                                   <CardTitle>{mapset.title}</CardTitle>
+                                                   <CardSubtitle>{mapset.artist}</CardSubtitle>
+                                                   <CardSubtitle className="d-flex gap-1 mt-1">
+                                                      {mapset.versions.map(bm => (
                                                          <span
                                                             key={bm._id}
-                                                            className={`rounded ${
-                                                               valid ? "" : "bg-body-secondary"
-                                                            }`}
-                                                            style={
-                                                               valid
-                                                                  ? {
-                                                                       backgroundColor: palette(
-                                                                          Math.max(
-                                                                             0,
-                                                                             Math.min(
-                                                                                (bm.stars - 1) / 7.75,
-                                                                                1
-                                                                             )
-                                                                          )
-                                                                       )
-                                                                    }
-                                                                  : undefined
-                                                            }
+                                                            className="rounded"
+                                                            style={{
+                                                               backgroundColor: palette(
+                                                                  Math.max(
+                                                                     0,
+                                                                     Math.min((bm.stars - 1) / 7.75, 1)
+                                                                  )
+                                                               )
+                                                            }}
                                                          >
                                                             &ensp;
                                                          </span>
-                                                      );
-                                                   })}
+                                                      ))}
+                                                   </CardSubtitle>
+                                                </div>
+                                             </Col>
+                                          </Row>
+                                          <div className="collapse" id={`collapse${mapset.setid}`}>
+                                             <div className="my-2">
+                                                <CardSubtitle className="d-flex gap-3">
+                                                   <Link
+                                                      href={buildUrl.beatmapset(mapset.setid)}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                   >
+                                                      Beatmap Listing
+                                                   </Link>
+                                                   <Link href={`/maps/${mode}/${mapset.setid}`}>
+                                                      Mapset Stats
+                                                   </Link>
                                                 </CardSubtitle>
                                              </div>
-                                          </Col>
-                                       </Row>
-                                       <div className="collapse" id={`collapse${mapset.setid}`}>
-                                          <div className="my-2">
-                                             <CardSubtitle className="d-flex gap-3">
-                                                <Link
-                                                   href={buildUrl.beatmapset(mapset.setid)}
-                                                   target="_blank"
-                                                   rel="noopener noreferrer"
-                                                >
-                                                   Beatmap Listing
-                                                </Link>
-                                                <Link href={`/maps/${mode}/${mapset.setid}`}>
-                                                   Mapset Stats
-                                                </Link>
-                                             </CardSubtitle>
+                                             <div className="d-flex gap-1 flex-wrap">
+                                                {mapset.versions.map(bm => (
+                                                   <Card
+                                                      key={bm._id}
+                                                      style={{
+                                                         flexBasis: "225px",
+                                                         flexGrow: 1,
+                                                         maxWidth: "516px"
+                                                      }}
+                                                   >
+                                                      <CardBody className="d-flex flex-column">
+                                                         <CardTitle className="d-flex gap-2">
+                                                            <div className="text-break">{bm.version}</div>
+                                                            <div className="ms-auto">{bm._id}</div>
+                                                         </CardTitle>
+                                                         <MapCardBody beatmap={bm} className="mt-auto" />
+                                                      </CardBody>
+                                                   </Card>
+                                                ))}
+                                             </div>
                                           </div>
-                                          <div className="d-flex gap-1 flex-wrap">
-                                             {mapset.versions.map(bm => (
-                                                <Card
-                                                   key={bm._id}
-                                                   style={{
-                                                      flexBasis: "225px",
-                                                      flexGrow: 1,
-                                                      maxWidth: "516px"
-                                                   }}
-                                                >
-                                                   <CardBody className="d-flex flex-column">
-                                                      <CardTitle className="d-flex gap-2">
-                                                         <div className="text-break">{bm.version}</div>
-                                                         <div className="ms-auto">{bm._id}</div>
-                                                      </CardTitle>
-                                                      <MapCardBody
-                                                         beatmap={bm}
-                                                         rating={playerRating}
-                                                         className="mt-auto"
-                                                      />
-                                                   </CardBody>
-                                                </Card>
-                                             ))}
-                                          </div>
-                                       </div>
-                                    </CardBody>
-                                 </Card>
-                              );
-                           })}
+                                       </CardBody>
+                                    </Card>
+                                 );
+                              })}
+                        </div>
                      </div>
                   </CardBody>
                </Card>

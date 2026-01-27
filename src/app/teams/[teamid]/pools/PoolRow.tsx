@@ -153,74 +153,69 @@ export default function PoolRow({
          </div>
          <div className="collapse" id={`collapse${collapseId}`}>
             <div className="d-flex gap-1 mt-2 flex-wrap">
-               {maps.map((m, i) => {
-                  const modsMult = m.mods?.reduce((mult, mod) => mult * (m.map.mods?.[mod] || 1), 1) || 1;
-                  return (
-                     <Card key={i} className="flex-shrink-0 flex-grow-1" style={{ flexBasis: "140px" }}>
-                        <Link href={`/maps/${mode}/${m.map.setid}`}>
-                           <CardImg
-                              src={buildUrl.beatmapsetCover(m.map.setid)}
-                              alt="Cover"
-                              style={{ objectFit: "cover" }}
-                           />
-                        </Link>
-                        <CardBody className="d-flex flex-column">
-                           <div className="d-flex justify-content-between">
-                              <div>
-                                 <CardSubtitle className="text-break">
-                                    {m.map.artist || m.map._id} - {m.map.title}
-                                 </CardSubtitle>
-                                 <div className="d-flex justify-content-between align-items-center">
-                                    <span>{m.map.version || "No Info"}</span>
-                                 </div>
+               {maps.map((m, i) => (
+                  <Card key={i} className="flex-shrink-0 flex-grow-1" style={{ flexBasis: "140px" }}>
+                     <Link href={`/maps/${mode}/${m.map.setid}`}>
+                        <CardImg
+                           src={buildUrl.beatmapsetCover(m.map.setid)}
+                           alt="Cover"
+                           style={{ objectFit: "cover" }}
+                        />
+                     </Link>
+                     <CardBody className="d-flex flex-column">
+                        <div className="d-flex justify-content-between">
+                           <div>
+                              <CardSubtitle className="text-break">
+                                 {m.map.artist || m.map._id} - {m.map.title}
+                              </CardSubtitle>
+                              <div className="d-flex justify-content-between align-items-center">
+                                 <span>{m.map.version || "No Info"}</span>
                               </div>
-                              {editing && (
-                                 <div>
-                                    <Button
-                                       size="sm"
-                                       variant="danger"
-                                       onClick={() =>
-                                          setMaps(arr => arr.filter(rmMap => rmMap.map._id !== m.map._id))
-                                       }
-                                    >
-                                       x
-                                    </Button>
-                                 </div>
-                              )}
                            </div>
-                           <div className="mt-auto" />
                            {editing && (
                               <div>
-                                 <FormControl
-                                    placeholder="Sort"
-                                    value={m.sort || ""}
-                                    onChange={e =>
-                                       setMaps(arr =>
-                                          arr.map((m, idx) =>
-                                             idx === i
-                                                ? e.target.value
-                                                   ? { ...m, sort: parseInt(e.target.value) }
-                                                   : (() => {
-                                                        const { sort, ...rest } = m;
-                                                        return rest;
-                                                     })()
-                                                : m
-                                          )
-                                       )
+                                 <Button
+                                    size="sm"
+                                    variant="danger"
+                                    onClick={() =>
+                                       setMaps(arr => arr.filter(rmMap => rmMap.map._id !== m.map._id))
                                     }
-                                 />
+                                 >
+                                    x
+                                 </Button>
                               </div>
                            )}
-                           <div className="d-flex">
-                              <span>{!m.mods ? "FM" : m.mods.join("") || "NM"}</span>
-                              {"rating" in m.map && (
-                                 <span className="ms-auto">{(m.map.rating.rating * modsMult).toFixed()}</span>
-                              )}
+                        </div>
+                        <div className="mt-auto" />
+                        {editing && (
+                           <div>
+                              <FormControl
+                                 placeholder="Sort"
+                                 value={m.sort || ""}
+                                 onChange={e =>
+                                    setMaps(arr =>
+                                       arr.map((m, idx) =>
+                                          idx === i
+                                             ? e.target.value
+                                                ? { ...m, sort: parseInt(e.target.value) }
+                                                : (() => {
+                                                     const { sort, ...rest } = m;
+                                                     return rest;
+                                                  })()
+                                             : m
+                                       )
+                                    )
+                                 }
+                              />
                            </div>
-                        </CardBody>
-                     </Card>
-                  );
-               })}
+                        )}
+                        <div className="d-flex">
+                           <span>{!m.mods ? "FM" : m.mods.join("") || "NM"}</span>
+                           <span className="ms-auto">{m.map._id}</span>
+                        </div>
+                     </CardBody>
+                  </Card>
+               ))}
             </div>
          </div>
       </Form>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 export default function Mappools() {
+   const packs = parseInt(process.env.ACTIVE_MAPPACKS);
    return (
       <div>
          <h3 id="mappools">Mappools</h3>
@@ -12,7 +13,7 @@ export default function Mappools() {
                </Link>
             </li>
             <li>A new mappack will the used each Monday</li>
-            <li>Two packs will be active at a time</li>
+            <li>{packs} packs will be active at a time</li>
             <li>Each difficulty is taken individually</li>
          </ul>
       </div>

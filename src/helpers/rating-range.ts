@@ -159,30 +159,6 @@ export function effectiveRating(baseRating: Rating, mode: GameMode, modMult: num
    return (lo + hi) / 2;
 }
 
-export function withinRange(...ratings: { rating: number; rd: number }[]) {
-   ratings = ratings.filter(r => r);
-   if (ratings.length < 2) return false;
-   const range = Math.sqrt(ratings.reduce((sum, r) => sum + r.rd * r.rd, 0));
-   const { min, max } = ratings.reduce(
-      (agg, r) => {
-         if (r.rating < agg.min.rating) agg.min = r;
-         else if (r.rating > agg.max.rating) agg.max = r;
-         return agg;
-      },
-      { min: ratings[0], max: ratings[0] }
-   );
-   const diff = Math.abs(min.rating - max.rating);
-   return diff <= range;
-}
-
-export function anyWithinRange(map: DbBeatmap, candidateRating: Rating) {
-   if (withinRange(map.rating, candidateRating)) return true;
-   const searchMods = ["HD", "HR", "DT"] as Mod[];
-   return searchMods.some(mod =>
-      withinRange({ ...map.rating, rating: map.rating.rating * (map.mods[mod] || 1) }, candidateRating)
-   );
-}
-
 export function combineRatings(...ratings: Rating[]) {
    const agg = ratings
       .filter(v => v)
