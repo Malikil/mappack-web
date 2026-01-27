@@ -1,9 +1,7 @@
 import { playersDb } from "@/app/api/db/connection";
 import { GameMode, Mod } from "osu-web.js";
-import { combineRatings, matchResultValue } from "../rating-range";
+import { combineRatings, matchResultValue, predictOutcome } from "../rating-range";
 import { Rating } from "@/types/rating";
-import { Glicko2 } from "glicko2";
-import { logit, sigmoid } from "@/mathplus";
 
 const MAP_STYLE_LEARNING_RATE = 0.05;
 const PLAYER_STYLES_LEARNING_RATE = 0.01;
@@ -27,32 +25,6 @@ export async function combineRatingsById(mode: GameMode, ...playerIds: number[])
       targetRating,
       players
    };
-}
-
-/**
- * Gives the outcome (0, 1) the player is expected to get on this map. If an array of skills is
- * provided they are also used in the prediction. Both skills arrays should be equal length.
- * @deprecated Use function from rating-range
- * @param playerRating
- * @param mapRating
- * @param playerSkills
- * @param mapSkills
- * @returns
- */
-export function predictOutcome(
-   playerRating: Rating,
-   mapRating: Rating,
-   playerSkills: number[] = [],
-   mapSkills: number[] = []
-) {
-   const calculator = new Glicko2();
-   const playerCalc = calculator.makePlayer(playerRating.rating, playerRating.rd, playerRating.vol);
-   const mapCalc = calculator.makePlayer(mapRating.rating, mapRating.rd, mapRating.vol);
-   const simplePredict = calculator.predict(playerCalc, mapCalc);
-   let residual = 0;
-   for (let i = 0; i < playerSkills.length; i++) residual += playerSkills[i] * mapSkills[i];
-
-   return sigmoid(logit(simplePredict) + residual);
 }
 
 export function getUpdatedModsFromBatch(

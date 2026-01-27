@@ -1,7 +1,7 @@
 import { createMappool, cyclePools } from "@/helpers/addPool";
 import { NextRequest, NextResponse } from "next/server";
 import { Client, GameMode } from "osu-web.js";
-import { historyDb } from "../db/connection";
+import { historyDb, playersDb } from "../db/connection";
 import {
    UndocumentedBeatmappack,
    UndocumentedBeatmappackCompact,
@@ -88,10 +88,63 @@ export async function GET(req: NextRequest) {
    );
 
    return cyclePools().then(
-      () => new NextResponse("OK"),
+      () => inflateRd().then(() => new NextResponse("OK")),
       err => {
          console.error(err);
          return new NextResponse("Error", { status: 500 });
       }
    );
+}
+
+async function inflateRd() {
+   const modes: GameMode[] = ["osu", "fruits", "taiko", "mania"];
+   const inflateResult = await playersDb.updateMany(
+      { $or: modes.map(m => ({ [`${m}.pve.rd`]: { $lt: 350 } })) },
+      [
+         {
+            $set: {
+               ...Object.fromEntries(
+                  modes.map(mode => [
+                     `${mode}.pve.rd`,
+                     {
+                        $let: {
+                           vars: {
+                              t: {
+                                 $cond: [
+                                    { $ifNull: [`$${mode}.pve.lastPlayed`, false] },
+                                    {
+                                       $dateDiff: {
+                                          startDate: `$${mode}.pve.lastPlayed`,
+                                          endDate: "$$NOW",
+                                          unit: "week"
+                                       }
+                                    },
+                                    0
+                                 ]
+                              }
+                           },
+                           in: {
+                              $min: [
+                                 350,
+                                 {
+                                    $sqrt: {
+                                       $add: [
+                                          { $multiply: [`$${mode}.pve.rd`, `$${mode}.pve.rd`] },
+                                          {
+                                             $multiply: [`$${mode}.pve.vol`, `$${mode}.pve.vol`, "$$t"]
+                                          }
+                                       ]
+                                    }
+                                 }
+                              ]
+                           }
+                        }
+                     }
+                  ])
+               )
+            }
+         }
+      ]
+   );
+   console.log(inflateResult);
 }

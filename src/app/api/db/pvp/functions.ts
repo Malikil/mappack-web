@@ -7,7 +7,6 @@ import { ModPool, Rating } from "@/types/rating";
 import { UpdateOneModel } from "mongodb";
 import { getMaplist } from "@/helpers/server/currentPack";
 import { matchResultValue } from "@/helpers/rating-range";
-import { parseModpool } from "@/app/profile/[playerid]/pve/functions";
 import { ScoreParser } from "@/helpers/scorev1";
 import { getPlayerList } from "@/helpers/server/players";
 import { getUpdatedModsFromBatch, getUpdatedStylesFromBatch } from "@/helpers/server/ratings";
@@ -36,6 +35,32 @@ export async function createPvpRegistration(osuid: number, ppRaw: number, mode: 
       { returnDocument: "after" }
    );
    return player;
+}
+
+function parseModpool(mods: Mod[], mode: GameMode): ModPool {
+   mods = ignoreSongMods(mods);
+   // If DT is in the modlist, assume the pool is DT and ignore everything else
+   if (mods.includes("DT") || mods.includes("NC")) return "dt";
+   // Catch generally allows HD in addition to other mods. Discard HD if it's not the only mod
+   if (mode === "fruits" && mods.length > 1) mods = mods.filter(m => m !== "HD");
+   // In order for the score to be valid, only one mod should be used
+   if (mods.length > 1) return "fm";
+   if (mods.length === 0) return "nm";
+   else if (mode === "mania") {
+      if (mods[0] === "DT" || mods[0] === "NC") return "dt";
+      // Only reject EZ and HT
+      if (mods[0] === "EZ" || mods[0] === "HT") return "fm";
+      else return "nm";
+   } else
+      switch (mods[0]) {
+         case "HD":
+            return "hd";
+         case "HR":
+            return "hr";
+         case "DT":
+         case "NC":
+            return "dt";
+      }
 }
 
 function parseTeamsLobby(lobby: LegacyMultiplayerLobby, warmups: number): TeamMpLobbyResults {

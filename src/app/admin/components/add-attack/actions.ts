@@ -3,8 +3,8 @@
 import { mpLinksDb, playersDb } from "@/app/api/db/connection";
 import { addMatchData, addTeamsData, parseMpLobby as parsePvp } from "@/app/api/db/pvp/functions";
 import { register } from "@/app/api/db/register/functions";
-import { parseMpLobby as parsePve, submitPveData } from "@/app/profile/[playerid]/pve/functions";
 import { createPvpRegistration } from "@/helpers/server/players";
+import { submitPveData } from "@/helpers/server/pve";
 import { MpLobbyResults } from "@/types/multiplayer";
 import { LegacyClient } from "osu-web.js";
 
@@ -67,36 +67,20 @@ export async function adminPvp(formData: FormData) {
 export async function adminPve(formData: FormData) {
    const mpLink = formData.get("mp").toString();
    const matchIdSegment = parseInt(mpLink.slice(mpLink.lastIndexOf("/") + 1));
-   const data = await parsePve(matchIdSegment, true);
-   if (!data)
+   if (mpLinksDb.findOne({ _id: matchIdSegment }))
+      return {
+         http: {
+            status: 400,
+            message: "MP link already submitted"
+         }
+      };
+   const success = await submitPveData(matchIdSegment, true);
+   if (!success)
       return {
          http: {
             status: 400,
             message: "Failed to parse lobby"
          }
       };
-   if (Object.keys(data.matches).length < 1)
-      return {
-         http: {
-            status: 400,
-            message: "No songs found"
-         }
-      };
-   console.log(data.matches);
-   try {
-      await submitPveData(data);
-      // Add the mp link to history
-      mpLinksDb.insertOne({ _id: matchIdSegment }).catch(err => {
-         console.warn("Admin pve add existing mp link");
-         console.warn(err);
-      });
-   } catch (err) {
-      console.warn(err);
-      return {
-         http: {
-            status: 500,
-            message: "Failed to fetch player information"
-         }
-      };
-   }
+   mpLinksDb.insertOne({ _id: matchIdSegment });
 }

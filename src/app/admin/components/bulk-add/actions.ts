@@ -7,8 +7,8 @@ import {
    addTeamsData
 } from "@/app/api/db/pvp/functions";
 import { register } from "@/app/api/db/register/functions";
-import { parseMpLobby as parsePve, submitPveData } from "@/app/profile/[playerid]/pve/functions";
 import { createPvpRegistration } from "@/helpers/server/players";
+import { submitPveData } from "@/helpers/server/pve";
 import { delay, seconds } from "@/time";
 import { MpLobbyResults } from "@/types/multiplayer";
 import { LegacyClient } from "osu-web.js";
@@ -76,6 +76,7 @@ export async function submitTournamentStage(formData: FormData) {
          await add1v1Match(lobbyResult as MpLobbyResults);
          await mpLinksDb.insertOne({ _id: mp });
       }
+   // PvE submit
    else
       for (const mp of parsedLinks) {
          console.log(`Lobby ${mp}`);
@@ -83,9 +84,8 @@ export async function submitTournamentStage(formData: FormData) {
             console.log("Lobby already exists");
             continue;
          }
-         const lobbyResult = await parsePve(mp);
-         console.log("Parsed. Submitting...");
-         await submitPveData(lobbyResult);
+         console.log(`Submit ${mp}...`);
+         await submitPveData(mp);
          console.log("Done");
          await mpLinksDb.insertOne({ _id: mp });
          await delay(seconds(0.5));

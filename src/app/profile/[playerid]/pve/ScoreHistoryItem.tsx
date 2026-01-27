@@ -61,7 +61,7 @@ export default async function ScoreHistoryItem({ match, mode }: { match: MatchHi
                <div className="d-flex gap-1 flex-wrap mt-3">
                   {details.map((m, i) => {
                      const mods = getEnumMods(m.mods || 0);
-                     const modsMult = mods.reduce((mult, mod) => mult * (m.map.mods[mod] || 1), 1);
+                     const modsMult = mods.reduce((mult, mod) => mult * (m.map?.mods[mod] || 1), 1);
                      const map = m.map || { ...m.mapSimple, _id: m.mapSimple.id };
                      return (
                         <PvEMap

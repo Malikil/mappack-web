@@ -10,6 +10,7 @@ export async function updateTeamScoreHistory(
       score: number;
    }[]
 ) {
+   if (practicePoolUpdates.length < 1) return;
    const practicePoolDbResult = await teamsDb.bulkWrite(
       practicePoolUpdates.map(ppu => {
          const nomod = ppu.mods.length < 1;

@@ -34,12 +34,14 @@ export interface PvPInfo extends Rating {
    matches: PvPMatchHistory[];
    losses: number;
    wins: number;
+   lastPlayed?: Date;
 }
 
 export interface PvEInfo extends Rating {
    matches: MatchHistory[];
    games: number;
    songs: number;
+   lastPlayed?: Date;
 }
 
 export interface ModeInfo {
