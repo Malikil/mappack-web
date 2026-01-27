@@ -17,6 +17,7 @@ export default function TargetSelector({
       hr: number;
       dt: number;
       fm: number;
+      tb: number;
    };
 }) {
    const router = useRouter();
@@ -79,6 +80,11 @@ export default function TargetSelector({
                      <td>HR</td>
                      <td>
                         <FormControl type="text" name="hr" placeholder="3" defaultValue={counts.hr} />
+                     </td>
+                     <td />
+                     <td>TB</td>
+                     <td>
+                        <FormControl type="text" name="tb" placeholder="0" defaultValue={counts.tb} />
                      </td>
                   </tr>
                </tbody>

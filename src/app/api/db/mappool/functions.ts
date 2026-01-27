@@ -22,6 +22,7 @@ export async function getMappool(
       hrCount?: number;
       dtCount?: number;
       fmCount?: number;
+      tbCount?: number;
    } = {}
 ) {
    const opts = {
@@ -31,6 +32,7 @@ export async function getMappool(
       hrCount: 3,
       dtCount: 3,
       fmCount: 3,
+      tbCount: 0,
       ...options
    };
    console.log("Get mappool for target:", targetRating);
@@ -42,26 +44,28 @@ export async function getMappool(
       rating: m.rating,
       expectedScores: m.expectedScores
    });
-   const { nmCount, hdCount, hrCount, dtCount, fmCount } =
+   const { nmCount, hdCount, hrCount, dtCount, fmCount, tbCount } =
       mode === "mania"
          ? {
               nmCount: opts.hdCount + opts.hrCount + opts.dtCount + opts.fmCount,
               hdCount: 0,
               hrCount: 0,
               dtCount: 0,
-              fmCount: 0
+              fmCount: 0,
+              tbCount: 0
            }
          : {
               nmCount: opts.nmCount,
               hdCount: opts.hdCount,
               hrCount: opts.hrCount,
               dtCount: opts.dtCount,
-              fmCount: opts.fmCount
+              fmCount: opts.fmCount,
+              tbCount: opts.tbCount
            };
    const usedSets = new Set<number>();
    const pick = (
       list: MapWithScores[],
-      sorter: (a: { expectedScores: ExpectedScores }, b: { expectedScores: ExpectedScores }) => number,
+      sorter: (a: MapWithScores, b: MapWithScores) => number,
       count: number
    ) => {
       const available = list.filter(m => !usedSets.has(m.setid));
@@ -99,13 +103,38 @@ export async function getMappool(
       hr: MapWithScores[];
       dt: MapWithScores[];
       fm: MapWithScores[];
+      tb: MapWithScores[];
    } = {
       nm: [],
       hd: [],
       hr: [],
       dt: [],
-      fm: []
+      fm: [],
+      tb: []
    };
+
+   // The most restrictive is TB, because it requires special filtering
+   // Pick one first
+   console.log(`Pick ${tbCount} TB maps`);
+   const tbCandidates = maplist.filter(
+      m =>
+         Math.abs(m.rating.rating - targetRating.rating) <=
+         Math.sqrt(m.rating.rd * m.rating.rd + targetRating.rd * targetRating.rd)
+   );
+   resultList.tb = pick(
+      tbCandidates,
+      (a, b) => {
+         const err = (m: MapWithScores) => {
+            const delta = predictOutcome(targetRating, m.rating) - 0.5;
+            const difficultyError = delta < 0 ? -2 * delta : delta;
+            const lengthBonus = Math.max(Math.min((m.length - 150) / (240 - 150), 1), 0);
+            const tbScore = difficultyError - lengthBonus * 0.1;
+            return tbScore;
+         };
+         return err(a) - err(b);
+      },
+      tbCount
+   );
 
    // Sort FM first, so the extra maps can be put into HD/HR
    console.log(`Pick ${fmCount} FM maps`);

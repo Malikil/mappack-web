@@ -23,13 +23,15 @@ export default async function PlayerPool({ searchParams }) {
    const hrCount = parseInt(stringParams.hr || 3);
    const dtCount = parseInt(stringParams.dt || 3);
    const fmCount = parseInt(stringParams.fm || 3);
+   const tbCount = parseInt(stringParams.tb || 0);
    const { maps: maplist } = await getMappool({ rating, rd }, mode, {
       keyCount,
       nmCount,
       hdCount,
       hrCount,
       dtCount,
-      fmCount
+      fmCount,
+      tbCount
    });
 
    return (
@@ -42,7 +44,8 @@ export default async function PlayerPool({ searchParams }) {
                hd: hdCount,
                hr: hrCount,
                dt: dtCount,
-               fm: fmCount
+               fm: fmCount,
+               tb: tbCount
             }}
          />
          <hr />

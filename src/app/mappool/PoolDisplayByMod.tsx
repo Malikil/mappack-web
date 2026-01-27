@@ -37,7 +37,8 @@ export default function PoolDisplayByMod({
                            hd: "Hidden",
                            hr: "HardRock",
                            dt: "DoubleTime",
-                           fm: "Freemod"
+                           fm: "Freemod",
+                           tb: "Tiebreaker"
                         }[mod]
                      }
                      key={mod}
