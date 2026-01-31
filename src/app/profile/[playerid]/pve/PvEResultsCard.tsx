@@ -14,7 +14,7 @@ export default function PvEResultsCard({
    osuid: number;
    mode: GameMode;
 }) {
-   const provisional = data.songs < 10 || data.games < 3;
+   const provisional = data.rd >= 150 || data.games < 3;
 
    return (
       <Card>

@@ -2,7 +2,7 @@ import interpolate from "color-interpolate";
 import { Mod } from "osu-web.js";
 import { Card, CardBody } from "react-bootstrap";
 
-const WORST_MULT = 1.08;
+const WORST_MULT = 1.09;
 
 const skillColor = interpolate(["red", "green"]);
 const bgColor = (value: number) => {

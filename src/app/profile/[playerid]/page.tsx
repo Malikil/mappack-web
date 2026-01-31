@@ -9,6 +9,7 @@ import CreatePvpStats from "./pvp/CreatePvpStats";
 import PvPResultsCard from "./pvp/PvPResultsCard";
 import ModSkills from "./ModSkills";
 import Link from "next/link";
+import AccessNotify from "@/components/access-notify/AccessNotify";
 
 export default async function Profile({ params }) {
    const playerParam = (await params).playerid;
@@ -28,55 +29,58 @@ export default async function Profile({ params }) {
    const pvpStats = player[gamemode].pvp;
    const pveStats = player[gamemode].pve;
    return (
-      <div className="d-flex flex-column gap-2">
-         <div className="d-flex justify-content-between align-items-center px-2">
-            <h1>
-               <Link
-                  href={buildUrl.user(player._id)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-reset text-decoration-none"
-               >
-                  <Image
-                     alt="avatar"
-                     src={buildUrl.userAvatar(player._id)}
-                     height={64}
-                     width={64}
-                     className="rounded"
-                  />{" "}
-                  {player.osuname}
-               </Link>
-            </h1>
-            <Image alt="Mode" src={`/mode-${gamemode}.png`} height={48} width={48} />
+      <>
+         <AccessNotify />
+         <div className="d-flex flex-column gap-2">
+            <div className="d-flex justify-content-between align-items-center px-2">
+               <h1>
+                  <Link
+                     href={buildUrl.user(player._id)}
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     className="text-reset text-decoration-none"
+                  >
+                     <Image
+                        alt="avatar"
+                        src={buildUrl.userAvatar(player._id)}
+                        height={64}
+                        width={64}
+                        className="rounded"
+                     />{" "}
+                     {player.osuname}
+                  </Link>
+               </h1>
+               <Image alt="Mode" src={`/mode-${gamemode}.png`} height={48} width={48} />
+            </div>
+            {pvpStats?.rating ? (
+               <PvPResultsCard
+                  pvpStats={pvpStats}
+                  playerid={playerid}
+                  mode={gamemode}
+                  allowSubmit={user?._id === player._id}
+               />
+            ) : (
+               <Card>
+                  <CardHeader>Vs. Players</CardHeader>
+                  <CardBody className="d-flex justify-content-between align-items-center">
+                     <span>
+                        Play a match to create PvP stats{user?._id === player._id && ", or click the button"}
+                     </span>
+                     {user?._id === player._id && <CreatePvpStats playerid={playerid} gamemode={gamemode} />}
+                  </CardBody>
+               </Card>
+            )}
+            {pveStats && (
+               <PvEResultsCard
+                  data={pveStats}
+                  osuid={user?._id === player._id ? playerid : null}
+                  mode={gamemode}
+               />
+            )}
+            {user?._id === player._id && (
+               <ModSkills mods={player[gamemode].mods} skills={player[gamemode].styles} />
+            )}
          </div>
-         {pvpStats?.rating ? (
-            <PvPResultsCard
-               pvpStats={pvpStats}
-               playerid={playerid}
-               mode={gamemode}
-               allowSubmit={user?._id === player._id}
-            />
-         ) : (
-            <Card>
-               <CardHeader>Vs. Players</CardHeader>
-               <CardBody className="d-flex justify-content-between align-items-center">
-                  <span>
-                     Play a match to create PvP stats{user?._id === player._id && ", or click the button"}
-                  </span>
-                  {user?._id === player._id && <CreatePvpStats playerid={playerid} gamemode={gamemode} />}
-               </CardBody>
-            </Card>
-         )}
-         {pveStats && (
-            <PvEResultsCard
-               data={pveStats}
-               osuid={user?._id === player._id ? playerid : null}
-               mode={gamemode}
-            />
-         )}
-         {user?._id === player._id && (
-            <ModSkills mods={player[gamemode].mods} skills={player[gamemode].styles} />
-         )}
-      </div>
+      </>
    );
 }

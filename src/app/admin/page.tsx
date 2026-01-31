@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 import AdminActions from "./components/actions/AdminActions";
 import { verify } from "./functions";
-// import { checkExpiry } from "@/auth";
-// import AdminNotify from "./components/admin-notify/AdminNotify";
+import AccessNotify from "../../components/access-notify/AccessNotify";
 import DifficultyChart from "./components/difficulty-chart/DifficultyChart";
 import AddAttack from "./components/add-attack/AddAttack";
 import TournamentSubmit from "./components/bulk-add/TournamentSubmit";
@@ -19,8 +18,8 @@ export default async function Admin() {
             <TournamentSubmit />
          </div>
          <DifficultyChart chartVersion="scaling" />
-         <DifficultyChart chartVersion="recent" />
-         {/* {checkExpiry(session.accessToken) && <AdminNotify />} */}
+         <DifficultyChart chartVersion="recent" legend />
+         <AccessNotify />
       </div>
    );
 }

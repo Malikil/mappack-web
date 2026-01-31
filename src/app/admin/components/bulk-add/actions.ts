@@ -7,13 +7,24 @@ import {
    addTeamsData
 } from "@/app/api/db/pvp/functions";
 import { register } from "@/app/api/db/register/functions";
+import { auth, checkExpiry } from "@/auth";
+import { getLobbyData } from "@/helpers/server/multiplayer";
 import { createPvpRegistration } from "@/helpers/server/players";
 import { submitPveData } from "@/helpers/server/pve";
 import { delay, seconds } from "@/time";
 import { MpLobbyResults } from "@/types/multiplayer";
-import { LegacyClient } from "osu-web.js";
+import { Client, LegacyClient } from "osu-web.js";
 
 export async function submitTournamentStage(formData: FormData) {
+   const session = await auth();
+   if (!session || checkExpiry(session.accessToken))
+      return {
+         http: {
+            status: 400,
+            message: "Access token expired"
+         }
+      };
+   const client = new Client(session.accessToken);
    const type = formData.get("submitType").toString();
    console.log(`Submit stage links as ${type}`);
    const mpLinks = formData
@@ -85,7 +96,8 @@ export async function submitTournamentStage(formData: FormData) {
             continue;
          }
          console.log(`Submit ${mp}...`);
-         await submitPveData(mp);
+         const lobby = await getLobbyData(mp, client);
+         await submitPveData(lobby);
          console.log("Done");
          await mpLinksDb.insertOne({ _id: mp });
          await delay(seconds(0.5));

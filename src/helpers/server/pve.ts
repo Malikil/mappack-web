@@ -1,5 +1,5 @@
-import { GameMode, getModsEnum, LegacyClient, LegacyGame, Mod } from "osu-web.js";
-import { ScoreParser } from "../scorev1";
+import { GameMode, getModsEnum, Mod } from "osu-web.js";
+import { ScoreParserV2 } from "../scorev1";
 import { getMaplist } from "./currentPack";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { DbPlayer, MatchHistorySong } from "@/types/database.player";
@@ -11,17 +11,18 @@ import { getUpdatedModsFromBatch, getUpdatedStylesFromBatch } from "./ratings";
 import { UpdateFilter, UpdateOneModel } from "mongodb";
 import { mapsDb, playersDb } from "@/app/api/db/connection";
 import { updateTeamScoreHistory } from "@/app/api/db/team/functions";
+import { MatchGame, MatchInfoRaw } from "@/types/undocumented/matches";
 
-const ALL_MODES: GameMode[] = ['osu', 'fruits', 'taiko', 'mania'];
+const ALL_MODES: GameMode[] = ["osu", "fruits", "taiko", "mania"];
 
-function validateGameSettings(game: LegacyGame) {
+function validateGameSettings(game: MatchGame) {
    if (!game.end_time) return false; // Song was aborted
-   if (game.scoring_type === 'Accuracy' || game.scoring_type === 'Combo') return false;
-   if (game.team_type === 'Tag Co-Op' || game.team_type === 'Tag Team VS') return false;
+   if (game.scoring_type === "accuracy" || game.scoring_type === "combo") return false;
+   if (game.team_type === "tag-coop" || game.team_type === "tag-team-vs") return false;
    return true;
 }
 
-async function fetchMaplist(games: LegacyGame[]) {
+async function fetchMaplist(games: MatchGame[]) {
    const modeMaps: { [mode in GameMode]: number[] } = {
       osu: [],
       fruits: [],
@@ -29,8 +30,7 @@ async function fetchMaplist(games: LegacyGame[]) {
       mania: []
    };
    for (const game of games) {
-      if (validateGameSettings(game))
-         modeMaps[game.play_mode].push(game.beatmap_id);
+      if (validateGameSettings(game)) modeMaps[game.mode].push(game.beatmap_id);
    }
    const maplist: { [mode in GameMode]: DbBeatmap[] } = {
       osu: [],
@@ -39,35 +39,28 @@ async function fetchMaplist(games: LegacyGame[]) {
       mania: []
    };
    for (const mode of ALL_MODES)
-      if (modeMaps[mode].length > 0)
-         maplist[mode] = await getMaplist(mode, modeMaps[mode]);
+      if (modeMaps[mode].length > 0) maplist[mode] = await getMaplist(mode, modeMaps[mode]);
    return maplist;
 }
 
-function validateGame(
-   game: LegacyGame,
-   maplist: Record<
-      GameMode,
-      DbBeatmap[]
-   >
-) {
+function validateGame(game: MatchGame, maplist: Record<GameMode, DbBeatmap[]>) {
    if (!validateGameSettings(game)) return;
 
    // Skip maps without any valid scores
    const scores = game.scores
       .map(score => {
          // If there are double the number of misses as good hits
-         if (score.countmiss > score.count300 * 2) return;
+         if (score.statistics.count_miss > score.statistics.count_300 * 2) return;
          return {
             score,
-            parser: new ScoreParser(score, game.scoring_type, game.play_mode)
+            parser: new ScoreParserV2(score, game.scoring_type === "scorev2" ? "Score V2" : "Score")
          };
       })
       .filter(v => v);
    if (scores.length < 1) return; // No valid scores
 
    // Make sure the map exists
-   const workingMap = maplist[game.play_mode].find(m => m._id === game.beatmap_id);
+   const workingMap = maplist[game.mode].find(m => m._id === game.beatmap_id);
    if (!workingMap) return; // Missing beatmap
 
    // Add map to score parsers
@@ -80,7 +73,7 @@ function validateGame(
          .map(s => ({
             user: s.score.user_id,
             score: s.parser,
-            mods: ignoreSongMods(game.mods.concat(s.score.enabled_mods))
+            mods: ignoreSongMods(s.score.mods)
          }))
    };
 }
@@ -146,6 +139,12 @@ function updatePlayerRating(
          },
          score: s.score
       }))
+   );
+   console.log(
+      "Old:",
+      workingPlayer[gamemode].styles,
+      "New:",
+      styleUpdates.players[workingPlayer._id][gamemode]
    );
    // Store results back into the working copy
    workingPve.rating = playerCalc.getRating();
@@ -217,6 +216,7 @@ function updateMapRating(
          score: s.score
       }))
    );
+   console.log("Old:", workingMap.styles, "New:", styleUpdates.maps[workingMap._id][gamemode]);
    // Store results back to the working copy
    workingMap.rating.rating = mapCalc.getRating();
    workingMap.rating.rd = mapCalc.getRd();
@@ -228,14 +228,13 @@ function updateMapRating(
    workingMap.styles = styleUpdates.maps[workingMap._id][gamemode] || workingMap.styles;
 }
 
-export async function submitPveData(mp: number, allowIncomplete = false) {
-   console.log(`Submit PvE lobby ${mp}`);
-   const osuClient = new LegacyClient(process.env.OSU_LEGACY_KEY);
+export async function submitPveData(
+   lobby: { match: MatchInfoRaw; games: MatchGame[] },
+   allowIncomplete = false
+) {
+   console.log(`Submit PvE lobby ${lobby.match.id}`);
    // Most recent map ratings
-   const maps: Record<
-      GameMode,
-      DbBeatmap[]
-   > = {
+   const maps: Record<GameMode, DbBeatmap[]> = {
       osu: [],
       fruits: [],
       taiko: [],
@@ -280,18 +279,17 @@ export async function submitPveData(mp: number, allowIncomplete = false) {
       score: number;
    }[] = [];
    try {
-      const mpLobby = await osuClient.getMultiplayerLobby({ mp });
-      console.log(`${mpLobby.games.length} songs played`);
-      console.log(`Finished ${mpLobby.match.end_time}`);
-      if (!allowIncomplete && !mpLobby.match.end_time) return;
-      if (mpLobby.games.length < 1) return;
+      console.log(`${lobby.games.length} songs played`);
+      console.log(`Finished ${lobby.match.end_time}`);
+      if (!allowIncomplete && !lobby.match.end_time) return;
+      if (lobby.games.length < 1) return;
 
-      Object.assign(maps, await fetchMaplist(mpLobby.games));
+      Object.assign(maps, await fetchMaplist(lobby.games));
 
-      for (const game of mpLobby.games) {
+      for (const game of lobby.games) {
          const { workingMap, scores } = validateGame(game, maps) || {};
-         if (!workingMap) continue; 
-         const scoreBuffer = bufferedPlayerResults[game.play_mode];
+         if (!workingMap) continue;
+         const scoreBuffer = bufferedPlayerResults[game.mode];
          // Keep the current map rating, and update map results
          const mapResultsList: {
             playerSnapshot: DbPlayer;
@@ -307,14 +305,14 @@ export async function submitPveData(mp: number, allowIncomplete = false) {
             // Set up the player's history if they haven't been seen yet
             if (!(playerId in playerHistory)) playerHistory[playerId] = {};
             // Ensure the player's history for this gamemode exists
-            if (!(game.play_mode in playerHistory[playerId]))
-               playerHistory[playerId][game.play_mode] = {
-                  mp: mpLobby.match.match_id,
-                  prevRating: players[playerId].original[game.play_mode].pve.rating,
+            if (!(game.mode in playerHistory[playerId]))
+               playerHistory[playerId][game.mode] = {
+                  mp: lobby.match.id,
+                  prevRating: players[playerId].original[game.mode].pve.rating,
                   songs: []
                };
             // Push this song to the player's history
-            playerHistory[playerId][game.play_mode].songs.push({
+            playerHistory[playerId][game.mode].songs.push({
                map: {
                   id: workingMap._id,
                   setid: workingMap.setid,
@@ -325,7 +323,7 @@ export async function submitPveData(mp: number, allowIncomplete = false) {
             });
             practicePoolUpdates.push({
                map: workingMap._id,
-               mode: game.play_mode,
+               mode: game.mode,
                mods: playerResult.mods,
                player: playerId,
                score: playerResult.score.getScore()
@@ -343,13 +341,12 @@ export async function submitPveData(mp: number, allowIncomplete = false) {
                mods: playerResult.mods
             });
             if (playerScoreList.length >= 5) {
-               updatePlayerRating(players[playerId].working, game.play_mode, playerScoreList);
+               updatePlayerRating(players[playerId].working, game.mode, playerScoreList);
                scoreBuffer[playerId] = [];
             }
          }
          // Update the map rating
-         if (mapResultsList.length > 0)
-            updateMapRating(workingMap, game.play_mode, mapResultsList);
+         if (mapResultsList.length > 0) updateMapRating(workingMap, game.mode, mapResultsList);
       }
       // Once the lobby is finished, update the remaining player results
       for (const mode of Object.keys(bufferedPlayerResults) as GameMode[])
@@ -434,12 +431,7 @@ async function updatePlayers(
    } else console.warn("No player updates to perform");
 }
 
-async function updateMaps(
-   maps: Record<
-      GameMode,
-      DbBeatmap[]
-   >
-) {
+async function updateMaps(maps: Record<GameMode, DbBeatmap[]>) {
    for (const mode of ALL_MODES) {
       const mapOps: { updateOne: UpdateOneModel<DbBeatmap> }[] = [];
 

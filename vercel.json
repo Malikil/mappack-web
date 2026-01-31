@@ -7,6 +7,10 @@
       {
          "path": "/api/cron/maps",
          "schedule": "0 0 * * *"
+      },
+      {
+         "path": "/api/cron/lobbies",
+         "schedule": "0 * * * *"
       }
    ]
 }

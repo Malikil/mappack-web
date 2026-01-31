@@ -255,7 +255,6 @@ export function getUpdatedStylesFromBatch(
                               PLAYER_STYLES_LEARNING_RATE * (v - STYLES_REGULARIZATION * playerOldStyles[i])
                         )
                      );
-                     console.log("Player", idStr, "Old:", playerOldStyles, "New:", playerNewStyles);
                      return [mode, playerNewStyles];
                   })
                )
@@ -278,7 +277,6 @@ export function getUpdatedStylesFromBatch(
                               MAP_STYLE_LEARNING_RATE * (v - STYLES_REGULARIZATION * mapOldStyles[i])
                         )
                      );
-                     console.log("Map", idStr, "Old:", mapOldStyles, "New:", mapNewStyles);
                      return [mode, mapNewStyles];
                   })
                )

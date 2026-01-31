@@ -3,10 +3,12 @@
 import { mpLinksDb, playersDb } from "@/app/api/db/connection";
 import { addMatchData, addTeamsData, parseMpLobby as parsePvp } from "@/app/api/db/pvp/functions";
 import { register } from "@/app/api/db/register/functions";
+import { auth, checkExpiry } from "@/auth";
+import { getLobbyData } from "@/helpers/server/multiplayer";
 import { createPvpRegistration } from "@/helpers/server/players";
 import { submitPveData } from "@/helpers/server/pve";
 import { MpLobbyResults } from "@/types/multiplayer";
-import { LegacyClient } from "osu-web.js";
+import { Client, LegacyClient } from "osu-web.js";
 
 export async function adminPvp(formData: FormData) {
    const mpLink = formData.get("mp").toString();
@@ -65,16 +67,26 @@ export async function adminPvp(formData: FormData) {
 }
 
 export async function adminPve(formData: FormData) {
+   const session = await auth();
+   if (!session || checkExpiry(session.accessToken))
+      return {
+         http: {
+            status: 400,
+            message: "Access token expired"
+         }
+      };
    const mpLink = formData.get("mp").toString();
    const matchIdSegment = parseInt(mpLink.slice(mpLink.lastIndexOf("/") + 1));
-   if (mpLinksDb.findOne({ _id: matchIdSegment }))
+   if (await mpLinksDb.findOne({ _id: matchIdSegment }))
       return {
          http: {
             status: 400,
             message: "MP link already submitted"
          }
       };
-   const success = await submitPveData(matchIdSegment, true);
+   const client = new Client(session.accessToken);
+   const lobby = await getLobbyData(matchIdSegment, client);
+   const success = await submitPveData(lobby, true);
    if (!success)
       return {
          http: {

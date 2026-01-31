@@ -2,22 +2,19 @@ import { Table } from "react-bootstrap";
 import { playersDb } from "../api/db/connection";
 import { buildUrl } from "osu-web.js";
 import { auth } from "@/auth";
-import { Filter } from "mongodb";
-import { DbPlayer } from "@/types/database.player";
 import Image from "next/image";
 import ClickableTableRow from "@/components/ClickableTableRow";
 
 export default async function Leaderboard() {
    const session = await auth();
-   let adminFilter: Filter<DbPlayer> = { hideLeaderboard: { $exists: false } };
    const user = await playersDb.findOne({ _id: session?.user.id });
    const gamemode = user?.gamemode || "osu";
-   if (user && user.admin) adminFilter = {};
    const pvePlayers = await playersDb
       .find(
          {
             hideLeaderboard: { $ne: true },
-            [`${gamemode}.pve.songs`]: { $gt: 10 },
+            [`${gamemode}.pve.rd`]: { $lt: 150 },
+            //[`${gamemode}.pve.songs`]: { $gt: 10 },
             [`${gamemode}.pve.games`]: { $gt: 2 }
          },
          { sort: [`${gamemode}.pve.rating`, -1], limit: 100 }

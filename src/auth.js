@@ -5,7 +5,7 @@ import Osu from "next-auth/providers/osu";
 export const { handlers, signIn, signOut, auth } = NextAuth({
    providers: [
       Osu({
-         authorization: "https://osu.ppy.sh/oauth/authorize?scope=identify"
+         authorization: "https://osu.ppy.sh/oauth/authorize?scope=identify public"
       })
    ],
    callbacks: {
@@ -26,7 +26,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
 /**
  * @param {string} jwt
- * @returns Returns true when the token *is expired*
+ * @returns Returns true when the token _**is**_ expired
  */
 export function checkExpiry(jwt) {
    const token = jwtDecode(jwt);
