@@ -54,8 +54,8 @@ export async function getPreviousMapScalings(mode: GameMode) {
    for await (const map of maplist) {
       meta.max = Math.max(meta.max, map.rating.rating + map.rating.rd * 2);
       datasets.x.push(createPredictorInput(map, mode));
-      const yData = [map.rating.rating, map.mods.DT];
-      if (mode !== "mania") yData.push(map.mods.HD, map.mods.HR);
+      const yData = [map.rating.rating, map.mods.DT || 1];
+      if (mode !== "mania") yData.push(map.mods.HD || 1, map.mods.HR || 1);
       datasets.y.push(yData);
    }
    const polyReg: PolynomialRegressor & { meta?: { max: number } } = new PolynomialRegressor(2, false, true);
