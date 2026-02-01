@@ -7,7 +7,7 @@ export default async function AccessNotify() {
    if (session && checkExpiry(session.accessToken))
       return (
          <div className={styles.notify}>
-            <ExclamationCircle className="text-warning" />
+            <ExclamationCircle color="var(--bs-warning)" size="1.5rem" />
             <div>
                osu! access token expired
                <br />

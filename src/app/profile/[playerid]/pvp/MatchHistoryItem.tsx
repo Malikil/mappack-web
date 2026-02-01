@@ -33,13 +33,17 @@ export default async function MatchHistoryItem({ match, mode }: { match: PvPMatc
             <div className="d-flex px-1 gap-3">
                <div className="d-flex align-items-center gap-2">
                   <div className="fw-bold">{match.prevRating.toFixed()}</div>
-                  {match.ratingDiff > 0 ? <ArrowUpRightCircle /> : <ArrowDownRightCircle />}
+                  {match.ratingDiff > 0 ? (
+                     <ArrowUpRightCircle color="var(--bs-body-color)" size="1rem" />
+                  ) : (
+                     <ArrowDownRightCircle color="var(--bs-body-color)" size="1rem" />
+                  )}
                   <div className="fw-bold">{(match.prevRating + match.ratingDiff).toFixed()}</div>
                   <div className="d-flex align-items-center">
                      {match.ratingDiff > 0 ? (
-                        <PlusCircle className="text-success m-1" />
+                        <PlusCircle className="m-1" color="var(--bs-success)" size="1rem" />
                      ) : (
-                        <DashCircle className="text-danger m-1" />
+                        <DashCircle className="m-1" color="var(--bs-danger)" size="1rem" />
                      )}
                      {Math.abs(match.ratingDiff).toFixed(1)}
                   </div>
@@ -98,18 +102,13 @@ export default async function MatchHistoryItem({ match, mode }: { match: PvPMatc
                            <CardBody className="d-flex flex-column">
                               <CardSubtitle className="d-flex justify-content-between flex-wrap">
                                  <span>{m.score.toLocaleString()}</span>
-                                 <span
-                                    className={`mx-1 ${
-                                       i >= (match.warmups || 0) &&
-                                       `text-${m.score > m.opponentScore ? "success" : "danger"}`
-                                    }`}
-                                 >
+                                 <span className="mx-1">
                                     {i < (match.warmups || 0) ? (
-                                       <DashCircle />
+                                       <DashCircle color="var(--bs-body-color)" size="1rem" />
                                     ) : m.score > m.opponentScore ? (
-                                       <CheckCircle />
+                                       <CheckCircle color="var(--bs-success)" size="1rem" />
                                     ) : (
-                                       <XCircle />
+                                       <XCircle color="var(--bs-danger)" size="1rem" />
                                     )}
                                  </span>
                                  <span>{m.opponentScore.toLocaleString()}</span>

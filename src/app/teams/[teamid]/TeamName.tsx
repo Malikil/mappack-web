@@ -25,7 +25,7 @@ export default function TeamName({
             <div className="d-flex gap-3 align-items-center">
                <FormControl value={teamName} onChange={e => setTeamName(e.target.value)} />
                <CheckSquareFill
-                  className="text-success"
+                  color="var(--bs-success)"
                   size={20}
                   role="button"
                   onClick={() =>
@@ -35,7 +35,7 @@ export default function TeamName({
                   }
                />
                <XSquareFill
-                  className="text-danger"
+                  color="var(--bs-danger)"
                   size={20}
                   role="button"
                   onClick={() => {
@@ -63,7 +63,13 @@ export default function TeamName({
    ) : (
       <div>
          <span>{teamName}</span>
-         <PencilSquare className="ms-3 text-muted" size={18} role="button" onClick={() => setEditing(true)} />
+         <PencilSquare
+            className="ms-3"
+            color="var(--bs-secondary-color)"
+            size={18}
+            role="button"
+            onClick={() => setEditing(true)}
+         />
       </div>
    );
 }

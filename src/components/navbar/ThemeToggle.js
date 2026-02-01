@@ -25,7 +25,11 @@ export default function ThemeToggle() {
             })
          }
       >
-         {curTheme === "dark" ? <MoonStars /> : <Sun />}
+         {curTheme === "dark" ? (
+            <MoonStars color="var(--bs-body-color)" size="1rem" />
+         ) : (
+            <Sun color="var(--bs-body-color)" size="1rem" />
+         )}
       </div>
    );
 }

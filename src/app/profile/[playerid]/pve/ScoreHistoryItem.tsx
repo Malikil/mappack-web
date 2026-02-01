@@ -1,4 +1,4 @@
-import { Card, CardBody, CardImg, CardSubtitle } from "react-bootstrap";
+import { Card, CardBody } from "react-bootstrap";
 import Link from "next/link";
 import { buildUrl, GameMode, getEnumMods } from "osu-web.js";
 import { ArrowDownRightCircle, ArrowUpRightCircle, DashCircle, PlusCircle } from "react-bootstrap-icons";
@@ -25,13 +25,17 @@ export default async function ScoreHistoryItem({ match, mode }: { match: MatchHi
          <CardBody>
             <div className="d-flex align-items-center gap-2 px-1">
                <div className="fw-bold">{match.prevRating.toFixed()}</div>
-               {match.ratingDiff > 0 ? <ArrowUpRightCircle /> : <ArrowDownRightCircle />}
+               {match.ratingDiff > 0 ? (
+                  <ArrowUpRightCircle color="var(--bs-body-color)" size="1rem" />
+               ) : (
+                  <ArrowDownRightCircle color="var(--bs-body-color)" size="1rem" />
+               )}
                <div className="fw-bold">{(match.prevRating + match.ratingDiff).toFixed()}</div>
                <div className="d-flex align-items-center">
                   {match.ratingDiff > 0 ? (
-                     <PlusCircle className="text-success m-1" />
+                     <PlusCircle className="m-1" color="var(--bs-success)" size="1rem" />
                   ) : (
-                     <DashCircle className="text-danger m-1" />
+                     <DashCircle className="m-1" color="var(--bs-danger)" size="1rem" />
                   )}
                   {Math.abs(match.ratingDiff).toFixed(1)}
                </div>
