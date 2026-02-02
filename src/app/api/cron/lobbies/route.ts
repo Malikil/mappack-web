@@ -8,8 +8,6 @@ import { getLobbyData } from "@/helpers/server/multiplayer";
 import { submitPveData } from "@/helpers/server/pve";
 import { mpLinksDb } from "../../db/connection";
 
-// Max duration configurable is 60s without enabling fluid compute
-export const maxDuration = 60;
 export async function GET(req: NextRequest) {
    if (req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`)
       return new NextResponse("Unauthorized", { status: 401 });
