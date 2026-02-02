@@ -11,7 +11,7 @@ import { getUpdatedModsFromBatch, getUpdatedStylesFromBatch } from "./ratings";
 import { UpdateFilter, UpdateOneModel } from "mongodb";
 import { mapsDb, playersDb } from "@/app/api/db/connection";
 import { updateTeamScoreHistory } from "@/app/api/db/team/functions";
-import { MatchGame, MatchInfoRaw } from "@/types/undocumented/matches";
+import { MatchGame, MatchInfo } from "@/types/undocumented/matches";
 
 const ALL_MODES: GameMode[] = ["osu", "fruits", "taiko", "mania"];
 
@@ -229,7 +229,7 @@ function updateMapRating(
 }
 
 export async function submitPveData(
-   lobby: { match: MatchInfoRaw; games: MatchGame[] },
+   lobby: { match: MatchInfo; games: MatchGame[] },
    allowIncomplete = false
 ) {
    console.log(`Submit PvE lobby ${lobby.match.id}`);

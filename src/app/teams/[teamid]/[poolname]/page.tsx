@@ -42,7 +42,7 @@ export default async function TeamPoolPage({ params }) {
          <div className="d-flex justify-content-between align-items-center">
             <h1 className="d-flex gap-3">
                <Link href={`/teams/${teamId}`} className="text-reset d-flex align-items-center fs-2">
-                  <ChevronLeft />
+                  <ChevronLeft color="var(--bs-body-color)" size="1.5rem" />
                </Link>
                <span>
                   {team.name} - {poolName}

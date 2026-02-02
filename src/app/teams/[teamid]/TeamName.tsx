@@ -51,7 +51,7 @@ export default function TeamName({
                   <option value={"taiko" as GameMode}>Taiko</option>
                   <option value={"mania" as GameMode}>Mania</option>
                </FormSelect>
-               <span className="fs-6">Size:</span>
+               <span className="fs-6">Team Size</span>
                <FormControl
                   value={teamSize}
                   onChange={e => setTeamSize(parseInt(e.target.value))}

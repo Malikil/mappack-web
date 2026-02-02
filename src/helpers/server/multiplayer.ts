@@ -1,6 +1,6 @@
 import { Client } from "osu-web.js";
 import { getOsuToken } from "../osuToken";
-import { UndocumentedMatchDetails } from "@/types/undocumented/matches";
+import { MatchInfo, UndocumentedMatchDetails } from "@/types/undocumented/matches";
 
 export async function getLobbyData(mp: number, client: Client = null) {
    if (!client) client = new Client(await getOsuToken());
@@ -27,6 +27,11 @@ export async function getLobbyData(mp: number, client: Client = null) {
    const games = match.events.filter(e => e.game).map(g => g.game);
    return {
       ...match,
+      match: {
+         ...match.match,
+         start_time: new Date(match.match.start_time),
+         end_time: new Date(match.match.end_time)
+      } as MatchInfo,
       games
    };
 }
