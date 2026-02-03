@@ -255,7 +255,8 @@ export async function addTeamsData({
                   $set: {
                      [`${mode}.pvp.rating`]: p.ratingCalc.getRating(),
                      [`${mode}.pvp.rd`]: p.ratingCalc.getRd(),
-                     [`${mode}.pvp.vol`]: p.ratingCalc.getVol()
+                     [`${mode}.pvp.vol`]: p.ratingCalc.getVol(),
+                     [`${mode}.pvp.lastPlayed`]: new Date()
                   },
                   $inc: {
                      [`${mode}.pvp.wins`]: +isWinner,
@@ -561,7 +562,8 @@ export async function addMatchData({
                $set: {
                   [`${mode}.pvp.rating`]: winnerPlayer.getRating(),
                   [`${mode}.pvp.rd`]: winnerPlayer.getRd(),
-                  [`${mode}.pvp.vol`]: winnerPlayer.getVol()
+                  [`${mode}.pvp.vol`]: winnerPlayer.getVol(),
+                  [`${mode}.pvp.lastPlayed`]: new Date()
                },
                $inc: { [`${mode}.pvp.wins`]: 1 },
                $push: {
@@ -604,7 +606,8 @@ export async function addMatchData({
                $set: {
                   [`${mode}.pvp.rating`]: loserPlayer.getRating(),
                   [`${mode}.pvp.rd`]: loserPlayer.getRd(),
-                  [`${mode}.pvp.vol`]: loserPlayer.getVol()
+                  [`${mode}.pvp.vol`]: loserPlayer.getVol(),
+                  [`${mode}.pvp.lastPlayed`]: new Date()
                },
                $inc: { [`${mode}.pvp.losses`]: 1 },
                $push: {

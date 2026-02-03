@@ -8,23 +8,7 @@ import {
    UndocumentedBeatmappackResponse
 } from "@/types/undocumented.beatmappacks";
 import { DbHistory } from "@/types/database.history";
-
-async function getOsuToken() {
-   console.log("Get osu token");
-   const url = new URL("https://osu.ppy.sh/oauth/token");
-   const headers = {
-      Accept: "application/json",
-      "Content-Type": "application/x-www-form-urlencoded"
-   };
-   const body = `client_id=${process.env.AUTH_OSU_ID}&client_secret=${process.env.AUTH_OSU_SECRET}&grant_type=client_credentials&scope=public`;
-   const osuResponse = await fetch(url, {
-      method: "POST",
-      headers,
-      body
-      // cache: "no-store" // TODO Investigate if this will be needed in production
-   }).then(res => res.json());
-   return osuResponse.access_token;
-}
+import { getOsuToken } from "@/helpers/osuToken";
 
 async function findMappackTag(packList: UndocumentedBeatmappackCompact[], mode: GameMode) {
    const history = (await historyDb.findOne({ _id: `${mode}Packs` })) as DbHistory & { type: "string" };
@@ -107,45 +91,51 @@ async function inflateRd() {
             $set: {
                ...Object.fromEntries(
                   modes.flatMap(mode => {
-                     const build = (q: "pve" | "pvp") => [
-                        `${mode}.${q}.rd`,
-                        {
-                           $cond: [
-                              {
-                                 $and: [
-                                    { $eq: [{ $type: `$${mode}.${q}` }, "object"] },
-                                    { $ne: [`$${mode}.${q}.lastPlayed`, null] }
-                                 ]
-                              },
-                              {
-                                 $min: [
-                                    350,
-                                    {
-                                       $sqrt: {
-                                          $add: [
-                                             { $pow: [`$${mode}.${q}.rd`, 2] },
-                                             {
-                                                $multiply: [
-                                                   { $pow: [`$${mode}.${q}.vol`, 2] },
-                                                   {
-                                                      $dateDiff: {
-                                                         startDate: `$${mode}.${q}.lastPlayed`,
-                                                         endDate: "$$NOW",
-                                                         unit: "week"
-                                                      }
+                     const inf = (q: "pvp" | "pve") => ({
+                        $cond: [
+                           { $eq: [{ $type: `$${mode}.${q}.lastPlayed` }, "date"] },
+                           {
+                              $min: [
+                                 350,
+                                 {
+                                    $sqrt: {
+                                       $add: [
+                                          { $pow: [`$${mode}.${q}.rd`, 2] },
+                                          {
+                                             $multiply: [
+                                                { $pow: [`$${mode}.${q}.vol`, 2] },
+                                                {
+                                                   $dateDiff: {
+                                                      startDate: `$${mode}.${q}.lastPlayed`,
+                                                      endDate: "$$NOW",
+                                                      unit: "week"
                                                    }
-                                                ]
-                                             }
-                                          ]
-                                       }
+                                                }
+                                             ]
+                                          }
+                                       ]
                                     }
-                                 ]
-                              },
-                              `$${mode}.${q}.rd`
-                           ]
-                        }
+                                 }
+                              ]
+                           },
+                           `$${mode}.${q}.rd`
+                        ]
+                     });
+                     return [
+                        [`${mode}.pve.rd`, inf("pve")],
+                        [
+                           `${mode}.pvp`,
+                           {
+                              $cond: [
+                                 { $eq: [{ $type: `$${mode}.pvp` }, "object"] },
+                                 {
+                                    $mergeObjects: [`$${mode}.pvp`, { rd: inf("pvp") }]
+                                 },
+                                 "$$REMOVE"
+                              ]
+                           }
+                        ]
                      ];
-                     return [build("pve"), build("pvp")];
                   })
                )
             }
