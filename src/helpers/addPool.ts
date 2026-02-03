@@ -6,6 +6,7 @@ import { DbMappack } from "@/types/database.mappack";
 import { batchArray } from "./list-splitter";
 import { getPreviousMapScalings, prepBeatmapData } from "./server/predictor";
 
+/** @deprecated Use function from helpers/server/beatmaps */
 export async function addMapsToDatabase(
    accessToken: string,
    mode: GameMode,

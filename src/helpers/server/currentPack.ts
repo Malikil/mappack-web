@@ -7,6 +7,7 @@ import { getOsuToken } from "../osuToken";
 
 const ACTIVE_MAPPACKS = parseInt(process.env.ACTIVE_MAPPACKS);
 
+/** @deprecated Use function from ./beatmaps */
 export async function getMaplist(mode: GameMode, maps: number[]) {
    console.log(`Fetch ${maps.length} maps`);
    const maplist: DbBeatmap[] = await mapsDb[mode].find({ _id: { $in: maps } }).toArray();

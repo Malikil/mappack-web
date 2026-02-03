@@ -1,6 +1,6 @@
-import { GameMode, getModsEnum, Mod } from "osu-web.js";
+import { Client, GameMode, getModsEnum, Mod, UserCompact } from "osu-web.js";
 import { ScoreParserV2 } from "../scorev1";
-import { getMaplist } from "./currentPack";
+import { getMaplist } from "./beatmaps";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { DbPlayer, MatchHistorySong } from "@/types/database.player";
 import { getPlayerList } from "./players";
@@ -12,6 +12,7 @@ import { UpdateFilter, UpdateOneModel } from "mongodb";
 import { mapsDb, playersDb } from "@/app/api/db/connection";
 import { updateTeamScoreHistory } from "@/app/api/db/team/functions";
 import { MatchGame, MatchInfo } from "@/types/undocumented/matches";
+import { getOsuToken } from "../osuToken";
 
 const ALL_MODES: GameMode[] = ["osu", "fruits", "taiko", "mania"];
 
@@ -22,7 +23,7 @@ function validateGameSettings(game: MatchGame) {
    return true;
 }
 
-async function fetchMaplist(games: MatchGame[]) {
+async function fetchMaplist(games: MatchGame[], client: Client = null) {
    const modeMaps: { [mode in GameMode]: number[] } = {
       osu: [],
       fruits: [],
@@ -39,7 +40,7 @@ async function fetchMaplist(games: MatchGame[]) {
       mania: []
    };
    for (const mode of ALL_MODES)
-      if (modeMaps[mode].length > 0) maplist[mode] = await getMaplist(mode, modeMaps[mode]);
+      if (modeMaps[mode].length > 0) maplist[mode] = await getMaplist(mode, modeMaps[mode], client);
    return maplist;
 }
 
@@ -75,19 +76,6 @@ function validateGame(game: MatchGame, maplist: Record<GameMode, DbBeatmap[]>) {
             score: s.parser,
             mods: ignoreSongMods(s.score.mods)
          }))
-   };
-}
-
-async function ensurePlayerInfo(id: number, playerBlacklist: Set<number>) {
-   if (playerBlacklist.has(id)) return;
-   const [player] = await getPlayerList([id]);
-   if (!player) {
-      playerBlacklist.add(id);
-      return;
-   }
-   return {
-      original: player,
-      working: structuredClone(player)
    };
 }
 
@@ -229,10 +217,12 @@ function updateMapRating(
 }
 
 export async function submitPveData(
-   lobby: { match: MatchInfo; games: MatchGame[] },
-   allowIncomplete = false
+   lobby: { match: MatchInfo; games: MatchGame[]; users: UserCompact[] },
+   allowIncomplete = false,
+   client: Client = null
 ) {
    console.log(`Submit PvE lobby ${lobby.match.id}`);
+   if (!client) client = new Client(await getOsuToken());
    // Most recent map ratings
    const maps: Record<GameMode, DbBeatmap[]> = {
       osu: [],
@@ -245,8 +235,12 @@ export async function submitPveData(
          working: DbPlayer;
          original: DbPlayer;
       };
-   } = {};
-   const playerBlacklist = new Set<number>();
+   } = Object.fromEntries(
+      (await getPlayerList(lobby.users, null, false, client)).map(p => [
+         p._id,
+         { original: p, working: structuredClone(p) }
+      ])
+   );
    const bufferedPlayerResults: Record<
       GameMode,
       {
@@ -284,11 +278,12 @@ export async function submitPveData(
       if (!allowIncomplete && !lobby.match.end_time) return;
       if (lobby.games.length < 1) return;
 
-      Object.assign(maps, await fetchMaplist(lobby.games));
+      Object.assign(maps, await fetchMaplist(lobby.games, client));
 
       for (const game of lobby.games) {
-         const { workingMap, scores } = validateGame(game, maps) || {};
-         if (!workingMap) continue;
+         const validatedGame = validateGame(game, maps);
+         if (!validatedGame) continue;
+         const { workingMap, scores } = validatedGame;
          const scoreBuffer = bufferedPlayerResults[game.mode];
          // Keep the current map rating, and update map results
          const mapResultsList: {
@@ -299,9 +294,8 @@ export async function submitPveData(
          // Add results to the player lists
          for (const playerResult of scores) {
             const playerId = playerResult.user;
+            if (!(playerId in players)) continue; // Player is likely banned
             if (!(playerId in scoreBuffer)) scoreBuffer[playerId] = [];
-            if (!(playerId in players)) players[playerId] = await ensurePlayerInfo(playerId, playerBlacklist);
-            if (!players[playerId]) continue; // Player is blacklisted
             // Set up the player's history if they haven't been seen yet
             if (!(playerId in playerHistory)) playerHistory[playerId] = {};
             // Ensure the player's history for this gamemode exists
@@ -398,9 +392,10 @@ async function updatePlayers(
          update.$set[`${mode}.pve.rating`] = w.pve.rating;
          update.$set[`${mode}.pve.rd`] = w.pve.rd;
          update.$set[`${mode}.pve.vol`] = w.pve.vol;
-         // Mods
+         // Mods and styles
          for (const [mod, val] of Object.entries(w.mods))
             if (o.mods[mod as Mod] !== val) update.$set[`${mode}.mods.${mod}`] = val;
+         update.$set[`${mode}.styles`] = w.styles;
          // History
          update.$set[`${mode}.pve.lastPlayed`] = new Date();
          update.$inc[`${mode}.pve.games`] = 1;
@@ -439,7 +434,8 @@ async function updateMaps(maps: Record<GameMode, DbBeatmap[]>) {
          const update: UpdateFilter<DbBeatmap> = {
             $set: {
                rating: working.rating,
-               mods: working.mods
+               mods: working.mods,
+               styles: working.styles
             }
          };
          mapOps.push({

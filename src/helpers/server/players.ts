@@ -1,11 +1,12 @@
 import { playersDb } from "@/app/api/db/connection";
 import { Client, GameMode } from "osu-web.js";
 import { getOsuToken } from "../osuToken";
-import { DbPlayer, ModeInfo } from "@/types/database.player";
+import { DbPlayer } from "@/types/database.player";
 import { batchArray } from "../list-splitter";
 import { delay, seconds } from "@/time";
 
 export async function createPvpRegistration(osuid: number, mode: GameMode = "osu") {
+   if (!mode) mode = "osu";
    console.log(`Create ${mode} pvp stats for ${osuid}`);
    const player = await playersDb.findOneAndUpdate(
       { _id: osuid, [`${mode}.pvp`]: { $exists: false } },
@@ -26,16 +27,81 @@ export async function createPvpRegistration(osuid: number, mode: GameMode = "osu
    return player;
 }
 
-export async function getPlayerList(playerIds: number[], mode: GameMode = "osu", createPvP = false) {
-   const existingPlayers: DbPlayer[] = await playersDb.find({ _id: { $in: playerIds } }).toArray();
-   console.log(`Found ${existingPlayers.length} of ${playerIds.length} players`);
-   const missingIds = playerIds.filter(pid => !existingPlayers.find(p => p._id === pid));
+const N_SKILLS = parseInt(process.env.SKILL_CATEGORIES);
+const SQRT_N = Math.sqrt(N_SKILLS);
+function createModesInfo() {
+   const pve = () => ({
+      rating: 1500,
+      rd: 350,
+      vol: 0.06,
+      matches: [],
+      games: 0,
+      songs: 0
+   });
+   const modeInfo = () => ({
+      pve: pve(),
+      styles: Array.from({ length: N_SKILLS }, () => ((Math.random() - 0.5) * SQRT_N) / 100),
+      mods: {}
+   });
+   return {
+      osu: modeInfo(),
+      fruits: modeInfo(),
+      taiko: modeInfo(),
+      mania: modeInfo()
+   };
+}
+
+export async function getPlayerList(
+   players: (number | { id: number; username: string })[],
+   mode: GameMode = "osu",
+   createPvP = false,
+   client: Client = null
+) {
+   // Split up known usernames
+   const knownUsers = new Map<number, string>();
+   const allIds: number[] = [];
+
+   for (const p of players) {
+      if (typeof p === "number") {
+         allIds.push(p);
+      } else {
+         knownUsers.set(p.id, p.username);
+         allIds.push(p.id);
+      }
+   }
+
+   // Initial fetch existing players
+   const existingPlayers = await playersDb.find({ _id: { $in: allIds } }).toArray();
+
+   const existingIds = new Set(existingPlayers.map(p => p._id));
+   console.log(`Found ${existingPlayers.length} of ${allIds.length} players`);
+   // Create update statements for anyone whose username has changed, or are missing from the database
+   if (knownUsers.size > 0) {
+      console.log(
+         await playersDb.bulkWrite(
+            [...knownUsers.entries()].map(([id, username]) => ({
+               updateOne: {
+                  filter: { _id: id },
+                  update: {
+                     $set: { osuname: username },
+                     $setOnInsert: createModesInfo()
+                  },
+                  upsert: true
+               }
+            }))
+         )
+      );
+   }
+
+   // See if we're still missing anyone at this point
+   const idsNeedingApi = allIds.filter(id => !knownUsers.has(id) && !existingIds.has(id));
+
    const addedPlayers: DbPlayer[] = [];
-   if (missingIds.length > 0) {
-      const client = new Client(await getOsuToken());
+   if (idsNeedingApi.length > 0) {
+      if (!client) client = new Client(await getOsuToken());
       const addingUsers: DbPlayer[] = [];
       let panic = false;
-      for (const batch of batchArray(missingIds)) {
+      for (const batch of batchArray(idsNeedingApi)) {
          console.log(`Get ${batch.length} players from bancho`);
          const banchoUsers = await client.users.getUsers({ query: { ids: batch } }).catch(err => {
             console.error(err);
@@ -46,29 +112,11 @@ export async function getPlayerList(playerIds: number[], mode: GameMode = "osu",
             break;
          }
 
-         const ratingSet: ModeInfo = {
-            pve: {
-               rating: 1500,
-               rd: 350,
-               vol: 0.06,
-               matches: [],
-               games: 0,
-               songs: 0
-            },
-            styles: Array.from(
-               { length: parseInt(process.env.SKILL_CATEGORIES) },
-               () => Math.random() * 0.02 - 0.01
-            ),
-            mods: {}
-         };
          addingUsers.push(
             ...banchoUsers.map(bu => ({
                _id: bu.id,
                osuname: bu.username,
-               osu: ratingSet,
-               fruits: ratingSet,
-               taiko: ratingSet,
-               mania: ratingSet
+               ...createModesInfo()
             }))
          );
          console.log(`Done! Now ${addingUsers.length} total`);
@@ -91,7 +139,7 @@ export async function getPlayerList(playerIds: number[], mode: GameMode = "osu",
       // Stop the function if we hit an error
       if (panic) throw new Error("Failed to fetch players");
    }
-   let playerList = existingPlayers.concat(addedPlayers);
+   let playerList = await playersDb.find({ _id: { $in: allIds } }).toArray();
    // Add pvp stats if requested
    console.log(`Create pvp stats? ${createPvP}`);
    if (createPvP)
