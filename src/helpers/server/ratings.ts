@@ -183,6 +183,10 @@ function normalize(vec: number[], maxNorm = 1) {
    return vec.map(v => v * (maxNorm / norm));
 }
 
+/**
+ * @param {object} results 
+ * @param results.score Score after mods are applied
+ */
 export function getUpdatedStylesFromBatch(
    results: {
       mode: GameMode;
@@ -197,6 +201,11 @@ export function getUpdatedStylesFromBatch(
          rating: Rating;
          styles: number[];
       };
+      mods?: {
+         mods: Mod[];
+         player: Partial<Record<Mod, number>>;
+         map: Partial<Record<Mod, number>>;
+      }
    }[]
 ) {
    const nSkills = parseInt(process.env.SKILL_CATEGORIES);
@@ -217,7 +226,7 @@ export function getUpdatedStylesFromBatch(
    const mapGradientsList: {
       [id: number]: Partial<Record<GameMode, number[]>>;
    } = {};
-   for (const { mode, score, player, map } of skillsEnsuredResults) {
+   for (const { mode, score, player, map, mods } of skillsEnsuredResults) {
       // Get the appropriate gradients
       if (!(player._id in playerGradientsList)) playerGradientsList[player._id] = {};
       const playerGradients = playerGradientsList[player._id];
@@ -227,7 +236,7 @@ export function getUpdatedStylesFromBatch(
       if (!(mode in mapGradients)) mapGradients[mode] = Array(nSkills).fill(0);
 
       // To update style weights, get the expected score
-      const scoreResult = matchResultValue(score, mode);
+      const scoreResult = matchResultValue(score, mode, mods);
       const expectedResult = predictOutcome(player.rating, map.rating, player.styles, map.styles);
       const error = scoreResult - expectedResult;
       const scale = 1 / Math.sqrt(nSkills);

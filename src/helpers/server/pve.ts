@@ -125,7 +125,12 @@ function updatePlayerRating(
             rating: workingPve,
             styles: workingPlayer[gamemode].styles
          },
-         score: s.score
+         score: s.score,
+         mods: {
+            mods: s.mods,
+            map: s.mapSnapshot.mods,
+            player: workingPlayer[gamemode].mods
+         }
       }))
    );
    console.log(
@@ -201,7 +206,12 @@ function updateMapRating(
             rating: s.playerSnapshot[gamemode].pve,
             styles: s.playerSnapshot[gamemode].styles
          },
-         score: s.score
+         score: s.score,
+         mods: {
+            mods: s.mods,
+            map: workingMap.mods,
+            player: s.playerSnapshot[gamemode].mods
+         }
       }))
    );
    console.log("Old:", workingMap.styles, "New:", styleUpdates.maps[workingMap._id][gamemode]);
@@ -449,6 +459,6 @@ async function updateMaps(maps: Record<GameMode, DbBeatmap[]>) {
       if (mapOps.length > 0) {
          const result = await mapsDb[mode].bulkWrite(mapOps);
          console.log(mode, "maps", result);
-      } else console.warn(mode, "No maps to update");
+      }
    }
 }

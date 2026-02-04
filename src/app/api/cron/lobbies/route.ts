@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
          (a, b) => a.match.end_time.getTime() - b.match.end_time.getTime()
       )) {
          console.log("Attempt add PvE", match.match.id);
-         const result = await submitPveData(match);
+         const result = await submitPveData(match, false, client);
          if (result) addLinks.push({ _id: match.match.id });
       }
       console.log("Add", addLinks.length, "pve matches");

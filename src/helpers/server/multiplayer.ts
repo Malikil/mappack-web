@@ -19,12 +19,9 @@ export async function getLobbyData(mp: number, client: Client = null) {
       console.log(`${i}:`, nextBatch.events[0].id, "-", nextBatch.events.slice(-1)[0].id);
       match.events = nextBatch.events.concat(match.events);
    }
-   console.log(
-      `Complete fetch: ${match.first_event_id === match.events[0].id}`,
-      match.events.length,
-      "events"
-   );
+   console.log(`Complete fetch: ${match.first_event_id === match.events[0].id}`);
    const games = match.events.filter(e => e.game).map(g => g.game);
+   console.log(games.length, `games, from ${match.events.length} events.`);
    return {
       ...match,
       match: {
