@@ -5,6 +5,7 @@ import AccessNotify from "../../components/access-notify/AccessNotify";
 import DifficultyChart from "./components/difficulty-chart/DifficultyChart";
 import AddAttack from "./components/add-attack/AddAttack";
 import TournamentSubmit from "./components/bulk-add/TournamentSubmit";
+import PlayerLookup from "./components/player-lookup/PlayerLookup";
 
 export default async function Admin() {
    const { session } = await verify();
@@ -16,6 +17,7 @@ export default async function Admin() {
             <AdminActions />
             <AddAttack />
             <TournamentSubmit />
+            <PlayerLookup />
          </div>
          <DifficultyChart chartVersion="scaling" />
          <DifficultyChart chartVersion="recent" legend />
