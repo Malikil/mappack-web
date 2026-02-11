@@ -1,13 +1,15 @@
 import { teamsDb } from "@/app/api/db/connection";
 import { ObjectId } from "mongodb";
 import { redirect } from "next/navigation";
-import { Card, CardBody, CardHeader } from "react-bootstrap";
+import { Card, CardBody, CardHeader, CardText } from "react-bootstrap";
 import PlayerCard from "../components/PlayerCard";
 import InvitePlayer from "./InvitePlayer";
 import TeamName from "./TeamName";
 import PoolSetupCard from "./pools/PoolSetupCard";
 import LeaveTeam from "./LeaveTeam";
 import { auth } from "@/auth";
+import AddOpponent from "./AddOpponent";
+import OpponentCard from "./OpponentCard";
 
 export default async function TeamPage({ params }) {
    const teamId = (await params).teamid;
@@ -39,6 +41,23 @@ export default async function TeamPage({ params }) {
             </CardBody>
          </Card>
          <PoolSetupCard teamid={teamId} data={team.pools} mode={team.mode} />
+         <Card className="mt-2">
+            <CardHeader className="d-flex justify-content-between align-items-center">
+               <span>Opponents</span>
+               <AddOpponent teamId={teamId} />
+            </CardHeader>
+            <CardBody>
+               <CardText>
+                  Actual opponent scores are unknown. Targets are estimated based on map difficulty, general
+                  mod performance, and learned mapping styles
+               </CardText>
+               <div className="d-flex flex-wrap gap-1">
+                  {team.opponents.map(opp => (
+                     <OpponentCard key={opp.id} teamId={teamId} player={opp} />
+                  ))}
+               </div>
+            </CardBody>
+         </Card>
       </div>
    );
 }

@@ -36,7 +36,7 @@ export default async function Teams() {
                      console.log("Create team");
                      await teamsDb.insertOne({
                         name: "New Team",
-                        mode: player.gamemode,
+                        mode: player.gamemode || "osu",
                         teamSize: 1,
                         players: [
                            {
@@ -45,7 +45,8 @@ export default async function Teams() {
                               pending: false
                            }
                         ],
-                        pools: []
+                        pools: [],
+                        opponents: []
                      });
                      revalidatePath("/teams");
                   }}

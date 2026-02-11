@@ -12,39 +12,44 @@ export default function PlayerLookup() {
             <Form
                className="d-flex flex-column gap-2 flex-fill"
                action={async formData => {
-                  const playerListLink = formData.get('ids').toString().split('\n').map(s => s.trim()).filter(s => s);
+                  const playerListLink = formData
+                     .get("ids")
+                     .toString()
+                     .split("\n")
+                     .map(s => s.trim())
+                     .filter(s => s);
                   const playerListId = playerListLink
-                     .map(l => parseInt(l.slice(l.lastIndexOf("/") + 1)))
-                     .filter(v => v)
-                     .sort((a, b) => a - b);
-                  serverActionToast(fetchPlayerList(playerListId).then(
-                     result => navigator.clipboard.writeText(JSON.stringify(result)),
-                     (err: Error) => ({
-                        http: {
-                           status: 500,
-                           message: err.message
-                        }
-                     })
-                  ), {
-                     pending: `Fetching ${playerListId.length} players`,
-                     success: "Data copied to clipboard"
-                  });
+                     .map(l => l.slice(l.lastIndexOf("/") + 1))
+                     .map(l => parseInt(l) || l);
+                  serverActionToast(
+                     fetchPlayerList(playerListId).then(
+                        result => navigator.clipboard.writeText(JSON.stringify(result)),
+                        (err: Error) => ({
+                           http: {
+                              status: 500,
+                              message: err.message
+                           }
+                        })
+                     ),
+                     {
+                        pending: `Fetching ${playerListId.length} players`,
+                        success: "Data copied to clipboard"
+                     }
+                  );
                }}
             >
                <FormGroup>
                   <FormLabel>User IDs</FormLabel>
                   <FormControl
                      as="textarea"
-                     style={{ width: '200px' }}
+                     style={{ width: "200px" }}
                      name="ids"
-                     placeholder={"osu.ppy.sh/u/12345\n12345\netc..."}
+                     placeholder={"osu.ppy.sh/u/12345\n12345\nUsername\netc..."}
                      rows={6}
                   />
                </FormGroup>
                <div className="mt-auto d-flex justify-content-end gap-1">
-                  <Button type="submit">
-                     Lookup Players
-                  </Button>
+                  <Button type="submit">Lookup Players</Button>
                </div>
             </Form>
          </CardBody>

@@ -4,39 +4,44 @@ import ComponentInfoRows from "../ComponentInfoRows";
 import AddPvESession from "./AddPveSession";
 import { PvEInfo } from "@/types/database.player";
 import { GameMode } from "osu-web.js";
+import { prettyRating } from "@/helpers/rating-range";
 
 export default function PvEResultsCard({
    data,
-   osuid,
-   mode
+   mode,
+   activePlayer
 }: {
    data: PvEInfo;
-   osuid: number;
    mode: GameMode;
+   activePlayer?: boolean;
 }) {
    const provisional = data.rd >= 150 || data.games < 3;
 
    return (
       <Card>
-         <CardHeader>Score Attack</CardHeader>
+         <CardHeader>General Play</CardHeader>
          <CardBody>
             <div className="d-flex">
                <ComponentInfoRows
                   data={[
-                     ["Rating", data.rating.toFixed(0), provisional && "Provisional"],
+                     ["Rating", prettyRating(data.rating), provisional && "Provisional"],
                      ["Deviation", data.rd.toFixed(0)],
-                     ["Games", data.games, `${data.songs} maps`]
+                     ["Lobbies", data.games, `${data.songs} maps`]
                   ].filter(v => v)}
                />
-               {osuid && <AddPvESession />}
+               {activePlayer && <AddPvESession />}
             </div>
-            <hr />
-            <CardTitle>Match History</CardTitle>
-            <div className="d-flex flex-column gap-1">
-               {data.matches.map((match, i) => (
-                  <ScoreHistoryItem key={i} match={match} mode={mode} />
-               ))}
-            </div>
+            {activePlayer && (
+               <>
+                  <hr />
+                  <CardTitle>Match History</CardTitle>
+                  <div className="d-flex flex-column gap-1">
+                     {data.matches.map((match, i) => (
+                        <ScoreHistoryItem key={i} match={match} mode={mode} />
+                     ))}
+                  </div>
+               </>
+            )}
          </CardBody>
       </Card>
    );

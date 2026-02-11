@@ -14,6 +14,7 @@
    "dependencies": {
       "@floating-ui/react": "^0.26.23",
       "@rainij/polynomial-regression-js": "^1.4.0",
+      "@stdlib/stats-base-dists-normal-cdf": "^0.3.1",
       "bootstrap": "^5.3.3",
       "chart.js": "^4.4.6",
       "color-interpolate": "^1.0.5",

@@ -174,3 +174,9 @@ export function combineRatings(...ratings: Rating[]) {
       rd: Math.sqrt(agg.rd)
    };
 }
+
+export function prettyRating(rating: number) {
+   const cutoff = 452; // From minimum rating -1269 | Retrieved Feb 8, 2026
+   if (rating >= cutoff) return rating.toFixed();
+   else return (cutoff * Math.exp(rating / cutoff - 1)).toFixed();
+}

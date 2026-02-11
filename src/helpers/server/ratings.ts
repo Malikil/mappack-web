@@ -3,8 +3,8 @@ import { GameMode, Mod } from "osu-web.js";
 import { combineRatings, matchResultValue, predictOutcome } from "../rating-range";
 import { Rating } from "@/types/rating";
 
-const MAP_STYLE_LEARNING_RATE = 0.05;
-const PLAYER_STYLES_LEARNING_RATE = 0.01;
+const MAP_STYLE_LEARNING_RATE = 0.5;
+const PLAYER_STYLES_LEARNING_RATE = 0.1;
 const STYLES_REGULARIZATION = 0.1;
 /**
  * The largest possible update per mod per play
@@ -184,7 +184,7 @@ function normalize(vec: number[], maxNorm = 1) {
 }
 
 /**
- * @param {object} results 
+ * @param {object} results
  * @param results.score Score after mods are applied
  */
 export function getUpdatedStylesFromBatch(
@@ -205,7 +205,7 @@ export function getUpdatedStylesFromBatch(
          mods: Mod[];
          player: Partial<Record<Mod, number>>;
          map: Partial<Record<Mod, number>>;
-      }
+      };
    }[]
 ) {
    const nSkills = parseInt(process.env.SKILL_CATEGORIES);
@@ -262,7 +262,8 @@ export function getUpdatedStylesFromBatch(
                            (v, i) =>
                               playerOldStyles[i] +
                               PLAYER_STYLES_LEARNING_RATE * (v - STYLES_REGULARIZATION * playerOldStyles[i])
-                        )
+                        ),
+                        2
                      );
                      return [mode, playerNewStyles];
                   })
@@ -284,7 +285,8 @@ export function getUpdatedStylesFromBatch(
                            (v, i) =>
                               mapOldStyles[i] +
                               MAP_STYLE_LEARNING_RATE * (v - STYLES_REGULARIZATION * mapOldStyles[i])
-                        )
+                        ),
+                        2
                      );
                      return [mode, mapNewStyles];
                   })

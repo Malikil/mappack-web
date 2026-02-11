@@ -14,7 +14,6 @@ export default async function Leaderboard() {
          {
             hideLeaderboard: { $ne: true },
             [`${gamemode}.pve.rd`]: { $lt: 150 },
-            //[`${gamemode}.pve.songs`]: { $gt: 10 },
             [`${gamemode}.pve.games`]: { $gt: 2 }
          },
          { sort: [`${gamemode}.pve.rating`, -1], limit: 100 }

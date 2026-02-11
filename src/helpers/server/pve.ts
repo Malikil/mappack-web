@@ -51,6 +51,9 @@ function validateGame(game: MatchGame, maplist: Record<GameMode, DbBeatmap[]>) {
    const scores = game.scores
       .map(score => {
          // If there are double the number of misses as good hits
+         // Mania counts rainbow hits as geki, presumably a player should get more imperfect 300s than
+         // misses anyways, but worth keeping in mind and revisiting this later
+         // Also TODO - check other gamemodes for how good hits are counted
          if (score.statistics.count_miss > score.statistics.count_300 * 2) return;
          return {
             score,

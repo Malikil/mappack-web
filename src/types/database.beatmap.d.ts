@@ -18,4 +18,5 @@ export interface DbBeatmap extends BeatmapVersion {
    styles: number[];
    mods: ModRatings;
    rating: Rating;
+   dtb?: boolean;
 }

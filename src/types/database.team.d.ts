@@ -22,6 +22,10 @@ export interface DbTeam {
       pending: boolean;
    }[];
    pools: PracticePool[];
+   opponents: {
+      id: number;
+      osuname: string;
+   }[];
 }
 
 export type Team = DbTeam & { _id: string };

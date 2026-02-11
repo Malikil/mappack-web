@@ -1,5 +1,5 @@
 import { teamsDb } from "@/app/api/db/connection";
-import { getMaplist } from "@/helpers/server/currentPack";
+import { getMaplist } from "@/helpers/server/beatmaps";
 import { ObjectId } from "mongodb";
 import { redirect } from "next/navigation";
 import { getModsEnum } from "osu-web.js";
@@ -9,6 +9,7 @@ import Link from "next/link";
 import { combineRatingsById } from "@/helpers/server/ratings";
 import { auth } from "@/auth";
 import StatsTable from "./StatsTable";
+import { getPlayerList } from "@/helpers/server/players";
 
 export default async function TeamPoolPage({ params }) {
    const { teamid: teamId, poolname } = await params;
@@ -36,6 +37,11 @@ export default async function TeamPoolPage({ params }) {
       pool.maps.map(m => m.id)
    );
    const combinedPlayerRatings = await combineRatingsById(team.mode, ...playerList.map(p => p.id));
+   const opponents = await getPlayerList(
+      team.opponents.map(opp => ({ id: opp.id, username: opp.osuname })),
+      team.mode,
+      true
+   );
 
    return (
       <div>
@@ -57,6 +63,10 @@ export default async function TeamPoolPage({ params }) {
             pool={pool}
             targetRating={combinedPlayerRatings.targetRating}
             teamSize={team.teamSize}
+            opponents={opponents.map(opp => ({
+               ...opp[team.mode],
+               rating: opp[team.mode].pvp
+            }))}
          />
       </div>
    );

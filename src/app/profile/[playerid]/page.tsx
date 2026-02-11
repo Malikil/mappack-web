@@ -71,11 +71,7 @@ export default async function Profile({ params }) {
                </Card>
             )}
             {pveStats && (
-               <PvEResultsCard
-                  data={pveStats}
-                  osuid={user?._id === player._id ? playerid : null}
-                  mode={gamemode}
-               />
+               <PvEResultsCard data={pveStats} activePlayer={user?._id === player._id} mode={gamemode} />
             )}
             {user?._id === player._id && (
                <ModSkills mods={player[gamemode].mods} skills={player[gamemode].styles} />
