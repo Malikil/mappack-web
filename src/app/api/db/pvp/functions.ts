@@ -134,7 +134,7 @@ function parseTeamsLobby(lobby: LegacyMultiplayerLobby, warmups: number): TeamMp
                map,
                mods: playerMods,
                player: score.user_id,
-               score: new ScoreParser(score, game.scoring_type, game.play_mode)
+               score: new ScoreParser(score, game.scoring_type, game.play_mode, playerMods)
             });
 
             // Run through each opponent, check if this player won or lost vs them
