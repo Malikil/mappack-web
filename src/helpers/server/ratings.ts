@@ -43,6 +43,7 @@ export function getUpdatedModsFromBatch(
          _id: number;
          rating: Rating;
          mods: Partial<Record<Mod, number>>;
+         dtb?: boolean;
       };
    }[]
 ) {
@@ -92,7 +93,7 @@ export function getUpdatedModsFromBatch(
       const playerModsModifier = score.mods.reduce((mult, mod) => mult * (player.mods[mod] || 1), 1);
       const mapModsModifier = score.mods.reduce((mult, mod) => mult * (map.mods[mod] || 1), 1);
       const modAdjustedScore = score.score * playerModsModifier * mapModsModifier;
-      const outcome = matchResultValue(modAdjustedScore, mode);
+      const outcome = matchResultValue(modAdjustedScore, map.dtb ? "dtb" : mode);
 
       // Calculate the expected result
       const expectedResult = predictOutcome(player.rating, map.rating);
@@ -200,6 +201,7 @@ export function getUpdatedStylesFromBatch(
          _id: number;
          rating: Rating;
          styles: number[];
+         dtb?: boolean;
       };
       mods?: {
          mods: Mod[];
@@ -236,7 +238,7 @@ export function getUpdatedStylesFromBatch(
       if (!(mode in mapGradients)) mapGradients[mode] = Array(nSkills).fill(0);
 
       // To update style weights, get the expected score
-      const scoreResult = matchResultValue(score, mode, mods);
+      const scoreResult = matchResultValue(score, map.dtb ? "dtb" : mode, mods);
       const expectedResult = predictOutcome(player.rating, map.rating, player.styles, map.styles);
       const error = scoreResult - expectedResult;
       const scale = 1 / Math.sqrt(nSkills);

@@ -314,6 +314,7 @@ export async function addTeamsData({
          rating: Rating;
          mods: Partial<Record<Mod, number>>;
          styles: number[];
+         dtb?: boolean;
       };
    }[] = [];
 
@@ -335,7 +336,7 @@ export async function addTeamsData({
       mapCalculatorResults.push([
          playerCalc,
          pMap.mapCalc,
-         matchResultValue(score.score.getScore() * playerModsMult * mapModsMult, mode)
+         matchResultValue(score.score.getScore() * playerModsMult * mapModsMult, pMap.map.dtb ? "dtb" : mode)
       ]);
       // Add data for mod multiplier updates
       modUpdatesObj.push({
@@ -685,7 +686,7 @@ export async function addMatchData({
    const calculatorMatches: [Player, Player, number][] = mapResultsForCalc.map(result => [
       result.player.calc,
       result.map.calc,
-      matchResultValue(result.score, mode, {
+      matchResultValue(result.score, result.map.map.dtb ? "dtb" : mode, {
          mods: result.mods,
          player: result.player.player[mode].mods,
          map: result.map.map.mods

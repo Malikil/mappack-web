@@ -47,14 +47,24 @@ async function fetchMaplist(games: MatchGame[], client: Client = null) {
 function validateGame(game: MatchGame, maplist: Record<GameMode, DbBeatmap[]>) {
    if (!validateGameSettings(game)) return;
 
+   // Make sure the map exists
+   const workingMap = maplist[game.mode].find(m => m._id === game.beatmap_id);
+   if (!workingMap) return; // Missing beatmap
+   const isDtb = workingMap.dtb && game.mode === "fruits";
+
    // Skip maps without any valid scores
    const scores = game.scores
       .map(score => {
+         const misses = score.statistics.count_miss;
+         const hits = score.statistics.count_300;
          // If there are double the number of misses as good hits
          // Mania counts rainbow hits as geki, presumably a player should get more imperfect 300s than
          // misses anyways, but worth keeping in mind and revisiting this later
          // Also TODO - check other gamemodes for how good hits are counted
-         if (score.statistics.count_miss > score.statistics.count_300 * 2) return;
+         if (isDtb) {
+            // Discard dtb plays where more than 1% of notes are hit
+            if (misses < hits * 100) return;
+         } else if (misses > hits * 2) return;
          return {
             score,
             parser: new ScoreParserV2(score, game.scoring_type === "scorev2" ? "Score V2" : "Score")
@@ -62,10 +72,6 @@ function validateGame(game: MatchGame, maplist: Record<GameMode, DbBeatmap[]>) {
       })
       .filter(v => v);
    if (scores.length < 1) return; // No valid scores
-
-   // Make sure the map exists
-   const workingMap = maplist[game.mode].find(m => m._id === game.beatmap_id);
-   if (!workingMap) return; // Missing beatmap
 
    // Add map to score parsers
    scores.forEach(s => s.parser.setMap(workingMap));
@@ -98,7 +104,7 @@ function updatePlayerRating(
    const results: [Player, Player, number][] = scores.map(s => [
       playerCalc,
       calculator.makePlayer(s.mapSnapshot.rating.rating, s.mapSnapshot.rating.rd, s.mapSnapshot.rating.vol),
-      matchResultValue(s.score, gamemode, {
+      matchResultValue(s.score, s.mapSnapshot.dtb ? "dtb" : gamemode, {
          mods: s.mods,
          player: workingPlayer[gamemode].mods,
          map: s.mapSnapshot.mods
@@ -175,7 +181,7 @@ function updateMapRating(
       return [
          calculator.makePlayer(pdata.rating, pdata.rd, pdata.vol),
          mapCalc,
-         matchResultValue(s.score, gamemode, {
+         matchResultValue(s.score, workingMap.dtb ? "dtb" : gamemode, {
             mods: s.mods,
             player: s.playerSnapshot[gamemode].mods,
             map: workingMap.mods

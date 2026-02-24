@@ -1,5 +1,4 @@
 import { logit, sigmoid } from "@/mathplus";
-import { DbBeatmap } from "@/types/database.beatmap";
 import { Rating } from "@/types/rating";
 import { Glicko2 } from "glicko2";
 import { GameMode, Mod } from "osu-web.js";
@@ -9,25 +8,29 @@ export const MIN_ABSOLUTE = {
    osu: 92099,
    fruits: 500000,
    taiko: 300000,
-   mania: 595268
+   mania: 595268,
+   dtb: 5000
 };
 export const MIN_TARGETS = {
    osu: 105432,
    fruits: 500000,
    taiko: 300000,
-   mania: 630832
+   mania: 630832,
+   dtb: 5000
 };
 export const MAX_TARGETS = {
    osu: 892519,
    fruits: 900000,
    taiko: 900000,
-   mania: 957745
+   mania: 957745,
+   dtb: 500
 };
 export const MAX_ABSOLUTE = {
    osu: 906084,
    fruits: 900000,
    taiko: 900000,
-   mania: 963416
+   mania: 963416,
+   dtb: 500
 };
 export const UPDATE_REFERENCE = {
    osu: "OWC'25",
@@ -66,7 +69,7 @@ export function predictOutcome(
  */
 export function matchResultValue(
    score: number,
-   gamemode: GameMode,
+   gamemode: GameMode | "dtb",
    mods: {
       mods: Mod[];
       player: Partial<Record<Mod, number>>;
@@ -86,8 +89,13 @@ export function matchResultValue(
    const absMax = MAX_ABSOLUTE[gamemode];
 
    //console.log(`Clamp to [${absMin}, ${absMax}]`);
-   if (score < absMin) return 0;
-   if (score > absMax) return 1;
+   if (gamemode === "dtb") {
+      if (score < absMax) return 1;
+      if (score > absMin) return 0;
+   } else {
+      if (score < absMin) return 0;
+      if (score > absMax) return 1;
+   }
 
    const mid = (min + max) / 2;
    const width = max - min;
@@ -108,15 +116,20 @@ export function matchResultValue(
  */
 export function scoreFromResult(
    result: number,
-   gamemode: GameMode,
+   gamemode: GameMode | "dtb",
    mods: {
       mods: Mod[];
       player: Partial<Record<Mod, number>>;
       map: Partial<Record<Mod, number>>;
    } = null
 ) {
-   if (result <= 0) return 0;
-   if (result >= 1) return 1000000;
+   if (gamemode === "dtb") {
+      if (result <= 0) return MIN_ABSOLUTE.dtb;
+      if (result >= 1) return 0;
+   } else {
+      if (result <= 0) return 0;
+      if (result >= 1) return 1000000;
+   }
    const min = MIN_TARGETS[gamemode];
    const max = MAX_TARGETS[gamemode];
    const mid = (min + max) / 2;
@@ -136,7 +149,7 @@ export function scoreFromResult(
    return Math.max(0, Math.min(predictScore / modMult, 1000000));
 }
 
-export function effectiveRating(baseRating: Rating, mode: GameMode, modMult: number) {
+export function effectiveRating(baseRating: Rating, mode: GameMode | "dtb", modMult: number) {
    console.log(`Rating: ${baseRating.rating.toFixed()} Multiplier: ${modMult.toFixed(2)}`);
    const baseOutcome = 0.5;
    const baseScore = scoreFromResult(baseOutcome, mode);
