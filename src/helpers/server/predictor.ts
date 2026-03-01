@@ -12,7 +12,7 @@ export function getMaplistForPredictor(mode: GameMode) {
    if (mode !== "mania") adding.push("$ratings.hd.rd", "$ratings.hr.rd");
    return mapsDb[mode].aggregate<DbBeatmap>([
       // Discard maps with 0 stars. I expect this will really only happen during SR reworks
-      { $match: { stars: { $gt: 0 }, "rating.rd": { $lt: 100 } } },
+      { $match: { stars: { $gt: 0 }, "rating.rd": { $lt: 100 }, dtb: { $ne: true } } },
       { $sort: { "rating.rd": 1 } },
       { $limit: 1000 }
    ]);

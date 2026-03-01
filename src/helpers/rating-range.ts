@@ -23,14 +23,14 @@ export const MAX_TARGETS = {
    fruits: 900000,
    taiko: 900000,
    mania: 957745,
-   dtb: 500
+   dtb: 100
 };
 export const MAX_ABSOLUTE = {
    osu: 906084,
    fruits: 900000,
    taiko: 900000,
    mania: 963416,
-   dtb: 500
+   dtb: 0
 };
 export const UPDATE_REFERENCE = {
    osu: "OWC'25",
