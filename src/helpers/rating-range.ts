@@ -9,21 +9,21 @@ export const MIN_ABSOLUTE = {
    fruits: 500000,
    taiko: 300000,
    mania: 595268,
-   dtb: 5000
+   dtb: 5125
 };
 export const MIN_TARGETS = {
    osu: 105432,
    fruits: 500000,
    taiko: 300000,
    mania: 630832,
-   dtb: 5000
+   dtb: 4909
 };
 export const MAX_TARGETS = {
    osu: 892519,
    fruits: 900000,
    taiko: 900000,
    mania: 957745,
-   dtb: 100
+   dtb: 67
 };
 export const MAX_ABSOLUTE = {
    osu: 906084,
@@ -36,7 +36,8 @@ export const UPDATE_REFERENCE = {
    osu: "OWC'25",
    fruits: "",
    taiko: "",
-   mania: "MWC7K'26"
+   mania: "MWC7K'26",
+   dtb: "Oriio Cup 2026"
 };
 
 /**
