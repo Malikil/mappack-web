@@ -1,10 +1,11 @@
-import { Card, CardBody, CardHeader, Row } from "react-bootstrap";
+import { Card, CardBody, CardHeader } from "react-bootstrap";
 import { PracticePool } from "@/types/database.team";
 import { GameMode, getModsEnum } from "osu-web.js";
 import CreatePoolButton from "./CreatePoolButton";
 import PoolRow from "./PoolRow";
 import { mapsDb } from "@/app/api/db/connection";
 import { revalidatePath } from "next/cache";
+import { DbBeatmap } from "@/types/database.beatmap";
 
 export default async function PoolSetupCard({
    data,
@@ -24,7 +25,7 @@ export default async function PoolSetupCard({
          return {
             mods: m.mods,
             sort: m.sort,
-            map
+            map: map || ({ _id: m.id, title: "Deleted Beatmap" } as DbBeatmap)
          };
       });
       return {
