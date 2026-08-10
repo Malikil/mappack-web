@@ -19,7 +19,10 @@ export const GET = async (req: NextRequest) => {
    if (!["osu", "fruits", "taiko", "mania"].includes(mode)) mode = "osu";
 
    // Get ratings
-   const { targetRating } = await combineRatingsById(mode, ...playerIds);
+   const { targetRating } =
+      playerIds.length > 0
+         ? await combineRatingsById(mode, ...playerIds)
+         : { targetRating: { rating: parseFloat(params.get("r")), rd: parseFloat(params.get("rd")) } };
    const { maps } = await getMappool(targetRating, mode, { keyCount });
    // Move NM to FM for mania
    if (mode === "mania") {

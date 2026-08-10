@@ -7,13 +7,13 @@ export const POST = async (req: NextRequest) => {
    const auth = req.headers.get("Authorization");
    if (auth !== process.env.MATCH_SUBMIT_AUTH) return new NextResponse("Bad auth key", { status: 401 });
 
-   const { mp, playerDefault } = await req.json();
+   const { mp, defaultWinner } = await req.json();
    console.log(`Add results from ${mp}`);
 
    const mpResults = await parseMpLobby(mp);
-   if (playerDefault === mpResults.winnerId) {
-      mpResults.winnerId = mpResults.loserId;
-      mpResults.loserId = playerDefault;
+   if (defaultWinner === mpResults.loserId) {
+      mpResults.loserId = mpResults.winnerId;
+      mpResults.winnerId = defaultWinner;
    }
    if (mpResults.winnerId === "Red" || mpResults.winnerId === "Blue")
       return new NextResponse("Invalid 1v1", { status: 400 });
