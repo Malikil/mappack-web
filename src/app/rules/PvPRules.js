@@ -29,7 +29,7 @@ export default function PvPRules() {
                   </li>
                </ul>
             </li>
-            <li>
+            <li id="pvp-lobby-commands">
                Lobby Commands:
                <ul>
                   <li>

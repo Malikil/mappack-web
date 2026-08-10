@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function PvERules() {
    return (
       <div>
@@ -21,8 +23,8 @@ export default function PvERules() {
                Commands:
                <ul>
                   <li>
-                     <pre className="border rounded p-1 d-inline lh-lg">!pve [mode]</pre> - Create a lobby and
-                     invite you to it. If no mode is specified &apos;osu&apos; is assumed. Specifying
+                     <pre className="border rounded p-1 d-inline lh-lg">!lives [mode]</pre> - Create a lobby
+                     and invite you to it. If no mode is specified &apos;osu&apos; is assumed. Specifying
                      &apos;mania&apos; will not restrict key count
                      <br />
                      Mode can be any of the following: osu, ctb, fruits, taiko, mania, 4k, 7k
@@ -85,6 +87,25 @@ export default function PvERules() {
                   <li>
                      <pre className="border rounded p-1 d-inline lh-lg">!request [map]</pre> - Add a map id to
                      the play queue
+                  </li>
+               </ul>
+            </li>
+         </ul>
+         <h4>1v1 vs Ghost Opponent</h4>
+         <ul>
+            <li>Play a 1v1 match against an opponent with generated scores on maps</li>
+            <li>
+               Commands:
+               <ul>
+                  <li>
+                     <pre className="border rounded p-1 d-inline lh-lg">!pve [mode]</pre> - Create a lobby and
+                     invite you to it. If no mode is specified &apos;osu&apos; is assumed. Specifying
+                     &apos;mania&apos; will not restrict key count
+                     <br />
+                     Mode can be any of the following: osu, ctb, fruits, taiko, mania, 4k, 7k
+                  </li>
+                  <li>
+                     Lobby commands are the same as <Link href="#pvp-lobby-commands">PvP Commands</Link>
                   </li>
                </ul>
             </li>
