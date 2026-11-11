@@ -1,13 +1,15 @@
-import { mapsDb } from "@/app/api/db/connection";
-import { DbBeatmap } from "@/types/database.beatmap";
+import { mapsDb } from "@/database/connection";
 import { Client, GameMode } from "osu-web.js";
 import { getOsuToken } from "../osuToken";
 import { getPreviousMapScalings, prepBeatmapData } from "./predictor";
 import { batchArray } from "../list-splitter";
+import { BeatmapByMode } from "@/types/database/beatmap";
+import { Filter } from "mongodb";
+import { findMaps } from "@/database/maps";
 
-export async function getMaplist(mode: GameMode, maps: number[], client: Client = null) {
+export async function getMaplist<M extends GameMode>(mode: M, maps: number[], client: Client = null): Promise<BeatmapByMode[M][]> {
    console.log(`Fetch ${maps.length} maps`);
-   const maplist: DbBeatmap[] = await mapsDb[mode].find({ _id: { $in: maps } }).toArray();
+   const maplist: BeatmapByMode[M][] = await findMaps(mode, { _id: { $in: maps } } as Filter<BeatmapByMode[M]>);
    // Get map info for any maps not in the database
    const missing = maps.filter(m => !maplist.find(exist => exist._id === m));
    console.log(`Missing ${missing.length}`);
@@ -17,16 +19,16 @@ export async function getMaplist(mode: GameMode, maps: number[], client: Client 
    return maplist;
 }
 
-export async function addMapsToDatabase(
-   mode: GameMode,
+export async function addMapsToDatabase<M extends GameMode>(
+   mode: M,
    maps: number[],
    client: Client = null
-): Promise<DbBeatmap[]> {
+): Promise<BeatmapByMode[M][]> {
    console.log("Fetch data for beatmaps list");
    // Get the map info from osu
    if (!client) client = new Client(await getOsuToken());
    const predictor = await getPreviousMapScalings(mode);
-   const resultList: DbBeatmap[] = [];
+   const resultList: BeatmapByMode[M][] = [];
    for (const sublist of batchArray(maps)) {
       const osuBeatmaps = await client.beatmaps.getBeatmaps({ query: { ids: sublist } });
       for (const osuBeatmap of osuBeatmaps) {

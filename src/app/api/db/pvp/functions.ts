@@ -1,6 +1,6 @@
 import { Glicko2, Player } from "glicko2";
 import { GameMode, getModsEnum, LegacyClient, LegacyMultiplayerLobby, Mod } from "osu-web.js";
-import { mapsDb, playersDb } from "../connection";
+import { mapsDb, playersDb } from "@/database/connection";
 import { MpLobbyResults, SongResultMap, TeamMpLobbyResults } from "@/types/multiplayer";
 import { DbBeatmap } from "@/types/database.beatmap";
 import { ModPool, Rating } from "@/types/rating";

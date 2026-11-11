@@ -1,6 +1,6 @@
 "use server";
 
-import { fruitsDb, maniaDb, osuDb, playersDb, taikoDb } from "@/app/api/db/connection";
+import { playersDb } from "@/app/api/db/connection";
 import { parse1v1Lobby } from "@/app/api/db/pvp/functions";
 import { auth } from "@/auth";
 import { getOsuToken } from "@/helpers/osuToken";

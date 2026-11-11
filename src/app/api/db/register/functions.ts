@@ -1,4 +1,4 @@
-import { playersDb } from "../connection";
+import { playersDb } from "@/database/connection";
 
 export async function register(osuid: number, osuname: string) {
    console.log(`Register player ${osuid}`);

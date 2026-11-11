@@ -1,7 +1,10 @@
+/// CRON job for fetching new mappacks and rotating packs from the active pool
+/// Runs weekly on Monday
+
 import { createMappool, cyclePools } from "@/helpers/addPool";
 import { NextRequest, NextResponse } from "next/server";
 import { Client, GameMode } from "osu-web.js";
-import { historyDb, playersDb } from "../db/connection";
+import { historyDb, playersDb } from "@/database/connection";
 import {
    UndocumentedBeatmappack,
    UndocumentedBeatmappackCompact,

@@ -1,9 +1,12 @@
+/// CRON job for updating map data of maps already in the database
+/// Runs daily
+
 import { NextRequest, NextResponse } from "next/server";
 import { Client, GameMode } from "osu-web.js";
-import { mapsDb } from "../../db/connection";
+import { mapsDb } from "@/database/connection";
 import { AnyBulkWriteOperation, UpdateFilter } from "mongodb";
 import { getOsuToken } from "@/helpers/osuToken";
-import { DbBeatmap } from "@/types/database.beatmap";
+import { AnyBeatmapType as DbBeatmap } from "@/types/database/beatmap";
 
 export async function GET(req: NextRequest) {
    if (req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`)
@@ -51,20 +54,10 @@ export async function GET(req: NextRequest) {
                   noteCount: {
                      circles: osuBeatmap.count_circles,
                      sliders: osuBeatmap.count_sliders
-                  }
+                  },
+                  lastQuery: now
                };
-               // If the map is ranked, we don't need to keep dates anymore
-               let unsetMapUpdate = null;
-               if (osuBeatmap.ranked < 1) {
-                  setMapUpdate.lastUpdate = new Date(osuBeatmap.last_updated);
-                  setMapUpdate.lastQuery = now;
-               } else
-                  unsetMapUpdate = {
-                     lastUpdate: "",
-                     lastQuery: ""
-                  };
                const update: UpdateFilter<DbBeatmap> = { $set: setMapUpdate };
-               if (unsetMapUpdate) update.$unset = unsetMapUpdate;
                return {
                   updateOne: {
                      filter: { _id: osuBeatmap.id },

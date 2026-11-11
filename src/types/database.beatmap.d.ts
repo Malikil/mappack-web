@@ -4,6 +4,7 @@ import { ManiaMod, Rating, SimpleMod } from "./rating";
 
 export type ModRatings = Partial<Record<Mod, number>>;
 
+/** @deprecated Use types/database/beatmap/DbBeatmapBase and children instead */
 export interface DbBeatmap extends BeatmapVersion {
    artist: string;
    title: string;

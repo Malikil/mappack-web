@@ -1,5 +1,5 @@
 import { GameMode, Mod } from "osu-web.js";
-import { teamsDb } from "../connection";
+import { teamsDb } from "@/database/connection";
 
 export async function updateTeamScoreHistory(
    practicePoolUpdates: {

@@ -1,4 +1,4 @@
-import { playersDb } from "@/app/api/db/connection";
+import { playersDb } from "@/database/connection";
 import { GameMode, Mod } from "osu-web.js";
 import { combineRatings, matchResultValue, predictOutcome } from "../rating-range";
 import { Rating } from "@/types/rating";
