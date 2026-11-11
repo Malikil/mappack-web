@@ -9,6 +9,7 @@ import {
 } from "@/types/undocumented.beatmappacks";
 import { DbHistory } from "@/types/database.history";
 import { getOsuToken } from "@/helpers/osuToken";
+import { pruneInactivePlayers } from "@/helpers/server/players";
 
 async function findMappackTag(packList: UndocumentedBeatmappackCompact[], mode: GameMode) {
    const history = (await historyDb.findOne({ _id: `${mode}Packs` })) as DbHistory & { type: "string" };
@@ -70,6 +71,9 @@ export async function GET(req: NextRequest) {
       );
 
       await cyclePools();
+      const pruneResult = await pruneInactivePlayers();
+      console.log("Pruned inactive players:", pruneResult.deletedCount);
+      // Inflate RD after pruning so players need to have spent the whole week at the cap
       await inflateRd();
       return new NextResponse("OK");
    } catch (err) {
@@ -92,33 +96,29 @@ async function inflateRd() {
                ...Object.fromEntries(
                   modes.flatMap(mode => {
                      const inf = (q: "pvp" | "pve") => ({
-                        $cond: [
-                           { $eq: [{ $type: `$${mode}.${q}.lastPlayed` }, "date"] },
+                        $min: [
+                           350,
                            {
-                              $min: [
-                                 350,
-                                 {
-                                    $sqrt: {
-                                       $add: [
-                                          { $pow: [`$${mode}.${q}.rd`, 2] },
+                              $sqrt: {
+                                 $add: [
+                                    { $pow: [`$${mode}.${q}.rd`, 2] },
+                                    {
+                                       $cond: [
+                                          { $eq: [{ $type: `$${mode}.${q}.lastPlayed` }, "date"] },
                                           {
-                                             $multiply: [
-                                                { $pow: [`$${mode}.${q}.vol`, 2] },
-                                                {
-                                                   $dateDiff: {
-                                                      startDate: `$${mode}.${q}.lastPlayed`,
-                                                      endDate: "$$NOW",
-                                                      unit: "week"
-                                                   }
-                                                }
-                                             ]
-                                          }
+                                             $dateDiff: {
+                                                startDate: `$${mode}.${q}.lastPlayed`,
+                                                endDate: "$$NOW",
+                                                unit: "week"
+                                             }
+                                          },
+                                          // Legacy ratings without lastPlayed use one year of inactivity.
+                                          52
                                        ]
                                     }
-                                 }
-                              ]
-                           },
-                           `$${mode}.${q}.rd`
+                                 ]
+                              }
+                           }
                         ]
                      });
                      return [
