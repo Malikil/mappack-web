@@ -5,35 +5,35 @@ import { GameMode, Mod } from "osu-web.js";
 
 const SIGMOID_WIDTH = 6;
 export const MIN_ABSOLUTE = {
-   osu: 92099,
+   osu: 84913,
    fruits: 459734,
    taiko: 323917,
    mania: 624274,
    dtb: 5125
 };
 export const MIN_TARGETS = {
-   osu: 105432,
+   osu: 109838,
    fruits: 497147,
    taiko: 357592,
    mania: 660635,
    dtb: 4909
 };
 export const MAX_TARGETS = {
-   osu: 892519,
+   osu: 884638,
    fruits: 906029,
    taiko: 920871,
    mania: 963562,
    dtb: 67
 };
 export const MAX_ABSOLUTE = {
-   osu: 906084,
+   osu: 910691,
    fruits: 918046,
    taiko: 931134,
    mania: 973018,
    dtb: 0
 };
 export const UPDATE_REFERENCE = {
-   osu: "OWC'25",
+   osu: "OWC'26",
    fruits: "CWC'26",
    taiko: "TWC'26",
    mania: "MWC4K'26",
