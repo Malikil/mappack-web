@@ -5,6 +5,27 @@ import { DbPlayer } from "@/types/database.player";
 import { batchArray } from "../list-splitter";
 import { delay, seconds } from "@/time";
 
+/**
+ * Remove players whose ratings have all returned to the initial RD.
+ * PvP is optional: an unregistered mode has no PvP rating to retain.
+ * This also removes players who have never played and still have initial RDs.
+ */
+export async function pruneInactivePlayers() {
+   const modes: GameMode[] = ["osu", "fruits", "taiko", "mania"];
+   return playersDb.deleteMany({
+      admin: { $ne: true },
+      $and: modes.flatMap(mode => [
+         { [`${mode}.pve.rd`]: 350 },
+         {
+            $or: [
+               { [`${mode}.pvp`]: { $exists: false } },
+               { [`${mode}.pvp.rd`]: 350 }
+            ]
+         }
+      ])
+   });
+}
+
 export async function createPvpRegistration(osuid: number, mode: GameMode = "osu") {
    if (!mode) mode = "osu";
    console.log(`Create ${mode} pvp stats for ${osuid}`);

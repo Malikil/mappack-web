@@ -18,10 +18,19 @@ import { calcModStat, Client, GameMode, LegacyClient } from "osu-web.js";
 import util from "util";
 
 export async function debug() {
-   const calculator = new Glicko2();
-   const player = calculator.makePlayer(900, 350, 0.06);
-   const map = calculator.makePlayer(1500, 150, 0.06);
-   calculator.updateRatings([[player, map, matchResultValue(600000, "mania")]]);
-   console.log(`Player rating: 900 => ${player.getRating().toFixed()}`);
-   console.log(`Map rating: 1500 => ${map.getRating().toFixed()}`);
+   const modes: GameMode[] = ["osu", "fruits", "taiko", "mania"];
+   const result = await playersDb.updateMany(
+      {
+         admin: { $ne: true },
+         $and: modes.flatMap(mode => [
+            { [`${mode}.pve.rd`]: 350 },
+            {
+               $or: [{ [`${mode}.pvp`]: { $exists: false } }, { [`${mode}.pvp.rd`]: 350 }]
+            }
+         ])
+      },
+      { $set: { delPreview: true } }
+   );
+
+   console.log(result);
 }
