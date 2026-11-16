@@ -13,7 +13,7 @@ export async function fetchUpdatesForMode<M extends GameMode>(
 ) {
    type MapType = BeatmapByMode[M];
    const updateMaps = await collection
-      .find({ lastQuery: { $lt: cutoff } } as Filter<MapType>, { sort: { lastQuery: 1 }, limit: 10 })
+      .find({ lastQuery: { $lt: cutoff } } as Filter<MapType>, { sort: { lastQuery: 1 }, limit: 15 })
       .toArray();
    console.log(`Updating ${updateMaps.length} ${mode} maps`);
    if (updateMaps.length < 1) return 0;

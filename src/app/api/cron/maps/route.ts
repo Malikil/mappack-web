@@ -22,4 +22,5 @@ export async function GET(req: NextRequest) {
    await fetchUpdatesForMode("taiko", cutoff, client, mapsDb.taiko);
    await new Promise(resolve => setTimeout(resolve, 200));
    await fetchUpdatesForMode("mania", cutoff, client, mapsDb.mania);
+   return new NextResponse("OK");
 }
