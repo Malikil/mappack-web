@@ -363,7 +363,15 @@ export async function addTeamsData<M extends GameMode>(
    calculator.updateRatings(mapCalculatorResults);
    const modRatingUpdates = getUpdatedModsFromBatch(modUpdatesObj);
    const styleRatingUpdates = getUpdatedStylesFromBatch(
-      modUpdatesObj.map(score => ({ ...score, score: score.score.score }))
+      modUpdatesObj.map(score => ({
+         ...score,
+         score: score.score.score,
+         mods: {
+            mods: score.score.mods,
+            player: score.player.mods,
+            map: score.map.mods
+         }
+      }))
    );
 
    // Update song ratings in database
@@ -719,7 +727,12 @@ export async function addMatchData<M extends GameMode>(
             styles: result.player.player[mode].styles
          },
          mode,
-         score: result.score
+         score: result.score,
+         mods: {
+            mods: result.mods,
+            player: result.player.player[mode].mods,
+            map: result.map.map.mods
+         }
       }))
    );
 

@@ -25,7 +25,7 @@ export default function AdminActions() {
                >
                   Debug
                </Button>
-               <div>{output}</div>
+               <pre>{output}</pre>
             </div>
          </CardBody>
       </Card>

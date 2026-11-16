@@ -5,7 +5,7 @@ import { DbPlayer, MatchHistorySong } from "@/types/database.player";
 import { getPlayerList } from "./players";
 import { ignoreSongMods } from "../mods";
 import { Glicko2, Player } from "glicko2";
-import { matchResultValue } from "../rating-range";
+import { matchResultValue, predictOutcome } from "../rating-range";
 import { getUpdatedModsFromBatch, getUpdatedStylesFromBatch } from "./ratings";
 import { Filter, UpdateFilter, UpdateOneModel } from "mongodb";
 import { mapsDb, playersDb } from "@/database/connection";
@@ -354,8 +354,36 @@ export async function submitPveData(
                mods: playerResult.mods
             });
             if (playerScoreList.length >= 5) {
+               console.log(
+                  `Updating styles ratings for ${players[playerId].original.osuname} using ${playerScoreList.length} results\n` +
+                     `On the first map, the expected result is ${predictOutcome(
+                        players[playerId].original[game.mode].pve,
+                        playerScoreList[0].mapSnapshot.rating,
+                        players[playerId].original[game.mode].styles,
+                        playerScoreList[0].mapSnapshot.styles
+                     )}\n    The observed result was ${matchResultValue(
+                        playerScoreList[0].score,
+                        "dtb" in playerScoreList[0].mapSnapshot && playerScoreList[0].mapSnapshot.dtb
+                           ? "dtb"
+                           : game.mode,
+                        {
+                           mods: playerScoreList[0].mods,
+                           player: players[playerId].original[game.mode].mods,
+                           map: playerScoreList[0].mapSnapshot.mods
+                        }
+                     )}`
+               );
                updatePlayerRating(players[playerId].working, game.mode, playerScoreList);
                scoreBuffer[playerId] = [];
+               console.log(
+                  `After updating styles, while using pre-update snapshot data for rating and mods, ` +
+                     `${players[playerId].original.osuname} is expected to score ${predictOutcome(
+                        players[playerId].original[game.mode].pve,
+                        playerScoreList[0].mapSnapshot.rating,
+                        players[playerId].working[game.mode].styles,
+                        playerScoreList[0].mapSnapshot.styles
+                     )}`
+               );
             }
          }
          // Update the map rating
