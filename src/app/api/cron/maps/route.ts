@@ -1,5 +1,5 @@
 /// CRON job for updating map data of maps already in the database
-/// Runs daily
+/// Runs on each odd hour
 
 import { NextRequest, NextResponse } from "next/server";
 import { Client } from "osu-web.js";
@@ -16,7 +16,10 @@ export async function GET(req: NextRequest) {
    const cutoff = new Date();
    cutoff.setMonth(cutoff.getMonth() - 1);
    await fetchUpdatesForMode("osu", cutoff, client, mapsDb.osu);
+   await new Promise(resolve => setTimeout(resolve, 200));
    await fetchUpdatesForMode("fruits", cutoff, client, mapsDb.fruits);
+   await new Promise(resolve => setTimeout(resolve, 200));
    await fetchUpdatesForMode("taiko", cutoff, client, mapsDb.taiko);
+   await new Promise(resolve => setTimeout(resolve, 200));
    await fetchUpdatesForMode("mania", cutoff, client, mapsDb.mania);
 }

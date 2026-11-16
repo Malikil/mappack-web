@@ -1,60 +1,20 @@
 {
-   "crons": [
-      {
+   "$schema": "https://openapi.vercel.sh/vercel.json",
+   "schedules": {
+      "fetch-lobbies": {
+         "schedule": "0 */2 * * *",
+         "path": "/api/cron/lobbies",
+         "requestMethod": "GET"
+      },
+      "rotate-maps": {
          "path": "/api/cron",
-         "schedule": "0 23 * * 1"
+         "schedule": "30 23 * * 1",
+         "requestMethod": "GET"
       },
-      {
+      "update-map-data": {
          "path": "/api/cron/maps",
-         "schedule": "0 0 * * *"
-      },
-      {
-         "path": "/api/cron/lobbies",
-         "schedule": "0 1 * * *"
-      },
-      {
-         "path": "/api/cron/lobbies",
-         "schedule": "0 3 * * *"
-      },
-      {
-         "path": "/api/cron/lobbies",
-         "schedule": "0 5 * * *"
-      },
-      {
-         "path": "/api/cron/lobbies",
-         "schedule": "0 7 * * *"
-      },
-      {
-         "path": "/api/cron/lobbies",
-         "schedule": "0 9 * * *"
-      },
-      {
-         "path": "/api/cron/lobbies",
-         "schedule": "0 11 * * *"
-      },
-      {
-         "path": "/api/cron/lobbies",
-         "schedule": "0 13 * * *"
-      },
-      {
-         "path": "/api/cron/lobbies",
-         "schedule": "0 15 * * *"
-      },
-      {
-         "path": "/api/cron/lobbies",
-         "schedule": "0 17 * * *"
-      },
-      {
-         "path": "/api/cron/lobbies",
-         "schedule": "0 19 * * *"
-      },
-      {
-         "path": "/api/cron/lobbies",
-         "schedule": "0 21 * * *"
-      },
-      {
-         "path": "/api/cron/lobbies",
-         "schedule": "0 23 * * *"
+         "schedule": "0 1/2 * * *",
+         "requestMethod": "GET"
       }
-   ]
+   }
 }

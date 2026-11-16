@@ -1,3 +1,6 @@
+// CRON job to fetch recent lobbies and use them to update map ratings
+// Runs on each even hour
+
 import { NextRequest, NextResponse } from "next/server";
 import { Client } from "osu-web.js";
 import { getOsuToken } from "@/helpers/osuToken";

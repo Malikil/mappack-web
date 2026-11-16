@@ -7,6 +7,7 @@ import { Card, CardBody, CardSubtitle, CardTitle } from "react-bootstrap";
 import { StylesSkillsChart } from "@/components/skills/StylesSkillsChart";
 import { convertTime } from "@/time";
 import { effectiveRating } from "@/helpers/rating-range";
+import { AnyBeatmapType } from "@/types/database/beatmap";
 
 export default async function MapProfile({ params }) {
    const stringParams = await params;
@@ -14,7 +15,7 @@ export default async function MapProfile({ params }) {
    const mode = stringParams.mode as GameMode;
    if (!setid || !["osu", "fruits", "taiko", "mania"].includes(mode)) return redirect("/");
 
-   const maps = await mapsDb[mode]
+   const maps: AnyBeatmapType[] = await mapsDb[mode]
       .find(
          { setid },
          {
@@ -63,7 +64,7 @@ export default async function MapProfile({ params }) {
                         <tbody>
                            <tr>
                               <td>Stars</td>
-                              <td>{map.stars.toFixed(2)}</td>
+                              <td>{map.stars.nm.toFixed(2)}</td>
                               <td className="text-center">★</td>
                            </tr>
                            <tr>

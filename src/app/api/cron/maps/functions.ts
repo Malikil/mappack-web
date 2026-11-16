@@ -13,33 +13,33 @@ export async function fetchUpdatesForMode<M extends GameMode>(
 ) {
    type MapType = BeatmapByMode[M];
    const updateMaps = await collection
-      .find({ lastQuery: { $lt: cutoff } } as Filter<MapType>, { sort: { lastQuery: 1 }, limit: 50 })
+      .find({ lastQuery: { $lt: cutoff } } as Filter<MapType>, { sort: { lastQuery: 1 }, limit: 10 })
       .toArray();
    console.log(`Updating ${updateMaps.length} ${mode} maps`);
-   if (updateMaps.length < 1) return;
+   if (updateMaps.length < 1) return 0;
    const mapResults = await client.beatmaps
       .getBeatmaps({ query: { ids: updateMaps.map(m => m._id) } })
       .catch(err => {
          console.error(`Failed to fetch maps for ${mode}`, err);
       });
-   if (!mapResults) return;
+   if (!mapResults) return -1;
    // Update maps
-   const updates: AnyBulkWriteOperation<MapType>[] = await Promise.all(
-      mapResults.map(async (osuBeatmap): Promise<AnyBulkWriteOperation<MapType> | null> => {
-         try {
-            const setMapUpdate = await projectBeatmapToDbShape(mode, osuBeatmap, client);
-            return {
+   const updates: AnyBulkWriteOperation<MapType>[] = [];
+   for (const osuBeatmap of mapResults) {
+      try {
+         const setMapUpdate = await projectBeatmapToDbShape(mode, osuBeatmap, client);
+         if (setMapUpdate)
+            updates.push({
                updateOne: {
                   filter: { _id: osuBeatmap.id } as Filter<MapType>,
                   update: { $set: setMapUpdate }
                }
-            };
-         } catch (err) {
-            console.error(`Failed to create update for ${osuBeatmap.id}:`, err);
-            return null;
-         }
-      })
-   ).then(arr => arr.filter((v): v is AnyBulkWriteOperation<MapType> => v !== null));
+            });
+      } catch (err) {
+         console.error(`Failed to create update for ${osuBeatmap.id}:`, err);
+         break;
+      }
+   }
    // Remove maps that have been deleted
    const missing = updateMaps
       .filter(m => {
@@ -48,11 +48,13 @@ export async function fetchUpdatesForMode<M extends GameMode>(
          return !apiMap || apiMap.total_length < 1;
       })
       .map(m => m._id);
-   if (missing.length > 0) updates.push({ deleteMany: { filter: { _id: { $in: missing } } as Filter<MapType> } });
+   if (missing.length > 0)
+      updates.push({ deleteMany: { filter: { _id: { $in: missing } } as Filter<MapType> } });
    if (updates.length > 0) {
       const result = await mapsDb[mode].bulkWrite(updates);
       console.log(result);
    }
+   return updates.length;
 }
 
 export async function projectBeatmapToDbShape<M extends GameMode>(
