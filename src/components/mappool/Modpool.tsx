@@ -1,27 +1,27 @@
 import { calcModStat, GameMode } from "osu-web.js";
 import MapCard from "./MapCard";
-import { DbBeatmap } from "@/types/database.beatmap";
+import { BeatmapByMode } from "@/types/database/beatmap";
 
-export default function ModPool(props: {
+export default function ModPool<M extends GameMode>(props: {
    mod: string;
-   maps: DbBeatmap[];
+   maps: BeatmapByMode[NoInfer<M>][];
    modshort: "nm" | "hd" | "hr" | "dt" | "fm";
    mapActions?: {
       title: string;
-      action: (map: DbBeatmap) => any;
-      condition?: (map: DbBeatmap) => boolean;
+      action: (map: BeatmapByMode[NoInfer<M>]) => any;
+      condition?: (map: BeatmapByMode[NoInfer<M>]) => boolean;
    }[];
-   mode: GameMode;
+   mode: M;
 }) {
    const maps = props.maps.map(m => {
       const result = { ...m };
       if (props.modshort === "dt") {
          result.bpm = calcModStat.dt.bpm(result.bpm);
          result.length = calcModStat.dt.length(result.length);
-         result.ar = calcModStat.dt.ar(result.ar);
+         if ("ar" in result) result.ar = calcModStat.dt.ar(result.ar);
       } else if (props.modshort === "hr") {
-         result.ar = calcModStat.hr.ar(result.ar);
-         result.cs = calcModStat.hr.cs(result.cs);
+         if ("ar" in result) result.ar = calcModStat.hr.ar(result.ar);
+         if ("cs" in result) result.cs = calcModStat.hr.cs(result.cs);
       }
       return result;
    });

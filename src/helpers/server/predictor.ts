@@ -1,5 +1,6 @@
 import { mapsDb } from "@/database/connection";
-import { AnyBeatmapType, BeatmapByMode } from "@/types/database/beatmap";
+import { AnyBeatmapType, BeatmapByMode, DbBeatmapBase } from "@/types/database/beatmap";
+import { MergeUnion } from "@/types/general";
 import { PolynomialRegressor } from "@rainij/polynomial-regression-js";
 import { Beatmap, Beatmapset, GameMode } from "osu-web.js";
 
@@ -18,104 +19,74 @@ export function getMaplistForPredictor<M extends GameMode>(mode: M) {
    ]);
 }
 
-type SharedPredictorData = {
-   length: number;
-   bpm: number;
-   noteCount: {
-      circles: number;
-      sliders: number;
-   };
-   maxCombo: number;
+type ModePredictorData = {
+   osu: "ar" | "cs" | "od";
+   fruits: "ar" | "cs" | "convert";
+   taiko: "od";
+   mania: "od" | "keys";
 };
-function createPredictorInput(
-   mode: "osu",
-   map: SharedPredictorData & {
-      stars: {
-         nm: number;
-         hr: number;
-         dt: number;
-      };
-      ar: number;
-      cs: number;
-      od: number;
-   }
-): number[];
-function createPredictorInput(
-   mode: "fruits",
-   map: SharedPredictorData & {
-      stars: {
-         nm: number;
-         hr: number;
-         dt: number;
-      };
-      ar: number;
-      cs: number;
-      convert?: boolean;
-   }
-): number[];
-function createPredictorInput(
-   mode: "taiko",
-   map: SharedPredictorData & {
-      stars: {
-         nm: number;
-         hr: number;
-         dt: number;
-      };
-      od: number;
-   }
-): number[];
-function createPredictorInput(
-   mode: "mania",
-   map: SharedPredictorData & {
-      stars: {
-         nm: number;
-         dt: number;
-      };
-      od: number;
-      cs: number;
-   }
-): number[];
-function createPredictorInput(
-   mode: GameMode,
-   map: SharedPredictorData & {
-      stars: {
-         nm: number;
-         dt: number;
-         hr?: number;
-      };
-      ar?: number;
-      cs?: number;
-      od?: number;
-      convert?: boolean;
-   }
-): number[] {
+type SharedPredictorInput = Pick<DbBeatmapBase, "length" | "bpm" | "noteCount" | "maxCombo">;
+
+type PredictorInputByMode = {
+   [M in GameMode]: SharedPredictorInput &
+      Pick<BeatmapByMode[M], "stars"> &
+      Pick<BeatmapByMode[M], Extract<ModePredictorData[M], keyof BeatmapByMode[M]>>;
+};
+type AnyPredictorInput = PredictorInputByMode[GameMode];
+type PredictorInputInclusive = SharedPredictorInput & {
+   stars: {
+      nm: number;
+      dt: number;
+      hd?: number;
+      hr?: number;
+   };
+   ar: number;
+   cs: number;
+   od: number;
+   keys: number;
+   convert?: boolean;
+};
+
+function createPredictorInput<M extends GameMode>(mode: M, map: PredictorInputByMode[NoInfer<M>]): number[] {
+   const input: AnyPredictorInput = map;
+
    const data = [
-      map.stars.nm,
-      map.stars.dt,
-      map.length,
-      map.bpm,
-      map.noteCount.circles,
-      map.noteCount.sliders,
-      map.maxCombo
+      input.stars.nm,
+      input.stars.dt,
+      input.length,
+      input.bpm,
+      input.noteCount.circles,
+      input.noteCount.sliders,
+      input.maxCombo
    ];
+
    switch (mode) {
-      case "osu":
-         data.push(map.stars.hr, map.ar, map.cs, map.od);
+      case "osu": {
+         const osu = input as PredictorInputByMode["osu"];
+         data.push(osu.stars.hd, osu.stars.hr, osu.ar, osu.cs, osu.od);
          break;
-      case "fruits":
-         data.push(map.stars.hr, map.ar, map.cs, +(map.convert || 0));
+      }
+      case "fruits": {
+         const fruits = input as PredictorInputByMode["fruits"];
+         data.push(fruits.stars.hr, fruits.ar, fruits.cs, +(fruits.convert ?? false));
          break;
-      case "taiko":
-         data.push(map.stars.hr, map.od);
+      }
+      case "taiko": {
+         const taiko = input as PredictorInputByMode["taiko"];
+         data.push(taiko.stars.hr, taiko.od);
          break;
-      case "mania":
-         data.push(map.cs, map.od);
+      }
+      case "mania": {
+         const mania = input as PredictorInputByMode["mania"];
+         data.push(mania.keys, mania.od);
          break;
+      }
    }
+
    return data;
 }
 
-export async function getPreviousMapScalings(mode: GameMode) {
+export async function getPreviousMapScalings<M extends GameMode>(mode: M) {
    console.log("Get previous map scalings");
    const maplist = getMaplistForPredictor(mode);
    const datasets = { x: [] as number[][], y: [] as number[][] };
@@ -133,30 +104,38 @@ export async function getPreviousMapScalings(mode: GameMode) {
    return polyReg;
 }
 
+type BeatmapPreprationInput<M extends GameMode> = Omit<Beatmap, "mode"> & {
+   mode: M;
+   max_combo: number;
+   beatmapset: Beatmapset;
+   moddedStars: Omit<BeatmapByMode[M]["stars"], "nm">;
+};
 export function prepBeatmapData<M extends GameMode>(
-   osuBeatmap: Beatmap & {
-      max_combo: number;
-      beatmapset: Beatmapset;
-   },
+   osuBeatmap: BeatmapPreprationInput<M>,
    predictor: PolynomialRegressor & { meta?: { max: number } }
 ): BeatmapByMode[M] {
    const { max } = predictor.meta;
    const nSkills = parseInt(process.env.SKILL_CATEGORIES);
+   const predictorInputData = {
+      bpm: osuBeatmap.bpm,
+      length: osuBeatmap.total_length,
+      stars: {
+         nm: osuBeatmap.difficulty_rating,
+         ...osuBeatmap.moddedStars
+      } as BeatmapByMode[M]["stars"],
+      noteCount: {
+         circles: osuBeatmap.count_circles,
+         sliders: osuBeatmap.count_sliders
+      },
+      maxCombo: osuBeatmap.max_combo,
+      od: osuBeatmap.accuracy,
+      ar: osuBeatmap.ar,
+      cs: osuBeatmap.cs,
+      keys: osuBeatmap.cs,
+      convert: osuBeatmap.convert
+   } satisfies PredictorInputInclusive;
    const [[ratingRaw, DT, HD, HR]] = predictor.predict([
-      createPredictorInput(osuBeatmap.mode, {
-         bpm: osuBeatmap.bpm,
-         length: osuBeatmap.total_length,
-         stars: osuBeatmap.difficulty_rating,
-         noteCount: {
-            circles: osuBeatmap.count_circles,
-            sliders: osuBeatmap.count_sliders
-         },
-         maxCombo: osuBeatmap.max_combo,
-         od: osuBeatmap.accuracy,
-         ar: osuBeatmap.ar,
-         cs: osuBeatmap.cs,
-         convert: osuBeatmap.convert
-      })
+      createPredictorInput(osuBeatmap.mode, predictorInputData as PredictorInputByMode[M])
    ]);
    const rating =
       ratingRaw > max
@@ -165,14 +144,17 @@ export function prepBeatmapData<M extends GameMode>(
            ? { rating: RATING_MIN, rd: Math.sqrt(RATING_MIN - ratingRaw) + INIT_MAP_RD, vol: INIT_MAP_VOL }
            : { rating: ratingRaw, rd: INIT_MAP_RD, vol: INIT_MAP_VOL };
 
-   const mapData: AnyBeatmapType = {
+   const mapData: MergeUnion<AnyBeatmapType> = {
       _id: osuBeatmap.id,
       setid: osuBeatmap.beatmapset_id,
       artist: osuBeatmap.beatmapset.artist,
       title: osuBeatmap.beatmapset.title,
       version: osuBeatmap.version,
       mapper: osuBeatmap.beatmapset.creator,
-      stars: osuBeatmap.difficulty_rating,
+      stars: {
+         nm: osuBeatmap.difficulty_rating,
+         ...osuBeatmap.moddedStars
+      },
       length: osuBeatmap.total_length,
       bpm: osuBeatmap.bpm,
       maxCombo: osuBeatmap.max_combo,
@@ -188,15 +170,20 @@ export function prepBeatmapData<M extends GameMode>(
       mapData.mods.HD = HD;
       mapData.mods.HR = HR;
    }
-   // If the map is unranked, include dates to re-query later
-   if (osuBeatmap.ranked < 1) mapData.lastQuery = new Date();
-   if (osuBeatmap.mode !== "fruits") mapData.od = osuBeatmap.accuracy;
-   if (osuBeatmap.mode !== "taiko") mapData.cs = osuBeatmap.cs;
-   if (osuBeatmap.mode === "osu") mapData.ar = osuBeatmap.ar;
-   else if (osuBeatmap.mode === "fruits") {
+   if (osuBeatmap.mode === "osu") {
       mapData.ar = osuBeatmap.ar;
+      mapData.cs = osuBeatmap.cs;
+      mapData.od = osuBeatmap.accuracy;
+   } else if (osuBeatmap.mode === "fruits") {
+      mapData.ar = osuBeatmap.ar;
+      mapData.cs = osuBeatmap.cs;
       mapData.convert = osuBeatmap.convert;
+   } else if (osuBeatmap.mode === "taiko") mapData.od = osuBeatmap.accuracy;
+   else {
+      mapData.od = osuBeatmap.accuracy;
+      mapData.keys = osuBeatmap.cs;
    }
+   mapData.lastQuery = new Date();
 
-   return mapData;
+   return mapData as BeatmapByMode[M];
 }

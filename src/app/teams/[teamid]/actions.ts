@@ -1,6 +1,6 @@
 "use server";
 
-import { teamsDb } from "@/app/api/db/connection";
+import { teamsDb } from "@/database/connection";
 import { auth } from "@/auth";
 import { ObjectId } from "mongodb";
 import { revalidatePath } from "next/cache";

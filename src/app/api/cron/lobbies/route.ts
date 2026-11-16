@@ -6,7 +6,7 @@ import { convertTime, minutes } from "@/time";
 import { adminPvp } from "@/app/admin/components/add-attack/actions";
 import { getLobbyData } from "@/helpers/server/multiplayer";
 import { submitPveData } from "@/helpers/server/pve";
-import { mpLinksDb } from "../../db/connection";
+import { mpLinksDb } from "@/database/connection";
 
 export async function GET(req: NextRequest) {
    if (req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`)

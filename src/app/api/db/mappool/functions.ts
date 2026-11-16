@@ -1,7 +1,7 @@
 import { predictOutcome, scoreFromResult } from "@/helpers/rating-range";
 import { getCurrentPack } from "@/helpers/server/currentPack";
 import { ModPool, Rating } from "@/types/rating";
-import { DbBeatmap } from "@/types/database.beatmap";
+import { AnyBeatmapType } from "@/types/database/beatmap";
 import { GameMode, Mod } from "osu-web.js";
 
 type ExpectedScores = {
@@ -10,7 +10,7 @@ type ExpectedScores = {
    HR: number;
    DT: number;
 };
-type MapWithScores = DbBeatmap & { expectedScores: ExpectedScores };
+type MapWithScores = AnyBeatmapType & { expectedScores: ExpectedScores };
 
 export async function getMappool(
    targetRating: Rating,
@@ -36,11 +36,11 @@ export async function getMappool(
       ...options
    };
    console.log("Get mappool for target:", targetRating);
-   const loggingMap = (m: MapWithScores) => ({
+   const logMap = (sr: "nm" | "hd" | "hr" | "dt") => (m: MapWithScores) => ({
       artist: m.artist,
       title: m.title,
       version: m.version,
-      stars: m.stars,
+      stars: sr in m.stars ? m.stars[sr] : m.stars.nm,
       rating: m.rating,
       expectedScores: m.expectedScores
    });
@@ -157,26 +157,26 @@ export async function getMappool(
       },
       fmCount
    );
-   console.log(resultList.fm.map(loggingMap));
+   console.log(resultList.fm.map(logMap("nm")));
    // Sort DT next, as this is likely to be a more restricted pool
    console.log(`Pick ${dtCount} DT maps`);
    resultList.dt = pick(maplist, sortFunc("DT"), dtCount);
-   console.log(resultList.dt.map(loggingMap));
+   console.log(resultList.dt.map(logMap("dt")));
    // I find HR harder. Skill issue
    console.log(`Pick ${hrCount} HR maps`);
    resultList.hr = pick(maplist, sortFunc("HR"), hrCount);
-   console.log(resultList.hr.map(loggingMap));
+   console.log(resultList.hr.map(logMap("hr")));
    // HD is the last mod
    console.log(`Pick ${hdCount} HD maps`);
    resultList.hd = pick(maplist, sortFunc("HD"), hdCount);
-   console.log(resultList.hd.map(loggingMap));
+   console.log(resultList.hd.map(logMap("hd")));
    // Everything else into NM
    console.log(`Pick ${nmCount} NM maps`);
    resultList.nm = pick(maplist, sortFunc("NM"), nmCount);
-   console.log(resultList.nm.map(loggingMap));
+   console.log(resultList.nm.map(logMap("nm")));
 
    return {
-      maps: resultList as Record<ModPool, DbBeatmap[]>,
+      maps: resultList as Record<ModPool, AnyBeatmapType[]>,
       target: targetRating
    };
 }

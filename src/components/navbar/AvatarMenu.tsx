@@ -1,4 +1,4 @@
-import { playersDb } from "@/app/api/db/connection";
+import { playersDb } from "@/database/connection";
 import { auth, signOut } from "@/auth";
 import Link from "next/link";
 import GamemodeButton from "./GamemodeButton";
@@ -9,7 +9,7 @@ export default async function AvatarMenu() {
    const player = await playersDb.findOne({ _id: session.user.id }).catch(err => console.warn(err));
    return (
       <ul className="dropdown-menu dropdown-menu-end">
-         {player?.admin && (
+         {player && player.admin && (
             <li>
                <Link className="dropdown-item" href="/admin">
                   Admin

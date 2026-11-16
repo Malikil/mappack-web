@@ -1,5 +1,5 @@
 import { Table } from "react-bootstrap";
-import { playersDb } from "../api/db/connection";
+import { playersDb } from "@/database/connection";
 import { buildUrl } from "osu-web.js";
 import { auth } from "@/auth";
 import Image from "next/image";

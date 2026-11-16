@@ -3,9 +3,9 @@ import { PracticePool } from "@/types/database.team";
 import { GameMode, getModsEnum } from "osu-web.js";
 import CreatePoolButton from "./CreatePoolButton";
 import PoolRow from "./PoolRow";
-import { mapsDb } from "@/app/api/db/connection";
+import { mapsDb } from "@/database/connection";
 import { revalidatePath } from "next/cache";
-import { DbBeatmap } from "@/types/database.beatmap";
+import { AnyBeatmapType } from "@/types/database/beatmap";
 
 export default async function PoolSetupCard({
    data,
@@ -25,7 +25,7 @@ export default async function PoolSetupCard({
          return {
             mods: m.mods,
             sort: m.sort,
-            map: map || ({ _id: m.id, title: "Deleted Beatmap" } as DbBeatmap)
+            map: map || ({ _id: m.id, title: "Deleted Beatmap" } as AnyBeatmapType)
          };
       });
       return {

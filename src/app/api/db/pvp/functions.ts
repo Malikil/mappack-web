@@ -2,10 +2,9 @@ import { Glicko2, Player } from "glicko2";
 import { GameMode, getModsEnum, LegacyClient, LegacyMultiplayerLobby, Mod } from "osu-web.js";
 import { mapsDb, playersDb } from "@/database/connection";
 import { MpLobbyResults, SongResultMap, TeamMpLobbyResults } from "@/types/multiplayer";
-import { DbBeatmap } from "@/types/database.beatmap";
 import { ModPool, Rating } from "@/types/rating";
 import { UpdateOneModel } from "mongodb";
-import { getMaplist } from "@/helpers/server/currentPack";
+import { getMaplist } from "@/helpers/server/beatmaps";
 import { matchResultValue } from "@/helpers/rating-range";
 import { ScoreParser } from "@/helpers/scorev1";
 import { getPlayerList } from "@/helpers/server/players";
@@ -13,6 +12,7 @@ import { getUpdatedModsFromBatch, getUpdatedStylesFromBatch } from "@/helpers/se
 import { DbPlayer } from "@/types/database.player";
 import { ignoreSongMods } from "@/helpers/mods";
 import { updateTeamScoreHistory } from "../team/functions";
+import { BeatmapByMode } from "@/types/database/beatmap";
 
 const MATCH_HISTORY_SIZE = 10;
 
@@ -72,7 +72,7 @@ function parseTeamsLobby(lobby: LegacyMultiplayerLobby, warmups: number): TeamMp
    const scores: {
       player: number;
       map: number;
-      score: ScoreParser;
+      score: ScoreParser<GameMode>;
       mods: Mod[];
    }[] = [];
    const teams = {
@@ -182,25 +182,28 @@ function parseTeamsLobby(lobby: LegacyMultiplayerLobby, warmups: number): TeamMp
    };
 }
 
-export async function addTeamsData({
-   mp,
-   mode,
-   maps,
-   blueTeam,
-   redTeam,
-   individualMatchups,
-   winnerId,
-   winnerScores,
-   loserScores,
-   individualScores
-}: TeamMpLobbyResults) {
+export async function addTeamsData<M extends GameMode>(
+   mode: M,
+   {
+      mp,
+      maps,
+      blueTeam,
+      redTeam,
+      individualMatchups,
+      winnerId,
+      winnerScores,
+      loserScores,
+      individualScores
+   }: TeamMpLobbyResults
+) {
+   type MapType = BeatmapByMode[M];
    // Get the played maps
    const maplist = await getMaplist(
       mode,
       maps.map(item => item.map)
    );
    const playedMaps: {
-      map: DbBeatmap;
+      map: MapType;
       modpool: ModPool;
       mapCalc?: Player;
    }[] = maps.map(item => ({
@@ -336,7 +339,10 @@ export async function addTeamsData({
       mapCalculatorResults.push([
          playerCalc,
          pMap.mapCalc,
-         matchResultValue(score.score.getScore() * playerModsMult * mapModsMult, pMap.map.dtb ? "dtb" : mode)
+         matchResultValue(
+            score.score.getScore() * playerModsMult * mapModsMult,
+            "dtb" in pMap.map && pMap.map.dtb ? "dtb" : mode
+         )
       ]);
       // Add data for mod multiplier updates
       modUpdatesObj.push({
@@ -380,7 +386,7 @@ export async function addTeamsData({
                   styles: styleRatingUpdates.maps[pMap.map._id]?.[mode] || pMap.map.styles
                }
             }
-         } as UpdateOneModel<DbBeatmap>
+         } as UpdateOneModel<MapType>
       }))
    );
    console.log("Maps", mapsResult);
@@ -518,16 +524,11 @@ export async function parseMpLobby(mp: number, warmups = 0, acceptIncomplete = f
    }
 }
 
-export async function addMatchData({
-   mp,
-   mode,
-   warmups,
-   winnerId,
-   loserId,
-   maps,
-   winnerScores,
-   loserScores
-}: MpLobbyResults) {
+export async function addMatchData<M extends GameMode>(
+   mode: M,
+   { mp, warmups, winnerId, loserId, maps, winnerScores, loserScores }: MpLobbyResults
+) {
+   type MapType = BeatmapByMode[M];
    console.log(winnerScores, loserScores);
    const winner = await playersDb.findOne({
       _id: winnerId
@@ -653,7 +654,7 @@ export async function addMatchData({
          calc: Player;
       };
       map: {
-         map: DbBeatmap;
+         map: MapType;
          calc: Player;
       };
       score: number;
@@ -686,7 +687,7 @@ export async function addMatchData({
    const calculatorMatches: [Player, Player, number][] = mapResultsForCalc.map(result => [
       result.player.calc,
       result.map.calc,
-      matchResultValue(result.score, result.map.map.dtb ? "dtb" : mode, {
+      matchResultValue(result.score, "dtb" in result.map.map && result.map.map.dtb ? "dtb" : mode, {
          mods: result.mods,
          player: result.player.player[mode].mods,
          map: result.map.map.mods
@@ -746,7 +747,7 @@ export async function addMatchData({
                      styles: updatedSkillRatings.maps[mapid]?.[mode] || mapInfo.map.styles
                   }
                }
-            } as UpdateOneModel<DbBeatmap>
+            } as UpdateOneModel<MapType>
          };
       })
    );

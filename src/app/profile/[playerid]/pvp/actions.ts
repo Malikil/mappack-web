@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { addMatchData, addTeamsData, parseMpLobby } from "@/app/api/db/pvp/functions";
 import { GameMode, LegacyClient } from "osu-web.js";
-import { mpLinksDb, playersDb } from "@/app/api/db/connection";
+import { mpLinksDb, playersDb } from "@/database/connection";
 import { redirect } from "next/navigation";
 import { register } from "@/app/api/db/register/functions";
 import { auth } from "@/auth";
@@ -55,7 +55,7 @@ export async function submitPvp(formData: FormData) {
             }
          };
       await mpLinksDb.insertOne({ _id: matchIdSegment });
-      await addTeamsData(lobbyResults);
+      await addTeamsData(lobbyResults.mode, lobbyResults);
    } else {
       if (session.user.id !== lobbyResults.winnerId && session.user.id !== lobbyResults.loserId)
          return {
@@ -84,7 +84,7 @@ export async function submitPvp(formData: FormData) {
             await createPvpRegistration(player._id, lobbyResults.mode);
          }
       // Add the match results
-      await addMatchData(lobbyResults);
+      await addMatchData(lobbyResults.mode, lobbyResults);
    }
 
    revalidatePath("/profile");

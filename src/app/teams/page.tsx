@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { playersDb, teamsDb } from "../api/db/connection";
+import { playersDb, teamsDb } from "@/database/connection";
 import { redirect } from "next/navigation";
 import { Button, Card, CardBody, CardHeader } from "react-bootstrap";
 import { Team } from "@/types/database.team";

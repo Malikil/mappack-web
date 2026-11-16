@@ -17,7 +17,7 @@ export const POST = async (req: NextRequest) => {
    }
    if (mpResults.winnerId === "Red" || mpResults.winnerId === "Blue")
       return new NextResponse("Invalid 1v1", { status: 400 });
-   await addMatchData(mpResults as MpLobbyResults);
+   await addMatchData(mpResults.mode, mpResults as MpLobbyResults);
    return new NextResponse(null, { status: 200 });
 };
 

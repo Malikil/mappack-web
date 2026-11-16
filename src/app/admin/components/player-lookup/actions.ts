@@ -1,6 +1,6 @@
 "use server";
 
-import { playersDb } from "@/app/api/db/connection";
+import { playersDb } from "@/database/connection";
 import { auth } from "@/auth";
 import { Rating } from "@/types/rating";
 

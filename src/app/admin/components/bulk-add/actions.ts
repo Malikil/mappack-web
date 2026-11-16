@@ -1,6 +1,6 @@
 "use server";
 
-import { mpLinksDb, playersDb } from "@/app/api/db/connection";
+import { mpLinksDb, playersDb } from "@/database/connection";
 import {
    parseMpLobby as parsePvp,
    addMatchData as add1v1Match,
@@ -58,7 +58,7 @@ export async function submitTournamentStage(formData: FormData) {
             lobbyResult.loserId === "Blue"
          ) {
             console.log(mp, "Add teams data");
-            await addTeamsData(lobbyResult);
+            await addTeamsData(lobbyResult.mode, lobbyResult);
             await mpLinksDb.insertOne({ _id: mp });
             continue;
          }
@@ -84,7 +84,7 @@ export async function submitTournamentStage(formData: FormData) {
             }
          // Add the match results
          console.log(mp, "Add 1v1 data");
-         await add1v1Match(lobbyResult as MpLobbyResults);
+         await add1v1Match(lobbyResult.mode, lobbyResult as MpLobbyResults);
          await mpLinksDb.insertOne({ _id: mp });
       }
    // PvE submit

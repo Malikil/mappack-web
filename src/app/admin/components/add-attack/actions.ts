@@ -1,6 +1,6 @@
 "use server";
 
-import { mpLinksDb, playersDb } from "@/app/api/db/connection";
+import { mpLinksDb, playersDb } from "@/database/connection";
 import { addMatchData, addTeamsData, parseMpLobby as parsePvp } from "@/app/api/db/pvp/functions";
 import { register } from "@/app/api/db/register/functions";
 import { auth, checkExpiry } from "@/auth";
@@ -40,7 +40,7 @@ export async function adminPvp(formData: FormData) {
       lobbyResults.loserId === "Red" ||
       lobbyResults.loserId === "Blue"
    ) {
-      await addTeamsData(lobbyResults);
+      await addTeamsData(lobbyResults.mode, lobbyResults);
       return;
    }
    // This point is only reached if lobbyResults is a 1v1
@@ -63,7 +63,7 @@ export async function adminPvp(formData: FormData) {
          await createPvpRegistration(player._id, lobbyResults.mode);
       }
    // Add the match results
-   await addMatchData(lobbyResults as MpLobbyResults);
+   await addMatchData(lobbyResults.mode, lobbyResults as MpLobbyResults);
 }
 
 export async function adminPve(formData: FormData) {

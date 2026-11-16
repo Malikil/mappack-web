@@ -3,7 +3,6 @@ import { buildUrl, GameMode, Mod } from "osu-web.js";
 import { Card, CardBody, CardImg, CardSubtitle } from "react-bootstrap";
 
 export default function PvEMap({
-   id,
    setid,
    version,
    mode,
@@ -11,7 +10,6 @@ export default function PvEMap({
    mods,
    rating
 }: {
-   id: number;
    setid: number;
    version: string;
    mode: GameMode;

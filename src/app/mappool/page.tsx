@@ -1,11 +1,11 @@
-import { mappacksDb, playersDb } from "../api/db/connection";
+import { mappacksDb, playersDb } from "@/database/connection";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { Card, CardBody, CardImg, CardSubtitle, CardTitle, Col, Row } from "react-bootstrap";
 import MapCardBody from "@/components/mappool/MapCardBody";
 import interpolate from "color-interpolate";
 import { buildUrl } from "osu-web.js";
-import { DbBeatmap } from "@/types/database.beatmap";
+import { AnyBeatmapType } from "@/types/database/beatmap";
 
 const palette = interpolate(["#4fc0ff", "#7cff4f", "#f6f05c", "#ff4e6f", "#c645b8", "#6563de", "black"]);
 const ACTIVE_MAPPACKS = parseInt(process.env.ACTIVE_MAPPACKS);
@@ -72,7 +72,7 @@ export default async function Mappool() {
          artist: string;
          title: string;
          mapper: string;
-         versions: DbBeatmap[];
+         versions: AnyBeatmapType[];
       }[];
    }[];
    console.log(pools);
@@ -139,7 +139,7 @@ export default async function Mappool() {
                                                                backgroundColor: palette(
                                                                   Math.max(
                                                                      0,
-                                                                     Math.min((bm.stars - 1) / 7.75, 1)
+                                                                     Math.min((bm.stars.nm - 1) / 7.75, 1)
                                                                   )
                                                                )
                                                             }}
@@ -181,7 +181,11 @@ export default async function Mappool() {
                                                             <div className="text-break">{bm.version}</div>
                                                             <div className="ms-auto">{bm._id}</div>
                                                          </CardTitle>
-                                                         <MapCardBody beatmap={bm} className="mt-auto" />
+                                                         <MapCardBody
+                                                            mode={mode}
+                                                            beatmap={bm}
+                                                            className="mt-auto"
+                                                         />
                                                       </CardBody>
                                                    </Card>
                                                 ))}

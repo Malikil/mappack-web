@@ -30,6 +30,7 @@ export interface OsuBeatmap extends DbBeatmapBase {
    od: number;
    stars: {
       nm: number;
+      hd: number;
       hr: number;
       dt: number;
    };

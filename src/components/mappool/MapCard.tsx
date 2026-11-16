@@ -13,21 +13,19 @@ import {
 } from "react-bootstrap";
 import styles from "./mappool.module.css";
 import MapCardBody from "./MapCardBody";
-import { DbBeatmap } from "@/types/database.beatmap";
 import { MapAction } from "@/types/mappool";
 import { Rating } from "@/types/rating";
 import { buildUrl, GameMode } from "osu-web.js";
+import { BeatmapByMode } from "@/types/database/beatmap";
 
-export type MapCardProps = {
-   beatmap: DbBeatmap;
+export default function MapCard<M extends GameMode>(props: {
+   beatmap: BeatmapByMode[NoInfer<M>];
    starsPlus?: boolean;
    mapActions?: MapAction[];
    rating?: Rating;
    hideRatings?: boolean;
-   mode: GameMode;
-};
-
-export default function MapCard(props: MapCardProps) {
+   mode: M;
+}) {
    return (
       <Card className={styles.mapcard}>
          <CardBody className="d-flex flex-column">

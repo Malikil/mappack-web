@@ -1,4 +1,4 @@
-import { mapsDb } from "@/app/api/db/connection";
+import { mapsDb } from "@/database/connection";
 import { redirect } from "next/navigation";
 import { GameMode } from "osu-web.js";
 
@@ -10,5 +10,5 @@ export default async function MapPage({ params, searchParams }) {
 
    const map = await mapsDb[mode].findOne({ _id: mapOverride });
    if (map) redirect(`/maps/${mode}/${map.setid}`);
-   else redirect('/');
+   else redirect("/");
 }

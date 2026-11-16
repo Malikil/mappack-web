@@ -1,4 +1,4 @@
-import { teamsDb } from "../api/db/connection";
+import { teamsDb } from "@/database/connection";
 import { ObjectId } from "mongodb";
 
 export async function removePlayer(playerId: number, teamId: string) {
@@ -9,7 +9,7 @@ export async function removePlayer(playerId: number, teamId: string) {
       {
          $pull: { players: { id: playerId } },
          $unset: {
-            [`pools.$[].maps.$[].scores.${playerId}`]: ''
+            [`pools.$[].maps.$[].scores.${playerId}`]: ""
          }
       },
       { returnDocument: "after" }

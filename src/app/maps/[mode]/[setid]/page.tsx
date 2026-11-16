@@ -1,4 +1,4 @@
-import { mapsDb } from "@/app/api/db/connection";
+import { mapsDb } from "@/database/connection";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { buildUrl, GameMode, Mod } from "osu-web.js";

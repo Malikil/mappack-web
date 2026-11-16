@@ -1,7 +1,6 @@
 "use client";
 
 import { scoreFromResult, predictOutcome, effectiveRating } from "@/helpers/rating-range";
-import { DbBeatmap } from "@/types/database.beatmap";
 import { PracticePool } from "@/types/database.team";
 import { Rating } from "@/types/rating";
 import { buildUrl, GameMode, getModsEnum, Mod } from "osu-web.js";
@@ -10,6 +9,7 @@ import { stdev } from "@/mathplus";
 import Link from "next/link";
 import { ReactNode, useEffect, useState } from "react";
 import cdf from "@stdlib/stats-base-dists-normal-cdf";
+import { AnyBeatmapType } from "@/types/database/beatmap";
 
 export default function StatsTable({
    players,
@@ -22,7 +22,7 @@ export default function StatsTable({
 }: {
    players: { id: number; osuname: string }[];
    pool: PracticePool;
-   maplist: DbBeatmap[];
+   maplist: AnyBeatmapType[];
    targetRating: Rating;
    mode: GameMode;
    teamSize: number;

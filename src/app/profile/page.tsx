@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { playersDb } from "../api/db/connection";
+import { playersDb } from "@/database/connection";
 import { Button } from "react-bootstrap";
 import { revalidatePath } from "next/cache";
 import { register } from "../api/db/register/functions";

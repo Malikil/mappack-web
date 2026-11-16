@@ -2,21 +2,18 @@
 
 import { convertTime } from "@/time";
 import { CardLink, CardSubtitle, Col, Container, Row } from "react-bootstrap";
-import { BeatmapVersion } from "@/types/mappool";
 import { MapAction } from "@/types/mappool";
-import { DbBeatmap } from "@/types/database.beatmap";
 import { GameMode } from "osu-web.js";
+import { BeatmapByMode, DbBeatmapBase } from "@/types/database/beatmap";
 
-export type MapCardBodyProps = {
+export default function MapCardBody<M extends GameMode>(props: {
    className?: string;
-   beatmap: DbBeatmap;
+   beatmap: BeatmapByMode[NoInfer<M>];
    starsPlus?: boolean;
    mapActions?: MapAction[];
    hideRatings?: boolean;
-   mode?: GameMode;
-};
-
-export default function MapCardBody(props: MapCardBodyProps) {
+   mode: M;
+}) {
    return (
       <div className={`d-flex flex-column ${props.className || ""}`}>
          <Container className="mb-auto">
@@ -33,18 +30,18 @@ export default function MapCardBody(props: MapCardBodyProps) {
                <Col className="d-flex align-items-center gap-1">
                   <div className={props.starsPlus ? "fst-italic" : undefined}>
                      {props.starsPlus && "("}
-                     {props.beatmap.stars.toFixed(2)}
+                     {props.beatmap.stars.nm.toFixed(2)}
                      {props.starsPlus && ")"}
                   </div>
                </Col>
             </Row>
-            {props.beatmap.cs && (
+            {"cs" in props.beatmap && (
                <Row>
                   <Col>CS</Col>
                   <Col>{parseFloat(props.beatmap.cs.toFixed(2))}</Col>
                </Row>
             )}
-            {props.beatmap.ar && (
+            {"ar" in props.beatmap && (
                <Row>
                   <Col>AR</Col>
                   <Col>{parseFloat(props.beatmap.ar.toFixed(2))}</Col>
@@ -78,7 +75,7 @@ export default function MapCardBody(props: MapCardBodyProps) {
                            <CardLink
                               key={fn.title}
                               role="button"
-                              onClick={() => (fn.action as (beatmap: BeatmapVersion) => void)(props.beatmap)}
+                              onClick={() => (fn.action as (beatmap: DbBeatmapBase) => void)(props.beatmap)}
                            >
                               {fn.title}
                            </CardLink>

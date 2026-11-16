@@ -1,4 +1,4 @@
-import { teamsDb } from "@/app/api/db/connection";
+import { teamsDb } from "@/database/connection";
 import { getMaplist } from "@/helpers/server/beatmaps";
 import { ObjectId } from "mongodb";
 import { redirect } from "next/navigation";

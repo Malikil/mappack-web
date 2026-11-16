@@ -1,7 +1,7 @@
 'use server';
 
 import { auth } from "@/auth";
-import { teamsDb } from "../api/db/connection";
+import { teamsDb } from "@/database/connection";
 import { ObjectId } from "mongodb";
 import { revalidatePath } from "next/cache";
 import { removePlayer } from "./functions";

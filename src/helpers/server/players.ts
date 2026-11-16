@@ -1,4 +1,4 @@
-import { playersDb } from "@/app/api/db/connection";
+import { playersDb } from "@/database/connection";
 import { Client, GameMode } from "osu-web.js";
 import { getOsuToken } from "../osuToken";
 import { DbPlayer } from "@/types/database.player";
@@ -17,10 +17,7 @@ export async function pruneInactivePlayers() {
       $and: modes.flatMap(mode => [
          { [`${mode}.pve.rd`]: 350 },
          {
-            $or: [
-               { [`${mode}.pvp`]: { $exists: false } },
-               { [`${mode}.pvp.rd`]: 350 }
-            ]
+            $or: [{ [`${mode}.pvp`]: { $exists: false } }, { [`${mode}.pvp.rd`]: 350 }]
          }
       ])
    });

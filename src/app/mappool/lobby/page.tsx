@@ -1,8 +1,8 @@
-import { mapsDb } from "@/app/api/db/connection";
-import { DbBeatmap } from "@/types/database.beatmap";
+import { mapsDb } from "@/database/connection";
 import { ModPool as ModPoolType } from "@/types/rating";
 import PoolDisplayByMod from "../PoolDisplayByMod";
 import { GameMode } from "osu-web.js";
+import { AnyBeatmapType } from "@/types/database/beatmap";
 
 const MODLIST: ModPoolType[] = ["nm", "hd", "hr", "dt", "fm"];
 
@@ -19,8 +19,8 @@ export default async function LobbyPool({ searchParams }) {
    // Get all maps. If pools are rotated while the match is ongoing, the previous maps will still need
    // to be visible on the lobby's pool page
    const mapIds = MODLIST.flatMap(mod => parsedParams[mod] || []);
-   const maps: DbBeatmap[] = await mapsDb[mode].find({ _id: { $in: mapIds } }).toArray();
-   const maplist: Partial<Record<ModPoolType, DbBeatmap[]>> = Object.fromEntries(
+   const maps: AnyBeatmapType[] = await mapsDb[mode].find({ _id: { $in: mapIds } }).toArray();
+   const maplist: Partial<Record<ModPoolType, AnyBeatmapType[]>> = Object.fromEntries(
       MODLIST.map(mod =>
          parsedParams[mod]
             ? [mod, parsedParams[mod].map(m => maps.find(p => p._id === m)).filter(m => m)]

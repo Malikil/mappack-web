@@ -9,13 +9,13 @@ import {
    PlusCircle,
    XCircle
 } from "react-bootstrap-icons";
-import { mapsDb } from "@/app/api/db/connection";
+import { mapsDb } from "@/database/connection";
 import { PvPMatchHistory } from "@/types/database.player";
-import { DbBeatmap } from "@/types/database.beatmap";
 import { effectiveRating } from "@/helpers/rating-range";
+import { AnyBeatmapType } from "@/types/database/beatmap";
 
 export default async function MatchHistoryItem({ match, mode }: { match: PvPMatchHistory; mode: GameMode }) {
-   const maplist: DbBeatmap[] = await mapsDb[mode]
+   const maplist: AnyBeatmapType[] = await mapsDb[mode]
       .find({ _id: { $in: match.songs.map(map => map.map.id) } })
       .toArray();
    // Get map details

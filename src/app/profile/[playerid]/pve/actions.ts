@@ -1,6 +1,6 @@
 "use server";
 
-import { mpLinksDb } from "@/app/api/db/connection";
+import { mpLinksDb } from "@/database/connection";
 import { revalidatePath } from "next/cache";
 import { submitPveData } from "@/helpers/server/pve";
 import { auth, checkExpiry } from "@/auth";

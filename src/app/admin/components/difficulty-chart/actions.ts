@@ -1,14 +1,14 @@
 "use server";
 
-import { mappacksDb, playersDb } from "@/app/api/db/connection";
+import { mappacksDb, playersDb } from "@/database/connection";
 import { auth } from "@/auth";
-import { DbBeatmap } from "@/types/database.beatmap";
+import { AnyBeatmapType } from "@/types/database/beatmap";
 import { GameMode } from "osu-web.js";
 import { getMaplistForPredictor } from "@/helpers/server/predictor";
 import { AggregationCursor } from "mongodb";
 
 function recentPackData(mode: GameMode) {
-   return mappacksDb.aggregate<DbBeatmap & { order: number; packName: string }>([
+   return mappacksDb.aggregate<AnyBeatmapType & { order: number; packName: string }>([
       { $match: { mode, order: { $gt: 0, $lte: parseInt(process.env.ACTIVE_MAPPACKS) } } },
       {
          $lookup: {
@@ -34,7 +34,7 @@ function recentPackData(mode: GameMode) {
 export async function fetchScatterData(type: "scaling" | "recent") {
    const session = await auth();
    const mode = session ? (await playersDb.findOne({ _id: session.user.id })).gamemode || "osu" : "osu";
-   const maps: AggregationCursor<DbBeatmap & { order?: number; packName?: string }> =
+   const maps: AggregationCursor<AnyBeatmapType & { order?: number; packName?: string }> =
       type === "scaling" ? getMaplistForPredictor(mode) : recentPackData(mode);
    const modRatios = {
       hd: 0,
@@ -71,14 +71,14 @@ export async function fetchScatterData(type: "scaling" | "recent") {
          if (!chartData[i]) chartData[i] = { data: [] };
          if (!("label" in chartData[i])) chartData[i].label = map.packName;
          chartData[i].data.push({
-            x: map.stars,
+            x: map.stars.nm,
             y: map.rating.rating,
             label: `${map.artist} - ${map.title} [${map.version}]`
          });
       } // Only one dataset, no label needed
       else
          chartData[0].data.push({
-            x: map.stars,
+            x: map.stars.nm,
             y: map.rating.rating,
             label: `${map.artist} - ${map.title} [${map.version}]`
          });

@@ -1,6 +1,5 @@
 "use client";
 
-import { DbBeatmap } from "@/types/database.beatmap";
 import { useEffect, useState } from "react";
 import { Button, Card, CardBody, CardImg, CardSubtitle, Form, FormControl, Spinner } from "react-bootstrap";
 import { fetchMapFromDb, removePool, savePool } from "./actions";
@@ -8,6 +7,7 @@ import { buildUrl, GameMode, Mod } from "osu-web.js";
 import Link from "next/link";
 import { toast } from "react-toastify";
 import { parseShortMods, ignoreSongMods } from "@/helpers/mods";
+import { AnyBeatmapType } from "@/types/database/beatmap";
 
 export default function PoolRow({
    teamid,
@@ -16,7 +16,7 @@ export default function PoolRow({
    revalidate
 }: {
    teamid: string;
-   data: { name: string; maps: { map: DbBeatmap; mods?: Mod[]; sort?: number }[] };
+   data: { name: string; maps: { map: AnyBeatmapType; mods?: Mod[]; sort?: number }[] };
    mode: GameMode;
    revalidate?: () => void;
 }) {
@@ -48,7 +48,7 @@ export default function PoolRow({
          map ||
          ({
             _id: intId
-         } as DbBeatmap);
+         } as AnyBeatmapType);
       const modinfo = ignoreSongMods(parseShortMods(mod));
       setMaps(arr => [...arr, { map: mapinfo, mods: modinfo }]);
       setAddMapId("");

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mpLinksDb } from "../connection";
+import { mpLinksDb } from "@/database/connection";
 import { getLobbyData } from "@/helpers/server/multiplayer";
 import { submitPveData } from "@/helpers/server/pve";
 

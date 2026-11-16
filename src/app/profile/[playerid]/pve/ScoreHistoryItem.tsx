@@ -3,7 +3,7 @@ import Link from "next/link";
 import { buildUrl, GameMode, getEnumMods } from "osu-web.js";
 import { ArrowDownRightCircle, ArrowUpRightCircle, DashCircle, PlusCircle } from "react-bootstrap-icons";
 import { MatchHistory } from "@/types/database.player";
-import { mapsDb } from "@/app/api/db/connection";
+import { mapsDb } from "@/database/connection";
 import PvEMap from "@/components/maps/PvEMap";
 import { effectiveRating } from "@/helpers/rating-range";
 
@@ -70,7 +70,6 @@ export default async function ScoreHistoryItem({ match, mode }: { match: MatchHi
                      return (
                         <PvEMap
                            key={i}
-                           id={map._id}
                            mods={mods}
                            mode={mode}
                            score={m.score}

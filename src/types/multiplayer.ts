@@ -1,6 +1,6 @@
 import { GameMode, Mod } from "osu-web.js";
-import { ModPool, SimpleMod } from "./rating";
-import { ScoreParser } from "@/helpers/scorev1";
+import { ModPool } from "./rating";
+import { AnyScoreParser, ScoreParser } from "@/helpers/scorev1";
 
 export type FreemodSelection = "hd" | "hr" | "hdhr";
 
@@ -26,7 +26,7 @@ export interface MpLobbyResults {
    loserId: number;
 }
 
-export interface TeamMpLobbyResults extends MpLobbyResults {
+export interface TeamMpLobbyResults extends Omit<MpLobbyResults, 'winnerId' | 'loserId'> {
    winnerId: "Red" | "Blue";
    loserId: "Red" | "Blue";
    individualMatchups: {
@@ -36,7 +36,7 @@ export interface TeamMpLobbyResults extends MpLobbyResults {
    individualScores: {
       player: number;
       map: number;
-      score: ScoreParser;
+      score: ScoreParser<GameMode>;
       mods: Mod[];
    }[];
    redTeam: number[];
@@ -48,7 +48,7 @@ export interface PveLobbyResults {
       [userid: number]: {
          map: number;
          mods: Mod[];
-         score: ScoreParser;
+         score: ScoreParser<GameMode>;
          mode: GameMode;
       }[];
    };

@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { playersDb } from "../api/db/connection";
+import { playersDb } from "@/database/connection";
 import { cache } from "react";
 
 const checkAdmin = cache(async (osuid: number) => {

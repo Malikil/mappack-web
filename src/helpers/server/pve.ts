@@ -1,18 +1,18 @@
 import { Client, GameMode, getModsEnum, Mod, UserCompact } from "osu-web.js";
 import { ScoreParserV2 } from "../scorev1";
 import { getMaplist } from "./beatmaps";
-import { DbBeatmap } from "@/types/database.beatmap";
 import { DbPlayer, MatchHistorySong } from "@/types/database.player";
 import { getPlayerList } from "./players";
 import { ignoreSongMods } from "../mods";
 import { Glicko2, Player } from "glicko2";
 import { matchResultValue } from "../rating-range";
 import { getUpdatedModsFromBatch, getUpdatedStylesFromBatch } from "./ratings";
-import { UpdateFilter, UpdateOneModel } from "mongodb";
-import { mapsDb, playersDb } from "@/app/api/db/connection";
+import { Filter, UpdateFilter, UpdateOneModel } from "mongodb";
+import { mapsDb, playersDb } from "@/database/connection";
 import { updateTeamScoreHistory } from "@/app/api/db/team/functions";
 import { MatchGame, MatchInfo } from "@/types/undocumented/matches";
 import { getOsuToken } from "../osuToken";
+import { AnyBeatmapType, BeatmapByMode } from "@/types/database/beatmap";
 
 const ALL_MODES: GameMode[] = ["osu", "fruits", "taiko", "mania"];
 
@@ -33,7 +33,7 @@ async function fetchMaplist(games: MatchGame[], client: Client = null) {
    for (const game of games) {
       if (validateGameSettings(game)) modeMaps[game.mode].push(game.beatmap_id);
    }
-   const maplist: { [mode in GameMode]: DbBeatmap[] } = {
+   const maplist: { [mode in GameMode]: AnyBeatmapType[] } = {
       osu: [],
       fruits: [],
       taiko: [],
@@ -44,13 +44,13 @@ async function fetchMaplist(games: MatchGame[], client: Client = null) {
    return maplist;
 }
 
-function validateGame(game: MatchGame, maplist: Record<GameMode, DbBeatmap[]>) {
+function validateGame(game: MatchGame, maplist: Record<GameMode, AnyBeatmapType[]>) {
    if (!validateGameSettings(game)) return;
 
    // Make sure the map exists
    const workingMap = maplist[game.mode].find(m => m._id === game.beatmap_id);
    if (!workingMap) return; // Missing beatmap
-   const isDtb = workingMap.dtb && game.mode === "fruits";
+   const isDtb = game.mode === "fruits" && "dtb" in workingMap && workingMap.dtb;
 
    // Skip maps without any valid scores
    const scores = game.scores
@@ -92,7 +92,7 @@ function updatePlayerRating(
    workingPlayer: DbPlayer,
    gamemode: GameMode,
    scores: {
-      mapSnapshot: DbBeatmap;
+      mapSnapshot: AnyBeatmapType;
       score: number;
       mods: Mod[];
    }[]
@@ -104,7 +104,7 @@ function updatePlayerRating(
    const results: [Player, Player, number][] = scores.map(s => [
       playerCalc,
       calculator.makePlayer(s.mapSnapshot.rating.rating, s.mapSnapshot.rating.rd, s.mapSnapshot.rating.vol),
-      matchResultValue(s.score, s.mapSnapshot.dtb ? "dtb" : gamemode, {
+      matchResultValue(s.score, "dtb" in s.mapSnapshot && s.mapSnapshot.dtb ? "dtb" : gamemode, {
          mods: s.mods,
          player: workingPlayer[gamemode].mods,
          map: s.mapSnapshot.mods
@@ -161,7 +161,7 @@ function updatePlayerRating(
 }
 
 function updateMapRating(
-   workingMap: DbBeatmap,
+   workingMap: AnyBeatmapType,
    gamemode: GameMode,
    scores: {
       playerSnapshot: DbPlayer;
@@ -181,7 +181,7 @@ function updateMapRating(
       return [
          calculator.makePlayer(pdata.rating, pdata.rd, pdata.vol),
          mapCalc,
-         matchResultValue(s.score, workingMap.dtb ? "dtb" : gamemode, {
+         matchResultValue(s.score, "dtb" in workingMap && workingMap.dtb ? "dtb" : gamemode, {
             mods: s.mods,
             player: s.playerSnapshot[gamemode].mods,
             map: workingMap.mods
@@ -243,7 +243,7 @@ export async function submitPveData(
    console.log(`Submit PvE lobby ${lobby.match.id}`);
    if (!client) client = new Client(await getOsuToken());
    // Most recent map ratings
-   const maps: Record<GameMode, DbBeatmap[]> = {
+   const maps: { [M in GameMode]: BeatmapByMode[M][] } = {
       osu: [],
       fruits: [],
       taiko: [],
@@ -264,7 +264,7 @@ export async function submitPveData(
       GameMode,
       {
          [id: number]: {
-            mapSnapshot: DbBeatmap;
+            mapSnapshot: AnyBeatmapType;
             score: number;
             mods: Mod[];
          }[];
@@ -445,22 +445,21 @@ async function updatePlayers(
    } else console.warn("No player updates to perform");
 }
 
-async function updateMaps(maps: Record<GameMode, DbBeatmap[]>) {
-   for (const mode of ALL_MODES) {
-      const mapOps: { updateOne: UpdateOneModel<DbBeatmap> }[] = [];
+async function updateMaps(maps: { [M in GameMode]: BeatmapByMode[M][] }) {
+   const performUpdateOps = async <M extends GameMode>(mode: M) => {
+      const mapOps: { updateOne: UpdateOneModel<BeatmapByMode[M]> }[] = [];
 
       for (const working of maps[mode]) {
-         const update: UpdateFilter<DbBeatmap> = {
-            $set: {
-               rating: working.rating,
-               mods: working.mods,
-               styles: working.styles
-            }
-         };
          mapOps.push({
             updateOne: {
-               filter: { _id: working._id },
-               update
+               filter: { _id: working._id } as Filter<BeatmapByMode[M]>,
+               update: {
+                  $set: {
+                     rating: working.rating,
+                     mods: working.mods,
+                     styles: working.styles
+                  }
+               } as UpdateFilter<BeatmapByMode[M]>
             }
          });
       }
@@ -469,5 +468,6 @@ async function updateMaps(maps: Record<GameMode, DbBeatmap[]>) {
          const result = await mapsDb[mode].bulkWrite(mapOps);
          console.log(mode, "maps", result);
       }
-   }
+   };
+   for (const mode of ALL_MODES) await performUpdateOps(mode);
 }

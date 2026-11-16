@@ -1,4 +1,4 @@
-import { DbBeatmap } from "@/types/database.beatmap";
+import { AnyBeatmapType, BeatmapByMode } from "@/types/database/beatmap";
 import { GameMode, LegacyMatchScore, Mod, Score, ScoringType } from "osu-web.js";
 
 const difficultyMods = {
@@ -21,7 +21,7 @@ const difficultyMods = {
 };
 
 export class ScoreParserV2 {
-   static parseV1Score(score: Score, map: DbBeatmap) {
+   static parseV1Score(score: Score, map: AnyBeatmapType) {
       const parser = new ScoreParserV2(score, "Score");
       parser.setMap(map);
       return parser.getScore();
@@ -30,7 +30,7 @@ export class ScoreParserV2 {
    #score: Score;
    #scoreCache: number;
    #scoreMode: ScoringType;
-   #map: DbBeatmap;
+   #map: AnyBeatmapType;
    #modMult: number;
 
    constructor(score: Score, scoreType: ScoringType) {
@@ -40,7 +40,7 @@ export class ScoreParserV2 {
          score.mods?.reduce((mult, mod) => mult * (difficultyMods[score.mode][mod] || 1), 1) || 1;
    }
 
-   setMap(map: DbBeatmap) {
+   setMap(map: AnyBeatmapType) {
       this.#map = map;
       this.#scoreCache = 0;
    }
@@ -159,12 +159,14 @@ export class ScoreParserV2 {
       const accScore = accCalc(this.#score);
       const comboScore = comboCalc(this.#score, this.#map.maxCombo);
       const missScore = missComponent / Math.sqrt(this.#score.statistics.count_miss + 1);
-      return parseInt(((accScore + comboScore + missScore) / this.#modMult).toFixed());
+      const finalResult = parseInt(((accScore + comboScore + missScore) / this.#modMult).toFixed());
+      this.#scoreCache = finalResult;
+      return finalResult;
    }
 }
 
-export class ScoreParser {
-   static parseV1Score(score: LegacyMatchScore, mode: GameMode, map: DbBeatmap) {
+export class ScoreParser<M extends GameMode> {
+   static parseV1Score<T extends GameMode>(score: LegacyMatchScore, mode: T, map: BeatmapByMode[T]) {
       const parser = new ScoreParser(score, "Score", mode);
       parser.setMap(map);
       return parser.getScore();
@@ -173,18 +175,24 @@ export class ScoreParser {
    #score: LegacyMatchScore;
    #scoreCache: number;
    #scoreMode: ScoringType;
-   #map: DbBeatmap;
-   #mode: GameMode;
+   #map: BeatmapByMode[M];
+   #mode: M;
    #modMult: number;
 
-   constructor(score: LegacyMatchScore, scoreType: ScoringType, mode: GameMode, mods: Mod[] = []) {
+   constructor(score: LegacyMatchScore, scoreType: ScoringType, mode: M, mods: Mod[] = []) {
       this.#score = score;
       this.#scoreMode = scoreType;
       this.#mode = mode;
       this.#modMult = mods?.reduce((mult, mod) => mult * (difficultyMods[mode][mod] || 1), 1) || 1;
    }
 
-   setMap(map: DbBeatmap) {
+   get mode(): M {
+      return this.#mode;
+   }
+   isMode<T extends GameMode>(mode: T): this is ScoreParser<T> {
+      return this.#mode === (mode as GameMode);
+   }
+   setMap(map: BeatmapByMode[M]) {
       this.#map = map;
       this.#scoreCache = 0;
    }
@@ -297,6 +305,14 @@ export class ScoreParser {
       const accScore = accCalc(this.#score);
       const comboScore = comboCalc(this.#score, this.#map.maxCombo);
       const missScore = missComponent / Math.sqrt(this.#score.countmiss + 1);
-      return parseInt(((accScore + comboScore + missScore) / this.#modMult).toFixed());
+      const finalResult = parseInt(((accScore + comboScore + missScore) / this.#modMult).toFixed());
+      this.#scoreCache = finalResult;
+      return finalResult;
    }
 }
+
+export type AnyScoreParser =
+   | ScoreParser<"osu">
+   | ScoreParser<"fruits">
+   | ScoreParser<"taiko">
+   | ScoreParser<"mania">;
