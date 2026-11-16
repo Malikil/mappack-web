@@ -13,7 +13,7 @@
       },
       "update-map-data": {
          "path": "/api/cron/maps",
-         "schedule": "0 1/2 * * *",
+         "schedule": "0 1-23/2 * * *",
          "requestMethod": "GET"
       }
    }
